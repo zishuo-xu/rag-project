@@ -531,22 +531,15 @@ class KnowledgeGraphBuilder:
         return matched[:top_k]
 
     def _save(self):
-        """持久化图谱到 JSON + 同步到 Neo4j（如已配置）"""
+        """持久化图谱到 JSON"""
         self.persist_path.parent.mkdir(parents=True, exist_ok=True)
         data = nx.node_link_data(self.graph)
         with open(self.persist_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         logger.info(f"知识图谱已保存: {self.persist_path}")
 
-        # 同步到 Neo4j（失败不影响主流程）
-        if self._neo4j_configured:
-            try:
-                self._sync_to_neo4j()
-            except Exception as e:
-                logger.warning(f"Neo4j 同步失败(不影响本地): {e}")
-
     def _load(self):
-        """从 JSON 加载图谱，本地无数据时尝试从 Neo4j 恢复"""
+        """从 JSON 加载图谱"""
         try:
             with open(self.persist_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -556,111 +549,17 @@ class KnowledgeGraphBuilder:
                 f"{self.graph.number_of_edges()} 边"
             )
         except Exception as e:
-            logger.warning(f"知识图谱本地加载失败: {e}, 尝试 Neo4j")
+            logger.warning(f"知识图谱加载失败: {e}, 使用空图")
             self.graph = nx.DiGraph()
-            # 本地无数据时从 Neo4j 云端恢复
-            if self._neo4j_configured:
-                self._load_from_neo4j()
-
-    # ============ Neo4j 云端同步 ============
-
-    @property
-    def _neo4j_configured(self) -> bool:
-        """是否配置了 Neo4j"""
-        settings = get_settings()
-        return bool(settings.neo4j_uri and settings.neo4j_password)
-
-    def _get_neo4j_driver(self):
-        """创建 Neo4j 驱动实例"""
-        from neo4j import GraphDatabase
-        settings = get_settings()
-        return GraphDatabase.driver(
-            settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password),
-        )
-
-    def _sync_to_neo4j(self):
-        """
-        将当前图谱全量同步到 Neo4j。
-
-        使用 MERGE 语句，实体自动去重，重复同步幂等。
-        """
-        if self.graph.number_of_edges() == 0:
-            return
-
-        driver = self._get_neo4j_driver()
-        try:
-            with driver.session() as session:
-                # 批量写入三元组
-                triples = [
-                    {"head": h, "rel": d.get("relation", "相关"), "tail": t, "source": d.get("source", "")}
-                    for h, t, d in self.graph.edges(data=True)
-                ]
-                session.run(
-                    """
-                    UNWIND $triples AS t
-                    MERGE (h:Entity {name: t.head})
-                    MERGE (tail:Entity {name: t.tail})
-                    MERGE (h)-[r:RELATES_TO {relation: t.rel}]->(tail)
-                    SET r.source = t.source
-                    """,
-                    triples=triples,
-                )
-            logger.info(f"Neo4j 同步完成: {len(triples)} 条关系")
-        finally:
-            driver.close()
-
-    def _load_from_neo4j(self):
-        """从 Neo4j 云端加载图谱到 NetworkX"""
-        try:
-            driver = self._get_neo4j_driver()
-            with driver.session() as session:
-                result = session.run(
-                    """
-                    MATCH (h:Entity)-[r:RELATES_TO]->(t:Entity)
-                    RETURN h.name AS head, r.relation AS rel, t.name AS tail,
-                           coalesce(r.source, '') AS source
-                    """
-                )
-                count = 0
-                for record in result:
-                    self.graph.add_node(record["head"], type="entity", source=record["source"])
-                    self.graph.add_node(record["tail"], type="entity", source=record["source"])
-                    self.graph.add_edge(
-                        record["head"], record["tail"],
-                        relation=record["rel"], source=record["source"],
-                    )
-                    count += 1
-            driver.close()
-
-            if count > 0:
-                self._save()  # 缓存到本地 JSON
-                logger.info(f"从 Neo4j 恢复图谱: {self.graph.number_of_nodes()} 节点, {count} 边")
-            else:
-                logger.info("Neo4j 中无图谱数据")
-        except Exception as e:
-            logger.warning(f"Neo4j 加载失败: {e}")
 
     def clear(self):
-        """清空图谱（本地 + Neo4j）"""
+        """清空图谱"""
         self.graph = nx.DiGraph()
         if self.persist_path.exists():
             self.persist_path.unlink()
         if self.meta_path.exists():
             self.meta_path.unlink()
         self.build_state["status"] = "idle"
-
-        # 同步清空 Neo4j
-        if self._neo4j_configured:
-            try:
-                driver = self._get_neo4j_driver()
-                with driver.session() as session:
-                    session.run("MATCH (n) DETACH DELETE n")
-                driver.close()
-                logger.info("Neo4j 图谱已清空")
-            except Exception as e:
-                logger.warning(f"Neo4j 清空失败: {e}")
-
         logger.info("知识图谱已清空")
 
 

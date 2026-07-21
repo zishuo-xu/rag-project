@@ -45,11 +45,6 @@ class Settings(BaseSettings):
     graph_max_entities: int = 5  # 每次查询最多匹配实体数
     graph_persist_path: str = "./data/knowledge_graph.json"
 
-    # Neo4j (可选 - 配置后图谱同步到 Neo4j，支持云端持久化)
-    neo4j_uri: str = ""
-    neo4j_user: str = "neo4j"
-    neo4j_password: str = ""
-
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""

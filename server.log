@@ -1897,3 +1897,252 @@ Prefix dict has been built successfully.
 2026-07-22 00:06:29,462 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
 2026-07-22 00:06:29,462 - main - INFO - RAG 系统初始化完成
 INFO:     Application startup complete.
+INFO:     127.0.0.1:57800 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57803 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57805 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57807 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57809 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57811 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57813 - "GET /api/graph/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57815 - "GET /api/graph/visual HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57819 - "GET /api/graph/triples?limit=50 HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:10:23,712 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33929]
+INFO:     Started server process [34335]
+INFO:     Waiting for application startup.
+2026-07-22 00:10:27,977 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-22 00:10:28,766 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:10:28,767 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:10:29,086 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:29,615 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:29,890 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:29,890 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-22 00:10:30,295 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:30,451 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:30,855 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:31,018 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-22 00:10:31,408 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:31,588 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:31,982 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:32,157 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:32,559 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:32,962 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:33,126 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 24313.81it/s]
+2026-07-22 00:10:33,571 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:33,996 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:34,392 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:34,801 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:35,214 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:35,383 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:35,780 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:35,968 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:36,358 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:36,524 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:36,915 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:37,085 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:37,520 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:37,941 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:10:38,376 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:38,539 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:39,116 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-22 00:10:39,129 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-22 00:10:39,335 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-22 00:10:39,741 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:39,742 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-22 00:10:40,193 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:10:40,590 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:40,744 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:41,155 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:41,551 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:41,754 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 7859.85it/s]
+2026-07-22 00:10:42,241 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:42,640 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:43,016 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:43,461 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:43,906 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:44,090 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:44,526 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:44,710 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:45,164 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:45,324 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:46,010 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:46,164 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:46,585 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:10:46,982 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:10:48,590 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:10:49,946 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-22 00:10:49,953 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 678 节点, 473 边
+2026-07-22 00:10:49,954 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-22 00:10:50,054 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-22 00:10:50,054 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.243 seconds.
+2026-07-22 00:10:50,297 - jieba - DEBUG - Loading model cost 0.243 seconds.
+Prefix dict has been built successfully.
+2026-07-22 00:10:50,297 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-22 00:10:50,319 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-22 00:10:50,319 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.
+INFO:     127.0.0.1:57833 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57837 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57869 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57871 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57873 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57875 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57877 - "GET /api/graph/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57879 - "GET /api/graph/visual HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57881 - "GET /api/graph/triples?limit=50 HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/ingestion/graph_extractor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:10:52,240 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34335]
+INFO:     Started server process [34370]
+INFO:     Waiting for application startup.
+2026-07-22 00:10:56,289 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-22 00:10:56,849 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:57,003 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:57,415 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:57,662 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:57,662 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-22 00:10:58,280 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:10:58,281 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:10:58,443 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:10:58,842 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:59,016 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-22 00:10:59,460 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:10:59,640 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:00,037 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:00,218 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:00,613 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:01,008 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:01,190 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 27766.49it/s]
+2026-07-22 00:11:01,653 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:02,050 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:02,455 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:02,916 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:03,311 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:03,469 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:03,874 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:04,045 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:04,474 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:04,676 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:05,146 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:05,316 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+WARNING:  WatchFiles detected changes in '.venv/lib/python3.11/site-packages/_pytest/pastebin.py', '.venv/lib/python3.11/site-packages/_pytest/reports.py', '.venv/lib/python3.11/site-packages/neo4j/_util/_context_bool.py', '.venv/lib/python3.11/site-packages/neo4j/_typing.py', '.venv/lib/python3.11/site-packages/_pytest/freeze_support.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_compare_set.py', '.venv/lib/python3.11/site-packages/_pytest/helpconfig.py', '.venv/lib/python3.11/site-packages/_pytest/pytester.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/rewrite.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/_common.py', '.venv/lib/python3.11/site-packages/_pytest/stepwise.py', '.venv/lib/python3.11/site-packages/jieba/posseg/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/work/session.py', '.venv/lib/python3.11/site-packages/neo4j/_async/work/transaction.py', '.venv/lib/python3.11/site-packages/_pytest/nodes.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v2/temporal.py', '.venv/lib/python3.11/site-packages/neo4j/vector.py', '.venv/lib/python3.11/site-packages/_pytest/hookspec.py', '.venv/lib/python3.11/site-packages/_pytest/_py/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/doctest.py', '.venv/lib/python3.11/site-packages/neo4j/_async/home_db_cache.py', '.venv/lib/python3.11/site-packages/_pytest/config/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/cacheprovider.py', '.venv/lib/python3.11/site-packages/neo4j/_async/work/session.py', '.venv/lib/python3.11/site-packages/_pytest/recwarn.py', '.venv/lib/python3.11/site-packages/_pytest/_io/wcwidth.py', '.venv/lib/python3.11/site-packages/_pytest/_io/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/_py/path.py', '.venv/lib/python3.11/site-packages/pytest_asyncio/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/exceptions.py', '.venv/lib/python3.11/site-packages/neo4j/_work/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/types/_unsupported.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v2/hydration_handler.py', '.venv/lib/python3.11/site-packages/_pytest/_code/code.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt_socket.py', '.venv/lib/python3.11/site-packages/neo4j/types/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/highlight.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v1/vector.py', '.venv/lib/python3.11/site-packages/_pytest/debugging.py', '.venv/lib/python3.11/site-packages/pluggy/_version.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/_python/_common.py', '.venv/lib/python3.11/site-packages/pluggy/_manager.py', '.venv/lib/python3.11/site-packages/_pytest/warning_types.py', '.venv/lib/python3.11/site-packages/neo4j/_data.py', '.venv/lib/python3.11/site-packages/neo4j/api.py', '.venv/lib/python3.11/site-packages/neo4j/_work/query.py', '.venv/lib/python3.11/site-packages/iniconfig/_version.py', '.venv/lib/python3.11/site-packages/py.py', '.venv/lib/python3.11/site-packages/jieba/posseg/prob_trans.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/creator.py', '.venv/lib/python3.11/site-packages/_pytest/_io/terminalwriter.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt_socket.py', '.venv/lib/python3.11/site-packages/pluggy/_warnings.py', '.venv/lib/python3.11/site-packages/neo4j/time/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/work/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_pool.py', '.venv/lib/python3.11/site-packages/neo4j/_addressing.py', '.venv/lib/python3.11/site-packages/pytest_asyncio/plugin.py', '.venv/lib/python3.11/site-packages/neo4j/_optional_deps.py', '.venv/lib/python3.11/site-packages/jieba/posseg/viterbi.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v3/hydration_handler.py', '.venv/lib/python3.11/site-packages/jieba/posseg/prob_emit.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_compare_any.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/work/workspace.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt3.py', '.venv/lib/python3.11/site-packages/_pytest/faulthandler.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/network/_util.py', '.venv/lib/python3.11/site-packages/neo4j/_io.py', '.venv/lib/python3.11/site-packages/_pytest/main.py', '.venv/lib/python3.11/site-packages/_pytest/tracemalloc.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/unittest.py', '.venv/lib/python3.11/site-packages/jieba/analyse/textrank.py', '.venv/lib/python3.11/site-packages/neo4j/debug.py', '.venv/lib/python3.11/site-packages/_pytest/config/argparsing.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/_common.py', '.venv/lib/python3.11/site-packages/neo4j/_debug/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_typing.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt6.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_conf.py', '.venv/lib/python3.11/site-packages/pluggy/_hooks.py', '.venv/lib/python3.11/site-packages/_pytest/legacypath.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/shims/_wait_for.py', '.venv/lib/python3.11/site-packages/neo4j/_work/summary.py', '.venv/lib/python3.11/site-packages/jieba/__main__.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/driver.py', '.venv/lib/python3.11/site-packages/_pytest/setupplan.py', '.venv/lib/python3.11/site-packages/neo4j/graph/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/deprecated.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_common.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/shims/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_debug/_notification_printer.py', '.venv/lib/python3.11/site-packages/jieba/finalseg/prob_trans.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_compare_sequence.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/work/result.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt5.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/_debug/_concurrency_check.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/_code/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/config/findpaths.py', '.venv/lib/python3.11/site-packages/_pytest/mark/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt4.py', '.venv/lib/python3.11/site-packages/jieba/posseg/prob_start.py', '.venv/lib/python3.11/site-packages/_pytest/logging.py', '.venv/lib/python3.11/site-packages/neo4j/_async/_debug/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v1/__init__.py', '.venv/lib/python3.11/site-packages/jieba/finalseg/prob_emit.py', '.venv/lib/python3.11/site-packages/_pytest/runner.py', '.venv/lib/python3.11/site-packages/neo4j/_util/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/auth_management.py', '.venv/lib/python3.11/site-packages/pytz/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_common.py', '.venv/lib/python3.11/site-packages/_pytest/mark/expression.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/reader_small.py', '.venv/lib/python3.11/site-packages/jieba/posseg/char_state_tab.py', '.venv/lib/python3.11/site-packages/pluggy/_result.py', '.venv/lib/python3.11/site-packages/pytz/tzfile.py', '.venv/lib/python3.11/site-packages/pytz/exceptions.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/v1/types.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/_debug/_concurrency_check.py', '.venv/lib/python3.11/site-packages/neo4j/warnings.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/home_db_cache.py', '.venv/lib/python3.11/site-packages/_pytest/raises.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt4.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/compare_text.py', '.venv/lib/python3.11/site-packages/jieba/finalseg/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/_debug/__init__.py', '.venv/lib/python3.11/site-packages/pytest/__init__.py', '.venv/lib/python3.11/site-packages/jieba/analyse/tfidf.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/network/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v1/spatial.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/__init__.py', '.venv/lib/python3.11/site-packages/iniconfig/_parse.py', '.venv/lib/python3.11/site-packages/_pytest/mark/structures.py', '.venv/lib/python3.11/site-packages/_pytest/_py/error.py', '.venv/lib/python3.11/site-packages/neo4j/_async/work/workspace.py', '.venv/lib/python3.11/site-packages/pluggy/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/work/transaction.py', '.venv/lib/python3.11/site-packages/_pytest/capture.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/_interface.py', '.venv/lib/python3.11/site-packages/pluggy/_tracing.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/utils.py', '.venv/lib/python3.11/site-packages/jieba/analyse/analyzer.py', '.venv/lib/python3.11/site-packages/pytz/reference.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_pool.py', '.venv/lib/python3.11/site-packages/_pytest/terminal.py', '.venv/lib/python3.11/site-packages/neo4j/_debug/_config.py', '.venv/lib/python3.11/site-packages/pytest/__main__.py', '.venv/lib/python3.11/site-packages/_pytest/setuponly.py', '.venv/lib/python3.11/site-packages/iniconfig/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_meta.py', '.venv/lib/python3.11/site-packages/_pytest/_code/source.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/util.py', '.venv/lib/python3.11/site-packages/_pytest/junitxml.py', '.venv/lib/python3.11/site-packages/neo4j/_api.py', '.venv/lib/python3.11/site-packages/_pytest/terminalprogress.py', '.venv/lib/python3.11/site-packages/_pytest/python_api.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v1/temporal.py', '.venv/lib/python3.11/site-packages/neo4j/_exceptions.py', '.venv/lib/python3.11/site-packages/iniconfig/exceptions.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_guards.py', '.venv/lib/python3.11/site-packages/_pytest/_version.py', '.venv/lib/python3.11/site-packages/_pytest/tmpdir.py', '.venv/lib/python3.11/site-packages/_pytest/stash.py', '.venv/lib/python3.11/site-packages/jieba/finalseg/prob_start.py', '.venv/lib/python3.11/site-packages/neo4j/_work/eager_result.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/warnings.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/util.py', '.venv/lib/python3.11/site-packages/_pytest/fixtures.py', '.venv/lib/python3.11/site-packages/_pytest/config/exceptions.py', '.venv/lib/python3.11/site-packages/pluggy/_callers.py', '.venv/lib/python3.11/site-packages/pytz/lazy.py', '.venv/lib/python3.11/site-packages/_pytest/python.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt6.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v3/unsupported.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v1/hydration_handler.py', '.venv/lib/python3.11/site-packages/neo4j/addressing.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/auth_management.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/truncate.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/nets.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/config.py', '.venv/lib/python3.11/site-packages/_pytest/subtests.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v2/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/_io/pprint.py', '.venv/lib/python3.11/site-packages/neo4j/spatial/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/__init__.py', '.venv/lib/python3.11/site-packages/jieba/lac_small/predict.py', '.venv/lib/python3.11/site-packages/_pytest/_io/saferepr.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/_bolt3.py', '.venv/lib/python3.11/site-packages/_pytest/outcomes.py', '.venv/lib/python3.11/site-packages/_pytest/pytester_assertions.py', '.venv/lib/python3.11/site-packages/_pytest/unraisableexception.py', '.venv/lib/python3.11/site-packages/neo4j/_async/work/result.py', '.venv/lib/python3.11/site-packages/neo4j/_async/driver.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/bookmark_manager.py', '.venv/lib/python3.11/site-packages/_pytest/scope.py', '.venv/lib/python3.11/site-packages/_pytest/timing.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/work/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/network/_bolt_socket.py', '.venv/lib/python3.11/site-packages/neo4j/_async/io/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/v1/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_auth_management.py', '.venv/lib/python3.11/site-packages/pytz/tzinfo.py', '.venv/lib/python3.11/site-packages/_pytest/compat.py', '.venv/lib/python3.11/site-packages/neo4j/time/_clock_implementations.py', '.venv/lib/python3.11/site-packages/_pytest/assertion/_compare_mapping.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt5.py', '.venv/lib/python3.11/site-packages/_pytest/_argcomplete.py', '.venv/lib/python3.11/site-packages/neo4j/_async_compat/concurrency.py', '.venv/lib/python3.11/site-packages/_pytest/threadexception.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v3/vector.py', '.venv/lib/python3.11/site-packages/jieba/analyse/__init__.py', '.venv/lib/python3.11/site-packages/_pytest/skipping.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/packstream/_python/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_async/auth_management.py', '.venv/lib/python3.11/site-packages/neo4j/_async/config.py', '.venv/lib/python3.11/site-packages/neo4j/_codec/hydration/v3/__init__.py', '.venv/lib/python3.11/site-packages/neo4j/_deadline.py', '.venv/lib/python3.11/site-packages/jieba/__init__.py', '.venv/lib/python3.11/site-packages/jieba/_compat.py', '.venv/lib/python3.11/site-packages/neo4j/_sync/io/_bolt.py', '.venv/lib/python3.11/site-packages/neo4j/time/_arithmetic.py', '.venv/lib/python3.11/site-packages/neo4j/_routing.py', '.venv/lib/python3.11/site-packages/neo4j/_warnings.py', '.venv/lib/python3.11/site-packages/_pytest/monkeypatch.py', '.venv/lib/python3.11/site-packages/neo4j/time/_metaclasses.py', '.venv/lib/python3.11/site-packages/neo4j/_async/bookmark_manager.py', '.venv/lib/python3.11/site-packages/_pytest/pathlib.py'. Reloading...
+2026-07-22 00:11:05,732 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:06,142 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:11:06,574 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:06,730 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:07,136 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-22 00:11:07,138 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-22 00:11:07,304 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-22 00:11:07,706 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:07,708 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-22 00:11:08,111 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:11:08,744 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:08,902 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:09,299 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:09,708 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:09,857 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 20874.93it/s]
+2026-07-22 00:11:10,364 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:10,778 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:11,246 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:11,644 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:12,122 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:12,310 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:12,691 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:12,856 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:13,263 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:13,410 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:13,785 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:11:14,013 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:11:14,580 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:11:15,012 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:11:16,730 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:11:17,489 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-22 00:11:17,493 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 678 节点, 473 边
+2026-07-22 00:11:17,493 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-22 00:11:17,599 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-22 00:11:17,599 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.239 seconds.
+2026-07-22 00:11:17,838 - jieba - DEBUG - Loading model cost 0.239 seconds.
+Prefix dict has been built successfully.
+2026-07-22 00:11:17,839 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-22 00:11:17,861 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-22 00:11:17,861 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:11:17,962 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34370]
+Process SpawnProcess-19:
+Traceback (most recent call last):
+  File "/Users/xuzishuo/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/Users/xuzishuo/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/_subprocess.py", line 80, in subprocess_started
+    target(sockets=sockets)
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/server.py", line 74, in run
+    return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/_compat.py", line 30, in asyncio_run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/Users/xuzishuo/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/server.py", line 78, in serve
+    await self._serve(sockets)
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/server.py", line 85, in _serve
+    config.load()
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/config.py", line 493, in load
+    self.loaded_app = self.load_app()
+                      ^^^^^^^^^^^^^^^
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/config.py", line 427, in load_app
+    return import_from_string(self.app)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/importer.py", line 22, in import_from_string
+    raise exc from None
+  File "/Users/xuzishuo/Documents/rag/.venv/lib/python3.11/site-packages/uvicorn/importer.py", line 19, in import_from_string
+    module = importlib.import_module(module_str)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/xuzishuo/.local/share/uv/python/cpython-3.11.15-macos-aarch64-none/lib/python3.11/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap>", line 1204, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1176, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1147, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 690, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 940, in exec_module
+  File "<frozen importlib._bootstrap>", line 241, in _call_with_frames_removed
+  File "/Users/xuzishuo/Documents/rag/main.py", line 10, in <module>
+    from app.api.routes import router, set_rag_chain
+  File "/Users/xuzishuo/Documents/rag/app/api/routes.py", line 22, in <module>
+    from app.generation.chain import RAGChain, RAGResponse
+  File "/Users/xuzishuo/Documents/rag/app/generation/chain.py", line 16, in <module>
+    from app.retrieval.sparse import SparseRetriever
+  File "/Users/xuzishuo/Documents/rag/app/retrieval/sparse.py", line 7, in <module>
+    import jieba
+ModuleNotFoundError: No module named 'jieba'
