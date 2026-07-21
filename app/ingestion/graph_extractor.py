@@ -292,8 +292,11 @@ class KnowledgeGraphBuilder:
 
                 # 每 5 个单元做一次检查点保存（防止中途中断丢失全部进度）
                 if self.build_state["processed"] % 5 == 0:
-                    self._save()
-                    self._save_processed_ids(processed_ids | set(newly_processed_ids))
+                    # 在线程池中执行 IO，不阻塞事件循环
+                    await asyncio.to_thread(self._save)
+                    await asyncio.to_thread(
+                        self._save_processed_ids, processed_ids | set(newly_processed_ids)
+                    )
                     logger.info(
                         f"图谱构建检查点: {self.build_state['processed']}/{self.build_state['total']} "
                         f"单元, {total_triples} 三元组"

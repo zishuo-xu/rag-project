@@ -1185,3 +1185,183 @@ Prefix dict has been built successfully.
 INFO:     Application startup complete.
 INFO:     127.0.0.1:55303 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
 INFO:     127.0.0.1:55312 - "GET /api/graph/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55395 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55397 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55399 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55401 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55403 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55405 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55407 - "GET /api/graph/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55409 - "GET /api/graph/triples?limit=50 HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'frontend/app.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-21 23:55:52,804 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32648]
+INFO:     Started server process [32850]
+INFO:     Waiting for application startup.
+2026-07-21 23:55:57,191 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-21 23:55:57,733 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 23:55:57,734 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 23:55:57,805 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 23:55:58,117 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:55:58,189 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 23:55:58,191 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-21 23:55:58,486 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:55:58,558 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 23:55:58,918 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:55:58,988 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-21 23:55:59,280 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:55:59,343 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 23:55:59,629 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:55:59,700 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:55:59,994 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:00,294 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:00,371 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 22560.27it/s]
+2026-07-21 23:56:00,721 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:01,068 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:01,478 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:01,886 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:02,184 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:02,494 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:03,131 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:03,460 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:03,978 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:04,246 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:04,771 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:05,069 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:05,606 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:06,124 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+WARNING:  WatchFiles detected changes in 'app/ingestion/graph_extractor.py'. Reloading...
+2026-07-21 23:56:09,509 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:09,787 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:10,306 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-21 23:56:10,308 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-21 23:56:10,515 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-21 23:56:11,617 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:11,617 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-21 23:56:12,124 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 23:56:13,045 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:13,316 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:13,843 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:14,336 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:14,625 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8165.66it/s]
+2026-07-21 23:56:15,191 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:15,706 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:16,737 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:17,350 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:17,901 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:18,272 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:18,783 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:19,065 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:19,570 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:19,849 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:20,342 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:20,626 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:21,124 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:21,636 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-21 23:56:23,232 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 23:56:24,924 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-21 23:56:24,927 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-21 23:56:25,014 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-21 23:56:25,014 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.221 seconds.
+2026-07-21 23:56:25,235 - jieba - DEBUG - Loading model cost 0.221 seconds.
+Prefix dict has been built successfully.
+2026-07-21 23:56:25,235 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-21 23:56:25,256 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-21 23:56:25,256 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-21 23:56:25,358 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32850]
+INFO:     Started server process [32898]
+INFO:     Waiting for application startup.
+2026-07-21 23:56:29,133 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-21 23:56:31,352 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 23:56:31,354 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 23:56:31,685 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:32,184 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:32,506 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:32,509 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-21 23:56:33,120 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:33,429 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:33,925 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:34,266 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-21 23:56:34,750 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:35,006 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:35,487 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:35,783 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:36,259 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:36,746 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:36,998 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 27691.61it/s]
+2026-07-21 23:56:37,551 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:38,094 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:38,577 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:39,053 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:39,551 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:39,801 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:40,295 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:40,541 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:41,107 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:41,660 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:42,174 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:42,435 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:43,042 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:43,828 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-21 23:56:44,378 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:45,143 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:45,664 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-21 23:56:45,673 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-21 23:56:45,831 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-21 23:56:46,433 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:46,434 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-21 23:56:46,944 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 23:56:47,558 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:47,802 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:48,337 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:48,890 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:49,155 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 9669.06it/s]
+2026-07-21 23:56:49,698 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:50,197 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:50,740 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:51,213 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:51,725 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:52,004 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:52,527 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:52,823 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:53,320 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:53,613 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:54,112 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 23:56:54,401 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 23:56:54,889 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 23:56:55,445 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-21 23:56:57,243 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 23:56:58,017 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-21 23:56:58,019 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-21 23:56:58,068 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-21 23:56:58,068 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.239 seconds.
+2026-07-21 23:56:58,308 - jieba - DEBUG - Loading model cost 0.239 seconds.
+Prefix dict has been built successfully.
+2026-07-21 23:56:58,308 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-21 23:56:58,332 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-21 23:56:58,332 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.

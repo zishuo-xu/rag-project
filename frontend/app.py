@@ -894,7 +894,7 @@ with tab_graph:
 
     # 图谱统计
     try:
-        stats_resp = requests.get(f"{API_BASE_URL}/api/graph/stats", timeout=5)
+        stats_resp = requests.get(f"{API_BASE_URL}/api/graph/stats", timeout=30)
         if stats_resp.status_code == 200:
             gstats = stats_resp.json()
             if not gstats.get("is_empty", True):
