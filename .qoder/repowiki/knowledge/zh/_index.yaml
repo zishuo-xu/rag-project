@@ -1,0 +1,109 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: master
+nodes_managed: true
+exported_at: "2026-07-21T15:00:53Z"
+modules:
+    "":
+        dir_name: RAG 系统根工程（多路召回 + 知识图谱 + 评估）
+        title: RAG 系统根工程（多路召回 + 知识图谱 + 评估）
+        scope:
+            - .gitignore
+            - pyproject.toml
+            - uv.lock
+            - config.py
+            - main.py
+            - run_eval.py
+            - run_concurrency_bench.py
+            - .env.example
+            - .python-version
+            - README.md
+            - concurrency_output.log
+            - eval_output.log
+            - eval_output2.log
+            - eval_output_qwen.log
+            - server.log
+        source_files: []
+        children:
+            - api_and_frontend
+            - docs_and_sample_data
+            - evaluation
+            - ingestion
+            - retrieval
+            - tests
+        depends_on: []
+        related_to: []
+    api_and_frontend:
+        dir_name: FastAPI 后端 API 与 Streamlit 前端界面
+        title: FastAPI 后端 API 与 Streamlit 前端界面
+        scope:
+            - app/api/
+            - frontend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: docs_and_sample_data
+            - path: evaluation
+            - path: ingestion
+            - path: retrieval
+            - path: tests
+    docs_and_sample_data:
+        dir_name: 项目文档与示例知识库
+        title: 项目文档与示例知识库
+        scope:
+            - docs/
+            - data/sample_docs/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_and_frontend
+            - path: ingestion
+    evaluation:
+        dir_name: RAG 评估模块（LLM-as-Judge 指标与测试数据集）
+        title: RAG 评估模块（LLM-as-Judge 指标与测试数据集）
+        scope:
+            - app/evaluation/
+            - data/eval_report.json
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_and_frontend
+    ingestion:
+        dir_name: 文档摄入与知识抽取管道
+        title: 文档摄入与知识抽取管道
+        scope:
+            - app/ingestion/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_and_frontend
+            - path: docs_and_sample_data
+            - path: tests
+    retrieval:
+        dir_name: 多路检索与重排序管线
+        title: 多路检索与重排序管线
+        scope:
+            - app/retrieval/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_and_frontend
+            - path: tests
+    tests:
+        dir_name: RAG 系统端到端与单元测试套件
+        title: RAG 系统端到端与单元测试套件
+        scope:
+            - tests/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: api_and_frontend
+            - path: ingestion
+            - path: retrieval

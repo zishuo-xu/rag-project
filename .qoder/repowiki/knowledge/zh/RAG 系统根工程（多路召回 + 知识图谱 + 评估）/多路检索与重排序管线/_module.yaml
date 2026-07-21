@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: retrieval
+title: 多路检索与重排序管线
+scope:
+    - app/retrieval/
+source_files: []
+depends_on: []
+related_to:
+    - path: api_and_frontend
+    - path: tests

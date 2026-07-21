@@ -1,0 +1,280 @@
+2026-07-21 01:41:33,494 [INFO] 加载评估数据集: data/eval_dataset.json (12 条)
+2026-07-21 01:41:37,151 [INFO] 开始 RAG 评估: 12 个问题
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-21 01:41:37,760 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:37,903 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:38,289 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:38,430 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:38,433 [INFO] Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-21 01:41:38,816 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 01:41:38,817 [WARNING] Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-21 01:41:38,959 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:39,398 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:39,543 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-21 01:41:39,917 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:40,063 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:40,525 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:40,669 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:41,139 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:41,548 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:41,702 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+
+============================================================
+  RAG 系统评估 - 12 个问题
+============================================================
+
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 18783.62it/s]
+2026-07-21 01:41:42,154 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:42,531 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:42,982 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:43,351 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:43,733 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:43,877 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:44,314 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:44,457 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:44,842 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:44,985 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:45,374 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:45,517 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:45,895 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:46,283 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-21 01:41:46,683 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:46,828 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:47,283 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-21 01:41:47,289 [INFO] langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-21 01:41:47,574 [INFO] No device provided, using mps
+2026-07-21 01:41:47,944 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:47,946 [INFO] No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-21 01:41:48,409 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 01:41:48,855 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:48,999 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:49,380 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:49,761 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:49,904 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 7816.05it/s]
+2026-07-21 01:41:50,457 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:50,836 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:51,217 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:51,647 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:52,081 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:52,225 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:52,594 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:52,739 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:53,124 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:53,268 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:53,644 [INFO] HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-21 01:41:53,790 [INFO] HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-21 01:41:54,165 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-21 01:41:54,657 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-21 01:41:55,957 [INFO] HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-21 01:41:57,423 [INFO] Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-21 01:41:57,425 [INFO] RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+2026-07-21 01:41:57,426 [INFO]   [1/12] 正在获取 RAG 回答: Redis的ZSet底层使用什么数据结构？为什么选择它？...
+2026-07-21 01:41:57,577 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:00,817 [INFO] Multi-Query: 原始 + 3 个变体
+Building prefix dict from the default dictionary ...
+2026-07-21 01:42:00,907 [DEBUG] Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-21 01:42:00,907 [DEBUG] Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.187 seconds.
+2026-07-21 01:42:01,094 [DEBUG] Loading model cost 0.187 seconds.
+Prefix dict has been built successfully.
+2026-07-21 01:42:01,094 [DEBUG] Prefix dict has been built successfully.
+2026-07-21 01:42:01,113 [INFO] BM25 索引构建完成: 65 个文档
+2026-07-21 01:42:01,115 [INFO] RRF 融合: 2 路结果 -> 57 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches:  50%|█████     | 1/2 [00:00<00:00,  3.31it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.39it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.52it/s]
+2026-07-21 01:42:03,075 [INFO] 重排序完成: 57 候选 -> top-8 (最高分: 0.9906, 最低分: 0.0000)
+2026-07-21 01:42:03,075 [INFO] 检索完成: 5649ms, dense=44, sparse=43, fused=57, final=8
+2026-07-21 01:42:03,192 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:08,949 [INFO]   [2/12] 正在获取 RAG 回答: 什么是缓存穿透、缓存击穿和缓存雪崩？分别怎么解决？...
+2026-07-21 01:42:09,065 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:11,753 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:11,806 [INFO] RRF 融合: 2 路结果 -> 54 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.82it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.82it/s]
+2026-07-21 01:42:13,484 [INFO] 重排序完成: 54 候选 -> top-8 (最高分: 0.9606, 最低分: 0.0000)
+2026-07-21 01:42:13,484 [INFO] 检索完成: 4535ms, dense=42, sparse=37, fused=54, final=8
+2026-07-21 01:42:13,605 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:18,867 [INFO]   [3/12] 正在获取 RAG 回答: 微服务架构中服务注册与发现有哪些方案？API网关的作用是什么...
+2026-07-21 01:42:18,995 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:22,271 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:22,318 [INFO] RRF 融合: 2 路结果 -> 50 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.85it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.85it/s]
+2026-07-21 01:42:23,867 [INFO] 重排序完成: 50 候选 -> top-8 (最高分: 0.9306, 最低分: 0.0000)
+2026-07-21 01:42:23,867 [INFO] 检索完成: 4998ms, dense=40, sparse=41, fused=50, final=8
+2026-07-21 01:42:24,046 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:26,196 [INFO]   [4/12] 正在获取 RAG 回答: Transformer中Self-Attention的计算公...
+2026-07-21 01:42:26,306 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:29,475 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:29,528 [INFO] RRF 融合: 2 路结果 -> 52 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.85it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.85it/s]
+2026-07-21 01:42:31,131 [INFO] 重排序完成: 52 候选 -> top-8 (最高分: 0.9902, 最低分: 0.0000)
+2026-07-21 01:42:31,131 [INFO] 检索完成: 4933ms, dense=46, sparse=30, fused=52, final=8
+2026-07-21 01:42:31,219 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:33,441 [INFO]   [5/12] 正在获取 RAG 回答: Docker的多阶段构建有什么好处？Kubernetes控制...
+2026-07-21 01:42:33,558 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:36,439 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:36,482 [INFO] RRF 融合: 2 路结果 -> 54 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.88it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.88it/s]
+2026-07-21 01:42:38,085 [INFO] 重排序完成: 54 候选 -> top-8 (最高分: 0.7075, 最低分: 0.0000)
+2026-07-21 01:42:38,085 [INFO] 检索完成: 4643ms, dense=38, sparse=48, fused=54, final=8
+2026-07-21 01:42:38,182 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:43,127 [INFO]   [6/12] 正在获取 RAG 回答: 数据库索引的B+树结构有什么特点？为什么MySQL选择B+树...
+2026-07-21 01:42:43,243 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:45,847 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:45,894 [INFO] RRF 融合: 2 路结果 -> 61 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.79it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.79it/s]
+2026-07-21 01:42:47,790 [INFO] 重排序完成: 61 候选 -> top-8 (最高分: 0.9982, 最低分: 0.0000)
+2026-07-21 01:42:47,790 [INFO] 检索完成: 4663ms, dense=44, sparse=51, fused=61, final=8
+2026-07-21 01:42:47,890 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:51,127 [INFO]   [7/12] 正在获取 RAG 回答: HTTPS的TLS握手过程是怎样的？如何防范XSS和CSRF...
+2026-07-21 01:42:51,238 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:42:54,154 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:42:54,210 [INFO] RRF 融合: 2 路结果 -> 51 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.86it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.86it/s]
+2026-07-21 01:42:55,788 [INFO] 重排序完成: 51 候选 -> top-8 (最高分: 0.9651, 最低分: 0.0000)
+2026-07-21 01:42:55,788 [INFO] 检索完成: 4660ms, dense=42, sparse=34, fused=51, final=8
+2026-07-21 01:42:55,880 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:03,962 [INFO]   [8/12] 正在获取 RAG 回答: TCP三次握手的过程是什么？为什么需要三次而不是两次？...
+2026-07-21 01:43:04,087 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:07,543 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:43:07,580 [INFO] RRF 融合: 2 路结果 -> 54 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.90it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.90it/s]
+2026-07-21 01:43:09,194 [INFO] 重排序完成: 54 候选 -> top-8 (最高分: 0.9964, 最低分: 0.0000)
+2026-07-21 01:43:09,194 [INFO] 检索完成: 5231ms, dense=45, sparse=28, fused=54, final=8
+2026-07-21 01:43:09,289 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:12,788 [INFO]   [9/12] 正在获取 RAG 回答: Python中GIL是什么？如何优化Python程序的性能？...
+2026-07-21 01:43:12,895 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:14,943 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:43:14,985 [INFO] RRF 融合: 2 路结果 -> 57 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.90it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.90it/s]
+2026-07-21 01:43:16,671 [INFO] 重排序完成: 57 候选 -> top-8 (最高分: 0.9595, 最低分: 0.0000)
+2026-07-21 01:43:16,671 [INFO] 检索完成: 3883ms, dense=49, sparse=43, fused=57, final=8
+2026-07-21 01:43:16,760 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:24,188 [INFO]   [10/12] 正在获取 RAG 回答: 系统设计中如何保证高可用？限流算法有哪些？...
+2026-07-21 01:43:24,299 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:26,513 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:43:26,576 [INFO] RRF 融合: 2 路结果 -> 53 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.91it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.91it/s]
+2026-07-21 01:43:28,157 [INFO] 重排序完成: 53 候选 -> top-8 (最高分: 0.6329, 最低分: 0.0000)
+2026-07-21 01:43:28,157 [INFO] 检索完成: 3969ms, dense=41, sparse=39, fused=53, final=8
+2026-07-21 01:43:28,258 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:32,995 [INFO]   [11/12] 正在获取 RAG 回答: LoRA微调的原理是什么？它相比全参数微调有什么优势？...
+2026-07-21 01:43:33,106 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:35,012 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:43:35,057 [INFO] RRF 融合: 2 路结果 -> 54 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.88it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.88it/s]
+2026-07-21 01:43:36,690 [INFO] 重排序完成: 54 候选 -> top-8 (最高分: 0.9929, 最低分: 0.0000)
+2026-07-21 01:43:36,690 [INFO] 检索完成: 3695ms, dense=42, sparse=37, fused=54, final=8
+2026-07-21 01:43:36,771 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:39,580 [INFO]   [12/12] 正在获取 RAG 回答: 在高并发系统中，缓存和数据库的一致性如何保证？有哪些常见的缓...
+2026-07-21 01:43:39,701 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:41,568 [INFO] Multi-Query: 原始 + 3 个变体
+2026-07-21 01:43:41,620 [INFO] RRF 融合: 2 路结果 -> 56 个唯一文档 (k=60)
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.81it/s]Batches: 100%|██████████| 2/2 [00:01<00:00,  1.81it/s]
+2026-07-21 01:43:43,354 [INFO] 重排序完成: 56 候选 -> top-8 (最高分: 0.9420, 最低分: 0.0000)
+2026-07-21 01:43:43,354 [INFO] 检索完成: 3773ms, dense=47, sparse=51, fused=56, final=8
+2026-07-21 01:43:43,452 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:43:48,910 [INFO]   [1/12] 正在评估: Redis的ZSet底层使用什么数据结构？为什么选择它？...
+2026-07-21 01:43:49,063 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:06,545 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:08,500 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:11,821 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:15,607 [INFO]   [2/12] 正在评估: 什么是缓存穿透、缓存击穿和缓存雪崩？分别怎么解决？...
+2026-07-21 01:44:15,760 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:20,423 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:22,269 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:25,877 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:32,210 [INFO]   [3/12] 正在评估: 微服务架构中服务注册与发现有哪些方案？API网关的作用是什么...
+2026-07-21 01:44:32,352 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:37,366 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:39,275 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:43,394 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:47,680 [INFO]   [4/12] 正在评估: Transformer中Self-Attention的计算公...
+2026-07-21 01:44:47,821 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:51,825 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:53,924 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:44:56,968 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:00,764 [INFO]   [5/12] 正在评估: Docker的多阶段构建有什么好处？Kubernetes控制...
+2026-07-21 01:45:00,920 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:04,361 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:11,010 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:20,607 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:26,525 [INFO]   [6/12] 正在评估: 数据库索引的B+树结构有什么特点？为什么MySQL选择B+树...
+2026-07-21 01:45:26,680 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:33,661 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:36,271 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:41,125 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:47,705 [INFO]   [7/12] 正在评估: HTTPS的TLS握手过程是怎样的？如何防范XSS和CSRF...
+2026-07-21 01:45:47,867 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:55,561 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:45:57,398 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:05,994 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:13,769 [INFO]   [8/12] 正在评估: TCP三次握手的过程是什么？为什么需要三次而不是两次？...
+2026-07-21 01:46:13,911 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:17,551 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:19,308 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:22,417 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:27,457 [INFO]   [9/12] 正在评估: Python中GIL是什么？如何优化Python程序的性能？...
+2026-07-21 01:46:27,628 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:42,139 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:44,294 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:50,299 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:46:59,157 [INFO]   [10/12] 正在评估: 系统设计中如何保证高可用？限流算法有哪些？...
+2026-07-21 01:46:59,309 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:06,125 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:08,095 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:15,927 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:21,033 [INFO]   [11/12] 正在评估: LoRA微调的原理是什么？它相比全参数微调有什么优势？...
+2026-07-21 01:47:21,186 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:26,365 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:27,972 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:30,785 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:34,797 [INFO]   [12/12] 正在评估: 在高并发系统中，缓存和数据库的一致性如何保证？有哪些常见的缓...
+2026-07-21 01:47:34,942 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:39,238 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:41,306 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:47:46,367 [INFO] HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 01:48:01,764 [INFO] 评估完成: {'faithfulness': 0.9167, 'answer_relevancy': 0.9333, 'context_precision': 0.965, 'context_recall': 0.913}
+
+============================================================
+  评估结果 (耗时 388.3s)
+============================================================
+
+  指标得分:
+    ✓ faithfulness             : 0.9167
+    ✓ answer_relevancy         : 0.9333
+    ✓ context_precision        : 0.9650
+    ✓ context_recall           : 0.9130
+
+  优秀标准: faithfulness>0.9, answer_relevancy>0.85,
+            context_precision>0.85, context_recall>0.9
+
+  逐题详情:
+    Q: Redis的ZSet底层使用什么数据结构？为什么选择它？...
+       F=0.50 R=1.00 P=1.00 RC=1.00
+    Q: 什么是缓存穿透、缓存击穿和缓存雪崩？分别怎么解决？...
+       F=1.00 R=1.00 P=1.00 RC=1.00
+    Q: 微服务架构中服务注册与发现有哪些方案？API网关的作用是什么？...
+       F=1.00 R=1.00 P=1.00 RC=1.00
+    Q: Transformer中Self-Attention的计算公式是什么？为什么要除...
+       F=1.00 R=1.00 P=1.00 RC=1.00
+    Q: Docker的多阶段构建有什么好处？Kubernetes控制平面包含哪些组件？...
+       F=1.00 R=0.60 P=0.81 RC=1.00
+    Q: 数据库索引的B+树结构有什么特点？为什么MySQL选择B+树而不是B树或哈希索引...
+       F=1.00 R=0.60 P=1.00 RC=0.67
+    Q: HTTPS的TLS握手过程是怎样的？如何防范XSS和CSRF攻击？...
+       F=1.00 R=1.00 P=0.85 RC=0.91
+    Q: TCP三次握手的过程是什么？为什么需要三次而不是两次？...
+       F=1.00 R=1.00 P=1.00 RC=1.00
+    Q: Python中GIL是什么？如何优化Python程序的性能？...
+       F=0.50 R=1.00 P=1.00 RC=0.67
+    Q: 系统设计中如何保证高可用？限流算法有哪些？...
+       F=1.00 R=1.00 P=0.92 RC=1.00
+    Q: LoRA微调的原理是什么？它相比全参数微调有什么优势？...
+       F=1.00 R=1.00 P=1.00 RC=1.00
+    Q: 在高并发系统中，缓存和数据库的一致性如何保证？有哪些常见的缓存策略？...
+       F=1.00 R=1.00 P=1.00 RC=0.71
+
+  报告已保存: data/eval_report.json

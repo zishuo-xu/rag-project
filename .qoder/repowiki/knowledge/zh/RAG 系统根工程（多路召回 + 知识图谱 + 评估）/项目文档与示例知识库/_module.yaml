@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: docs_and_sample_data
+title: 项目文档与示例知识库
+scope:
+    - docs/
+    - data/sample_docs/
+source_files: []
+depends_on: []
+related_to:
+    - path: api_and_frontend
+    - path: ingestion

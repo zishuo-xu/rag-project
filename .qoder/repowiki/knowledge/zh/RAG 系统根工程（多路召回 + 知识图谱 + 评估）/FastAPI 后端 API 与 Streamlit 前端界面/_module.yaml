@@ -1,0 +1,14 @@
+schema_version: 1
+module_path: api_and_frontend
+title: FastAPI 后端 API 与 Streamlit 前端界面
+scope:
+    - app/api/
+    - frontend/
+source_files: []
+depends_on: []
+related_to:
+    - path: docs_and_sample_data
+    - path: evaluation
+    - path: ingestion
+    - path: retrieval
+    - path: tests

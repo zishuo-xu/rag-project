@@ -211,23 +211,23 @@ def chat_with_api(question: str, chat_history: list, stream: bool = True):
         "stream": stream,
     }
     if stream:
-        return requests.post(f"{API_BASE_URL}/api/chat", json=payload, stream=True)
+        return requests.post(f"{API_BASE_URL}/api/chat", json=payload, stream=True, timeout=(5, 120))
     else:
-        response = requests.post(f"{API_BASE_URL}/api/chat", json=payload)
+        response = requests.post(f"{API_BASE_URL}/api/chat", json=payload, timeout=120)
         return response.json()
 
 
 def upload_document(file):
     """上传文档到后端"""
     files = {"file": (file.name, file.getvalue(), file.type)}
-    response = requests.post(f"{API_BASE_URL}/api/documents/upload", files=files)
+    response = requests.post(f"{API_BASE_URL}/api/documents/upload", files=files, timeout=60)
     return response.json()
 
 
 def get_documents():
     """获取已索引文档列表"""
     try:
-        response = requests.get(f"{API_BASE_URL}/api/documents")
+        response = requests.get(f"{API_BASE_URL}/api/documents", timeout=5)
         return response.json()
     except Exception:
         return {"documents": [], "total": 0}
@@ -343,7 +343,7 @@ def render_index_explorer():
         return
 
     try:
-        resp = requests.get(f"{API_BASE_URL}/api/documents/{selected_doc}/chunks")
+        resp = requests.get(f"{API_BASE_URL}/api/documents/{selected_doc}/chunks", timeout=10)
         if resp.status_code != 200:
             st.error("获取索引详情失败")
             return
@@ -694,7 +694,7 @@ with tab_trace:
 
     try:
         # 统计概览
-        stats_resp = requests.get(f"{API_BASE_URL}/api/traces/stats")
+        stats_resp = requests.get(f"{API_BASE_URL}/api/traces/stats", timeout=5)
         if stats_resp.status_code == 200:
             tstats = stats_resp.json()
             if tstats.get("total_traces", 0) > 0:
@@ -737,7 +737,7 @@ with tab_trace:
         st.divider()
 
         # 最近 traces 列表
-        traces_resp = requests.get(f"{API_BASE_URL}/api/traces?limit=10")
+        traces_resp = requests.get(f"{API_BASE_URL}/api/traces?limit=10", timeout=5)
         if traces_resp.status_code == 200:
             traces = traces_resp.json().get("traces", [])
             if traces:
@@ -829,7 +829,7 @@ with tab_graph:
 
     # 图谱统计
     try:
-        stats_resp = requests.get(f"{API_BASE_URL}/api/graph/stats")
+        stats_resp = requests.get(f"{API_BASE_URL}/api/graph/stats", timeout=5)
         if stats_resp.status_code == 200:
             gstats = stats_resp.json()
             if not gstats.get("is_empty", True):
@@ -870,7 +870,7 @@ with tab_graph:
                     show_labels = st.checkbox("显示标签", value=True, key="vis_labels")
 
                 try:
-                    vis_resp = requests.get(f"{API_BASE_URL}/api/graph/visual")
+                    vis_resp = requests.get(f"{API_BASE_URL}/api/graph/visual", timeout=10)
                     if vis_resp.status_code == 200:
                         vis_data = vis_resp.json()
                         if not vis_data.get("is_empty", True):
@@ -1039,7 +1039,7 @@ with tab_graph:
     st.divider()
     with st.expander("📜 浏览所有三元组"):
         try:
-            resp = requests.get(f"{API_BASE_URL}/api/graph/triples?limit=50")
+            resp = requests.get(f"{API_BASE_URL}/api/graph/triples?limit=50", timeout=10)
             if resp.status_code == 200:
                 tdata = resp.json()
                 triples = tdata.get("triples", [])

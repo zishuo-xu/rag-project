@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: ingestion
+title: 文档摄入与知识抽取管道
+scope:
+    - app/ingestion/
+source_files: []
+depends_on: []
+related_to:
+    - path: api_and_frontend
+    - path: docs_and_sample_data
+    - path: tests

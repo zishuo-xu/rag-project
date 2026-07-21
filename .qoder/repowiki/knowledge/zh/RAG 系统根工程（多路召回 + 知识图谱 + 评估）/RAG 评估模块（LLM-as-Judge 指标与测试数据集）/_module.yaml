@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: evaluation
+title: RAG 评估模块（LLM-as-Judge 指标与测试数据集）
+scope:
+    - app/evaluation/
+    - data/eval_report.json
+source_files: []
+depends_on: []
+related_to:
+    - path: api_and_frontend

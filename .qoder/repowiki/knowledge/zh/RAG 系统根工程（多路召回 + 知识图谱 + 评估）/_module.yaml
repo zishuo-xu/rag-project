@@ -1,0 +1,22 @@
+schema_version: 1
+module_path: ""
+title: RAG 系统根工程（多路召回 + 知识图谱 + 评估）
+scope:
+    - .gitignore
+    - pyproject.toml
+    - uv.lock
+    - config.py
+    - main.py
+    - run_eval.py
+    - run_concurrency_bench.py
+    - .env.example
+    - .python-version
+    - README.md
+    - concurrency_output.log
+    - eval_output.log
+    - eval_output2.log
+    - eval_output_qwen.log
+    - server.log
+source_files: []
+depends_on: []
+related_to: []
