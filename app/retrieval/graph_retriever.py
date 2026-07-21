@@ -63,12 +63,60 @@ class GraphRetriever:
         """
         从用户查询中抽取关键实体。
 
+        快速路径：先在图节点上做关键词匹配（零 LLM 调用），
+        匹配失败时才回退到 LLM 抽取。
+
         Args:
             question: 用户问题
 
         Returns:
             实体名列表
         """
+        # 快速路径：基于图节点的关键词匹配
+        fast_entities = self._fast_entity_match(question)
+        if fast_entities:
+            logger.debug(f"快速实体匹配: {fast_entities}")
+            return fast_entities
+
+        # 回退：LLM 抽取
+        return self._llm_extract_entities(question)
+
+    def _fast_entity_match(self, question: str) -> List[str]:
+        """
+        基于图节点的快速实体匹配（无 LLM 调用）。
+
+        策略：将查询与图中所有节点名做包含匹配，
+        按节点度数排序返回 top-K。
+        """
+        graph = self.graph_builder.graph
+        if graph.number_of_nodes() == 0:
+            return []
+
+        question_lower = question.lower()
+        degrees = dict(graph.degree())
+        matched = []
+
+        for node in graph.nodes():
+            node_lower = node.lower()
+            # 节点名必须 >= 2 字符且出现在查询中
+            if len(node_lower) >= 2 and node_lower in question_lower:
+                matched.append((node, degrees.get(node, 0)))
+
+        # 按度数降序，取 top-K
+        matched.sort(key=lambda x: x[1], reverse=True)
+
+        # 去除被更长实体包含的子串（如 "Redis" 和 "Redis Cluster"）
+        result = []
+        for node, deg in matched:
+            if not any(node.lower() != m.lower() and node.lower() in m.lower() for m in result):
+                result.append(node)
+            if len(result) >= self.max_entities:
+                break
+
+        return result[:self.max_entities]
+
+    def _llm_extract_entities(self, question: str) -> List[str]:
+        """使用 LLM 从查询中抽取实体（回退路径）"""
         chain = ENTITY_EXTRACT_PROMPT | self.llm | StrOutputParser()
 
         try:

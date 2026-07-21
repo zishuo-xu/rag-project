@@ -79,8 +79,9 @@ class TestSparseRetrieverTokenize:
         """中文分词"""
         retriever = SparseRetriever.__new__(SparseRetriever)
         tokens = retriever._tokenize("你好世界")
-        assert "你" in tokens
-        assert "好" in tokens
+        # jieba 将"你好世界"分为词级 token，而非单字
+        assert "你好" in tokens
+        assert "世界" in tokens
 
     def test_mixed_tokenize(self):
         """中英混合分词"""

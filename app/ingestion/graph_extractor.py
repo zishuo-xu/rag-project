@@ -9,11 +9,13 @@
     - 图存储抽象为接口，生产环境可无缝切换 Neo4j
 """
 
+import asyncio
 import json
 import logging
 import re
+import time
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 import networkx as nx
 from langchain_core.documents import Document
@@ -50,7 +52,18 @@ class KnowledgeGraphBuilder:
 
     使用 LLM 从文档分块中抽取实体和关系，
     构建 NetworkX 有向图，支持持久化到 JSON。
+
+    优化特性：
+    - 并发 LLM 调用（asyncio + Semaphore 限流）
+    - 增量构建（跳过已处理的分块）
+    - 实时进度追踪
+    - 相邻分块合并（减少 LLM 调用次数）
     """
+
+    # 并发 LLM 调用数上限
+    MAX_CONCURRENCY = 5
+    # 合并相邻分块的最大数量
+    MERGE_CHUNK_SIZE = 2
 
     def __init__(self, llm=None):
         settings = get_settings()
@@ -62,6 +75,19 @@ class KnowledgeGraphBuilder:
         )
         self.graph = nx.DiGraph()
         self.persist_path = Path(settings.graph_persist_path)
+        self.meta_path = self.persist_path.with_suffix(".meta.json")
+
+        # 构建进度状态
+        self.build_state: dict = {
+            "status": "idle",  # idle | building | completed | failed
+            "processed": 0,
+            "total": 0,
+            "triples_extracted": 0,
+            "skipped": 0,
+            "started_at": None,
+            "elapsed_seconds": 0,
+            "error": None,
+        }
 
         # 尝试加载已有图谱
         if self.persist_path.exists():
@@ -128,7 +154,7 @@ class KnowledgeGraphBuilder:
 
     def build_from_documents(self, documents: List[Document]) -> dict:
         """
-        从文档分块批量构建知识图谱。
+        从文档分块批量构建知识图谱（同步版本，保留兼容）。
 
         Args:
             documents: 文档分块列表
@@ -167,6 +193,203 @@ class KnowledgeGraphBuilder:
         }
         logger.info(f"知识图谱构建完成: {stats}")
         return stats
+
+    # ============ 异步构建（并发 + 增量 + 进度追踪） ============
+
+    @property
+    def is_building(self) -> bool:
+        """是否正在构建中"""
+        return self.build_state["status"] == "building"
+
+    def get_build_progress(self) -> dict:
+        """获取构建进度快照"""
+        state = self.build_state.copy()
+        if state["status"] == "building" and state["started_at"]:
+            state["elapsed_seconds"] = round(time.time() - state["started_at"], 1)
+        return state
+
+    async def build_from_documents_async(
+        self,
+        documents: List[Document],
+        incremental: bool = True,
+        progress_callback: Optional[Callable[[dict], None]] = None,
+    ) -> dict:
+        """
+        异步并发构建知识图谱。
+
+        优化策略：
+        1. 增量构建：跳过已处理过的 chunk（基于 chunk_id）
+        2. 分块合并：同文档相邻 2 块合并为一次 LLM 调用，减少 50% 请求
+        3. 并发控制：Semaphore 限制最多 5 个并发 LLM 请求
+        4. 进度追踪：实时更新 build_state，支持外部轮询
+
+        Args:
+            documents: 文档分块列表
+            incremental: 是否增量构建（跳过已处理分块）
+            progress_callback: 进度回调函数
+
+        Returns:
+            构建统计信息
+        """
+        if self.is_building:
+            raise RuntimeError("图谱正在构建中，请等待完成")
+
+        processed_ids = self._load_processed_ids() if incremental else set()
+
+        # 过滤已处理的分块
+        if incremental and processed_ids:
+            pending_docs = [
+                doc for doc in documents
+                if doc.metadata.get("chunk_id", "") not in processed_ids
+            ]
+            skipped = len(documents) - len(pending_docs)
+        else:
+            pending_docs = documents
+            skipped = 0
+
+        # 合并相邻分块（同文档的相邻 chunk 两两合并）
+        tasks_units = self._merge_chunks(pending_docs)
+
+        # 初始化构建状态
+        self.build_state = {
+            "status": "building",
+            "processed": 0,
+            "total": len(tasks_units),
+            "triples_extracted": 0,
+            "skipped": skipped,
+            "started_at": time.time(),
+            "elapsed_seconds": 0,
+            "error": None,
+        }
+        self._notify_progress(progress_callback)
+
+        semaphore = asyncio.Semaphore(self.MAX_CONCURRENCY)
+        total_triples = 0
+        newly_processed_ids: List[str] = []
+
+        async def process_unit(unit: dict):
+            """处理一个合并单元（1-2 个分块）"""
+            nonlocal total_triples
+            async with semaphore:
+                try:
+                    triples = await self._extract_triples_async(unit["text"])
+                except Exception as e:
+                    logger.warning(f"三元组抽取失败: {e}")
+                    triples = []
+
+                # 写入图（NetworkX 非线程安全，但 asyncio 是单线程事件循环，安全）
+                for head, relation, tail in triples:
+                    self.graph.add_node(head, type="entity", source=unit["source"])
+                    self.graph.add_node(tail, type="entity", source=unit["source"])
+                    self.graph.add_edge(head, tail, relation=relation, source=unit["source"])
+
+                total_triples += len(triples)
+                newly_processed_ids.extend(unit["chunk_ids"])
+
+                # 更新进度
+                self.build_state["processed"] += 1
+                self.build_state["triples_extracted"] = total_triples
+                self._notify_progress(progress_callback)
+
+        try:
+            # 并发执行所有抽取任务
+            await asyncio.gather(*[process_unit(u) for u in tasks_units])
+
+            # 持久化图谱 + 已处理 ID
+            self._save()
+            self._save_processed_ids(processed_ids | set(newly_processed_ids))
+
+            elapsed = time.time() - self.build_state["started_at"]
+            self.build_state.update({
+                "status": "completed",
+                "elapsed_seconds": round(elapsed, 1),
+            })
+            self._notify_progress(progress_callback)
+
+            stats = {
+                "processed_units": len(tasks_units),
+                "total_triples": total_triples,
+                "skipped_chunks": skipped,
+                "num_nodes": self.graph.number_of_nodes(),
+                "num_edges": self.graph.number_of_edges(),
+                "elapsed_seconds": round(elapsed, 1),
+                "concurrency": self.MAX_CONCURRENCY,
+            }
+            logger.info(f"知识图谱异步构建完成: {stats}")
+            return stats
+
+        except Exception as e:
+            self.build_state.update({
+                "status": "failed",
+                "error": str(e),
+                "elapsed_seconds": round(time.time() - self.build_state["started_at"], 1),
+            })
+            self._notify_progress(progress_callback)
+            raise
+
+    async def _extract_triples_async(self, text: str) -> List[tuple]:
+        """异步 LLM 三元组抽取"""
+        chain = EXTRACTION_PROMPT | self.llm | StrOutputParser()
+        result = await chain.ainvoke({"text": text[:2000]})
+        triples = self._parse_triples(result)
+        logger.debug(f"异步抽取到 {len(triples)} 个三元组")
+        return triples
+
+    def _merge_chunks(self, documents: List[Document]) -> List[dict]:
+        """
+        将同文档的相邻分块两两合并，减少 LLM 调用次数。
+
+        Returns:
+            [{"text": ..., "source": ..., "chunk_ids": [...]}]
+        """
+        # 按 doc_id 分组，保持 position 顺序
+        groups: dict = {}
+        for doc in documents:
+            doc_id = doc.metadata.get("doc_id", "unknown")
+            if doc_id not in groups:
+                groups[doc_id] = []
+            groups[doc_id].append(doc)
+
+        units = []
+        for doc_id, docs in groups.items():
+            docs.sort(key=lambda d: d.metadata.get("position", 0))
+            # 两两合并
+            for i in range(0, len(docs), self.MERGE_CHUNK_SIZE):
+                batch = docs[i:i + self.MERGE_CHUNK_SIZE]
+                units.append({
+                    "text": "\n\n".join(d.page_content for d in batch),
+                    "source": batch[0].metadata.get("source", "unknown"),
+                    "chunk_ids": [
+                        d.metadata.get("chunk_id", f"{doc_id}_{j}")
+                        for j, d in enumerate(batch)
+                    ],
+                })
+        return units
+
+    def _notify_progress(self, callback: Optional[Callable] = None):
+        """触发进度回调"""
+        if callback:
+            try:
+                callback(self.get_build_progress())
+            except Exception:
+                pass
+
+    def _load_processed_ids(self) -> set:
+        """加载已处理的 chunk_id 集合"""
+        if self.meta_path.exists():
+            try:
+                with open(self.meta_path, "r", encoding="utf-8") as f:
+                    meta = json.load(f)
+                return set(meta.get("processed_chunk_ids", []))
+            except Exception:
+                pass
+        return set()
+
+    def _save_processed_ids(self, ids: set):
+        """持久化已处理的 chunk_id 集合"""
+        self.meta_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.meta_path, "w", encoding="utf-8") as f:
+            json.dump({"processed_chunk_ids": sorted(ids)}, f, ensure_ascii=False)
 
     def get_subgraph(self, entities: List[str], max_hops: int = 2) -> nx.DiGraph:
         """
@@ -321,6 +544,9 @@ class KnowledgeGraphBuilder:
         self.graph = nx.DiGraph()
         if self.persist_path.exists():
             self.persist_path.unlink()
+        if self.meta_path.exists():
+            self.meta_path.unlink()
+        self.build_state["status"] = "idle"
         logger.info("知识图谱已清空")
 
 

@@ -801,31 +801,96 @@ with tab_graph:
     )
 
     # 图谱操作区
+    # 页面加载时检测是否有正在进行的构建（刷新页面后自动恢复进度显示）
+    if not st.session_state.get("graph_building"):
+        try:
+            _chk = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=3)
+            if _chk.status_code == 200 and _chk.json().get("status") == "building":
+                st.session_state.graph_building = True
+        except Exception:
+            pass
+
     col_build, col_clear = st.columns([2, 1])
     with col_build:
         if st.button("🚀 构建知识图谱", use_container_width=True, key="graph_build"):
-            with st.spinner("正在从文档中抽取实体和关系…"):
-                try:
-                    resp = requests.post(f"{API_BASE_URL}/api/graph/build", timeout=300)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        st.success(f"✅ {data['message']}")
-                        st.session_state.graph_stats = data.get("stats", {})
-                        st.rerun()
-                    else:
-                        st.error(f"构建失败: {resp.json().get('detail', resp.text)}")
-                except requests.ConnectionError:
-                    st.error("无法连接后端服务")
-                except requests.Timeout:
-                    st.error("构建超时（文档较多时可能需要几分钟）")
+            try:
+                resp = requests.post(f"{API_BASE_URL}/api/graph/build", timeout=10)
+                if resp.status_code == 200:
+                    st.session_state.graph_building = True
+                    st.rerun()
+                else:
+                    st.error(f"启动失败: {resp.json().get('detail', resp.text)}")
+            except requests.ConnectionError:
+                st.error("无法连接后端服务")
+            except requests.Timeout:
+                st.error("请求超时")
     with col_clear:
         if st.button("🗑️ 清空图谱", use_container_width=True, key="graph_clear"):
             try:
                 requests.delete(f"{API_BASE_URL}/api/graph")
                 st.session_state.pop("graph_stats", None)
+                st.session_state.pop("graph_building", None)
                 st.rerun()
             except Exception:
                 pass
+
+    # 构建进度展示（轮询后端进度接口）
+    if st.session_state.get("graph_building"):
+        import time as _time
+        progress_bar = st.progress(0, text="正在从文档中抽取实体和关系…")
+        status_text = st.empty()
+        max_wait = 600  # 最多等待 10 分钟
+        start_wait = _time.time()
+
+        while _time.time() - start_wait < max_wait:
+            try:
+                p_resp = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=5)
+                if p_resp.status_code != 200:
+                    break
+                prog = p_resp.json()
+            except Exception:
+                break
+
+            status = prog.get("status", "idle")
+            processed = prog.get("processed", 0)
+            total = prog.get("total", 1) or 1
+            triples = prog.get("triples_extracted", 0)
+            skipped = prog.get("skipped", 0)
+            elapsed = prog.get("elapsed_seconds", 0)
+
+            pct = min(processed / total, 1.0)
+            progress_bar.progress(
+                pct,
+                text=f"图谱构建中… {processed}/{total} 单元 · 已抽取 {triples} 个三元组 · {elapsed}s",
+            )
+            if skipped > 0:
+                status_text.caption(f"⚡ 增量构建：已跳过 {skipped} 个已处理分块")
+
+            if status == "completed":
+                progress_bar.progress(1.0, text="构建完成！")
+                stats = prog.get("stats", {})
+                st.success(
+                    f"✅ 知识图谱构建完成 — {stats.get('num_nodes', 0)} 个实体、"
+                    f"{stats.get('num_edges', 0)} 条关系，耗时 {elapsed}s"
+                )
+                st.session_state.pop("graph_building", None)
+                _time.sleep(1)
+                st.rerun()
+                break
+            elif status == "failed":
+                progress_bar.empty()
+                st.error(f"构建失败: {prog.get('error', '未知错误')}")
+                st.session_state.pop("graph_building", None)
+                break
+            elif status == "idle":
+                # 任务未启动（可能服务重启了）
+                st.session_state.pop("graph_building", None)
+                break
+
+            _time.sleep(2)
+        else:
+            st.warning("等待超时，请刷新页面查看结果")
+            st.session_state.pop("graph_building", None)
 
     # 图谱统计
     try:

@@ -1,5 +1,6 @@
 """FastAPI 路由定义 - Chat / Documents / Evaluation / Health"""
 
+import asyncio
 import json
 import logging
 import tempfile
@@ -399,33 +400,65 @@ async def evaluate(request: EvalRequest):
 
 # ============ Graph RAG 端点 ============
 
+# 图谱构建后台任务引用
+_graph_build_task: asyncio.Task | None = None
+
+
 @router.post("/api/graph/build")
 async def build_knowledge_graph():
     """
-    构建知识图谱。
+    启动知识图谱构建（后台异步执行）。
 
-    从已索引的文档分块中抽取实体和关系，构建 NetworkX 知识图谱。
+    立即返回，通过 GET /api/graph/build/progress 轮询进度。
+    支持增量构建：已处理过的分块自动跳过。
     """
-    chain = get_rag_chain()
+    global _graph_build_task
     from app.ingestion.graph_extractor import get_graph_builder
 
-    try:
-        all_chunks = chain.indexer.get_all_chunks()
-        if not all_chunks:
-            raise HTTPException(status_code=400, detail="无已索引文档，请先上传文档")
+    builder = get_graph_builder()
 
-        builder = get_graph_builder()
-        stats = builder.build_from_documents(all_chunks)
-
+    # 如果正在构建，返回当前进度
+    if builder.is_building:
         return {
-            "message": "知识图谱构建完成",
-            "stats": stats,
+            "message": "图谱正在构建中",
+            "status": "building",
+            "progress": builder.get_build_progress(),
         }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"知识图谱构建失败: {e}")
-        raise HTTPException(status_code=500, detail=f"图谱构建失败: {str(e)}")
+
+    chain = get_rag_chain()
+    all_chunks = chain.indexer.get_all_chunks()
+    if not all_chunks:
+        raise HTTPException(status_code=400, detail="无已索引文档，请先上传文档")
+
+    # 启动后台任务（不阻塞事件循环）
+    async def _run_build():
+        try:
+            await builder.build_from_documents_async(all_chunks, incremental=True)
+        except Exception as e:
+            logger.error(f"知识图谱后台构建失败: {e}")
+
+    _graph_build_task = asyncio.create_task(_run_build())
+
+    return {
+        "message": "图谱构建已启动",
+        "status": "building",
+        "total_chunks": len(all_chunks),
+        "progress": builder.get_build_progress(),
+    }
+
+
+@router.get("/api/graph/build/progress")
+async def get_graph_build_progress():
+    """查询图谱构建进度（前端轮询用）"""
+    from app.ingestion.graph_extractor import get_graph_builder
+    builder = get_graph_builder()
+    progress = builder.get_build_progress()
+
+    # 构建完成时附带统计信息
+    if progress["status"] == "completed":
+        progress["stats"] = builder.get_stats()
+
+    return progress
 
 
 @router.get("/api/graph/stats")
@@ -478,7 +511,9 @@ async def find_graph_path(source: str, target: str):
     if builder.graph.number_of_nodes() == 0:
         return {"path": [], "message": "知识图谱为空，请先构建"}
 
-    retriever = GraphRetriever(graph_builder=builder)
+    # 复用全局 RAGChain 的图检索器（避免每次新建 LLM 实例）
+    chain = get_rag_chain()
+    retriever = chain.graph_retriever or GraphRetriever(graph_builder=builder)
     path = retriever.find_path(source, target)
 
     return {
