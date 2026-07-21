@@ -9,11 +9,15 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # OpenAI
+    # OpenAI / DeepSeek
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
+
+    # Embedding
+    embedding_provider: str = "local"  # "local" | "openai"
+    embedding_model: str = "all-MiniLM-L6-v2"
 
     # ChromaDB
     chroma_persist_dir: str = "./data/chroma_db"
@@ -34,6 +38,12 @@ class Settings(BaseSettings):
     # Server
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+
+    # Graph RAG
+    graph_enabled: bool = True
+    graph_max_hops: int = 2  # 图检索最大跳数
+    graph_max_entities: int = 5  # 每次查询最多匹配实体数
+    graph_persist_path: str = "./data/knowledge_graph.json"
 
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False

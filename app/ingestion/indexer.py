@@ -12,14 +12,24 @@ from config import get_settings
 logger = logging.getLogger(__name__)
 
 
-def get_embeddings() -> OpenAIEmbeddings:
-    """获取 OpenAI Embedding 模型实例"""
+def get_embeddings():
+    """获取 Embedding 模型实例（支持本地模型和 OpenAI）"""
     settings = get_settings()
-    return OpenAIEmbeddings(
-        model=settings.openai_embedding_model,
-        openai_api_key=settings.openai_api_key,
-        openai_api_base=settings.openai_base_url,
-    )
+
+    if settings.embedding_provider == "local":
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        return HuggingFaceEmbeddings(
+            model_name=settings.embedding_model,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
+        )
+    else:
+        from langchain_openai import OpenAIEmbeddings
+        return OpenAIEmbeddings(
+            model=settings.openai_embedding_model,
+            openai_api_key=settings.openai_api_key,
+            openai_api_base=settings.openai_base_url,
+        )
 
 
 def get_llm() -> ChatOpenAI:
@@ -199,3 +209,44 @@ class HierarchicalIndexer:
             metadata = data["metadatas"][i] if data["metadatas"] else {}
             docs.append(Document(page_content=text, metadata=metadata))
         return docs
+
+    def get_chunk_embeddings(self, doc_id: str) -> List[dict]:
+        """
+        获取指定文档所有分块的向量信息（用于可视化）。
+
+        Returns:
+            [{chunk_id, position, vector_dim, vector_preview, norm}]
+        """
+        collection = self.chunk_store._collection
+        data = collection.get(
+            where={"doc_id": doc_id},
+            include=["documents", "metadatas", "embeddings"],
+        )
+        results = []
+        embeddings = data["embeddings"]
+        if embeddings is None:
+            return results
+        for i, emb in enumerate(embeddings):
+            metadata = data["metadatas"][i] if data["metadatas"] else {}
+            vec = list(emb)
+            norm = sum(v * v for v in vec) ** 0.5
+            results.append({
+                "chunk_id": metadata.get("chunk_id", ""),
+                "position": metadata.get("position", 0),
+                "vector_dim": len(vec),
+                "vector_preview": [round(v, 6) for v in vec[:8]],
+                "norm": round(norm, 6),
+            })
+        results.sort(key=lambda x: x["position"])
+        return results
+
+    def get_document_summary(self, doc_id: str) -> Optional[str]:
+        """获取指定文档的 L1 摘要"""
+        collection = self.summary_store._collection
+        data = collection.get(
+            where={"doc_id": doc_id},
+            include=["documents"],
+        )
+        if data["documents"]:
+            return data["documents"][0]
+        return None

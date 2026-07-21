@@ -24,6 +24,12 @@ async def lifespan(app: FastAPI):
     logger.info("正在初始化 RAG 系统...")
     settings = get_settings()
 
+    if not settings.openai_api_key:
+        raise RuntimeError(
+            "OPENAI_API_KEY 未配置！\n"
+            "请执行: cp .env.example .env  然后填入你的 API Key"
+        )
+
     # 初始化 RAG Chain
     rag_chain = RAGChain(
         use_query_transform=True,

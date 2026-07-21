@@ -9,6 +9,7 @@
 | [README.md](./README.md) | 项目概览与快速开始 |
 | [docs/architecture.md](./docs/architecture.md) | 架构设计文档（数据流、模块设计、技术选型理由） |
 | [docs/api.md](./docs/api.md) | API 接口详细文档（请求/响应示例） |
+| [docs/interview_guide.md](./docs/interview_guide.md) | 面试与学习指南（技术深度解析、高频Q&A、扩展路线） |
 | [API Swagger UI](http://localhost:8000/docs) | 启动服务后的交互式 API 文档 |
 
 ## 系统架构

@@ -36,6 +36,7 @@ class RetrievalDetail(BaseModel):
     queries_used: List[str] = Field(default_factory=list)
     dense_count: int = 0
     sparse_count: int = 0
+    graph_count: int = 0
     fused_count: int = 0
     final_count: int = 0
     retrieval_time_ms: float = 0

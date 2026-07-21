@@ -15,6 +15,7 @@ from app.api.schemas import (
     UploadResponse, DocumentListResponse, DocumentInfo,
     EvalRequest, EvalReport, HealthResponse,
 )
+from config import get_settings
 from app.ingestion.loader import load_document
 from app.ingestion.chunker import smart_chunk
 from app.generation.chain import RAGChain, RAGResponse
@@ -190,6 +191,184 @@ async def list_documents():
         return DocumentListResponse(documents=[], total=0)
 
 
+@router.get("/api/documents/{doc_id}/chunks")
+async def get_document_chunks(doc_id: str):
+    """
+    获取指定文档的全链路索引详情（用于可视化）。
+
+    返回：分块内容 + Embedding 向量 + L1 摘要 + BM25 词项
+    """
+    chain = get_rag_chain()
+
+    try:
+        all_chunks = chain.indexer.get_all_chunks()
+        doc_chunks = [
+            c for c in all_chunks if c.metadata.get("doc_id") == doc_id
+        ]
+        doc_chunks.sort(key=lambda x: x.metadata.get("position", 0))
+
+        # 1. 分块内容 + BM25 分词
+        chunks_info = []
+        for c in doc_chunks:
+            tokens = chain.sparse_retriever._tokenize(c.page_content)
+            # 词频统计 top-10
+            freq = {}
+            for t in tokens:
+                freq[t] = freq.get(t, 0) + 1
+            top_terms = sorted(freq.items(), key=lambda x: -x[1])[:10]
+            chunks_info.append({
+                "chunk_id": c.metadata.get("chunk_id", ""),
+                "position": c.metadata.get("position", 0),
+                "content": c.page_content,
+                "char_count": len(c.page_content),
+                "token_count": len(tokens),
+                "top_terms": [{"term": t, "count": n} for t, n in top_terms],
+                "source": c.metadata.get("source", ""),
+            })
+
+        # 2. Embedding 向量信息
+        embeddings_info = chain.indexer.get_chunk_embeddings(doc_id)
+
+        # 3. L1 文档摘要
+        summary = chain.indexer.get_document_summary(doc_id)
+
+        # 4. 汇总统计
+        total_chars = sum(c["char_count"] for c in chunks_info)
+        total_tokens = sum(c["token_count"] for c in chunks_info)
+
+        return {
+            "doc_id": doc_id,
+            "total": len(chunks_info),
+            "stats": {
+                "total_chars": total_chars,
+                "total_tokens": total_tokens,
+                "avg_chunk_chars": round(total_chars / len(chunks_info)) if chunks_info else 0,
+                "vector_dim": embeddings_info[0]["vector_dim"] if embeddings_info else 0,
+                "embedding_model": get_settings().embedding_model,
+                "has_summary": summary is not None,
+            },
+            "summary": summary,
+            "embeddings": embeddings_info,
+            "chunks": chunks_info,
+        }
+
+    except Exception as e:
+        logger.error(f"获取索引详情失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============ Retrieval Compare 端点 ============
+
+@router.post("/api/retrieval/compare")
+async def retrieval_compare(request: ChatRequest):
+    """
+    检索策略对比实验。
+
+    同一问题分别用 Dense / Sparse / Hybrid(RRF) / Hybrid+Rerank 四种策略检索，
+    返回各策略的命中结果、分数和耗时，用于对比分析。
+    """
+    chain = get_rag_chain()
+    settings = get_settings()
+    import time as _time
+
+    question = request.question
+    top_k = request.top_k or settings.retrieval_top_k
+
+    # 1. Dense Only
+    t0 = _time.time()
+    dense_docs = chain.dense_retriever.retrieve(question, top_k=top_k)
+    dense_ms = (_time.time() - t0) * 1000
+
+    # 2. Sparse Only (BM25)
+    t0 = _time.time()
+    sparse_docs = chain.sparse_retriever.retrieve(question, top_k=top_k)
+    sparse_ms = (_time.time() - t0) * 1000
+
+    # 3. Hybrid RRF (no rerank)
+    t0 = _time.time()
+    from app.retrieval.fusion import reciprocal_rank_fusion
+    fused_docs = reciprocal_rank_fusion([dense_docs, sparse_docs])[:top_k]
+    rrf_ms = (_time.time() - t0) * 1000
+
+    # 4. Hybrid + Rerank
+    t0 = _time.time()
+    if chain.reranker:
+        reranked_docs = chain.reranker.rerank(question, fused_docs, top_k=top_k)
+    else:
+        reranked_docs = fused_docs
+    rerank_ms = (_time.time() - t0) * 1000
+
+    def _fmt(docs):
+        return [
+            {
+                "content": d.page_content[:150],
+                "chunk_id": d.metadata.get("chunk_id", ""),
+                "source": d.metadata.get("source", ""),
+                "score": d.metadata.get("rerank_score") or d.metadata.get("bm25_score"),
+            }
+            for d in docs
+        ]
+
+    # 计算重叠度：各策略与 reranked 的 chunk_id 交集
+    rerank_ids = {d.metadata.get("chunk_id") for d in reranked_docs}
+    def _overlap(docs):
+        ids = {d.metadata.get("chunk_id") for d in docs}
+        return len(ids & rerank_ids)
+
+    return {
+        "question": question,
+        "top_k": top_k,
+        "strategies": {
+            "dense": {
+                "name": "Dense（向量检索）",
+                "time_ms": round(dense_ms, 1),
+                "count": len(dense_docs),
+                "overlap_with_rerank": _overlap(dense_docs),
+                "results": _fmt(dense_docs),
+            },
+            "sparse": {
+                "name": "Sparse（BM25 关键词）",
+                "time_ms": round(sparse_ms, 1),
+                "count": len(sparse_docs),
+                "overlap_with_rerank": _overlap(sparse_docs),
+                "results": _fmt(sparse_docs),
+            },
+            "rrf": {
+                "name": "Hybrid RRF（融合）",
+                "time_ms": round(rrf_ms, 1),
+                "count": len(fused_docs),
+                "overlap_with_rerank": _overlap(fused_docs),
+                "results": _fmt(fused_docs),
+            },
+            "rerank": {
+                "name": "Hybrid + Rerank（最终）",
+                "time_ms": round(rerank_ms, 1),
+                "count": len(reranked_docs),
+                "overlap_with_rerank": len(rerank_ids),
+                "results": _fmt(reranked_docs),
+            },
+        },
+    }
+
+
+# ============ Traces 端点 ============
+
+@router.get("/api/traces")
+async def get_traces(limit: int = 20):
+    """获取最近的管道追踪记录（瀑布图数据）"""
+    from app.observability.tracing import get_tracer
+    tracer = get_tracer()
+    return {"traces": tracer.get_traces(limit)}
+
+
+@router.get("/api/traces/stats")
+async def get_trace_stats():
+    """获取各阶段平均耗时统计"""
+    from app.observability.tracing import get_tracer
+    tracer = get_tracer()
+    return tracer.get_stats()
+
+
 # ============ Evaluation 端点 ============
 
 @router.post("/api/evaluate", response_model=EvalReport)
@@ -216,6 +395,108 @@ async def evaluate(request: EvalRequest):
     except Exception as e:
         logger.error(f"评估失败: {e}")
         raise HTTPException(status_code=500, detail=f"评估执行失败: {str(e)}")
+
+
+# ============ Graph RAG 端点 ============
+
+@router.post("/api/graph/build")
+async def build_knowledge_graph():
+    """
+    构建知识图谱。
+
+    从已索引的文档分块中抽取实体和关系，构建 NetworkX 知识图谱。
+    """
+    chain = get_rag_chain()
+    from app.ingestion.graph_extractor import get_graph_builder
+
+    try:
+        all_chunks = chain.indexer.get_all_chunks()
+        if not all_chunks:
+            raise HTTPException(status_code=400, detail="无已索引文档，请先上传文档")
+
+        builder = get_graph_builder()
+        stats = builder.build_from_documents(all_chunks)
+
+        return {
+            "message": "知识图谱构建完成",
+            "stats": stats,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"知识图谱构建失败: {e}")
+        raise HTTPException(status_code=500, detail=f"图谱构建失败: {str(e)}")
+
+
+@router.get("/api/graph/stats")
+async def get_graph_stats():
+    """获取知识图谱统计信息"""
+    from app.ingestion.graph_extractor import get_graph_builder
+    builder = get_graph_builder()
+    return builder.get_stats()
+
+
+@router.get("/api/graph/triples")
+async def get_graph_triples(limit: int = 100):
+    """获取知识图谱三元组（用于可视化）"""
+    from app.ingestion.graph_extractor import get_graph_builder
+    builder = get_graph_builder()
+    return {
+        "triples": builder.get_all_triples(limit=limit),
+        "stats": builder.get_stats(),
+    }
+
+
+@router.post("/api/graph/query")
+async def query_graph(request: ChatRequest):
+    """
+    图检索查询 - 返回实体、关系和子图信息。
+    """
+    chain = get_rag_chain()
+    if not chain.graph_retriever:
+        raise HTTPException(status_code=400, detail="Graph RAG 未启用")
+
+    try:
+        result = chain.graph_retriever.retrieve_with_context(request.question)
+        return result
+    except Exception as e:
+        logger.error(f"图检索失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/graph/path")
+async def find_graph_path(source: str, target: str):
+    """
+    查找两个实体之间的关系路径。
+
+    例如: /api/graph/path?source=Redis&target=B+树
+    """
+    from app.ingestion.graph_extractor import get_graph_builder
+    from app.retrieval.graph_retriever import GraphRetriever
+
+    builder = get_graph_builder()
+    if builder.graph.number_of_nodes() == 0:
+        return {"path": [], "message": "知识图谱为空，请先构建"}
+
+    retriever = GraphRetriever(graph_builder=builder)
+    path = retriever.find_path(source, target)
+
+    return {
+        "source": source,
+        "target": target,
+        "path": path,
+        "path_length": len(path),
+        "found": len(path) > 0,
+    }
+
+
+@router.delete("/api/graph")
+async def clear_graph():
+    """清空知识图谱"""
+    from app.ingestion.graph_extractor import get_graph_builder
+    builder = get_graph_builder()
+    builder.clear()
+    return {"message": "知识图谱已清空"}
 
 
 # ============ Health 端点 ============
@@ -267,6 +548,7 @@ def _build_chat_response(response: RAGResponse) -> ChatResponse:
         queries_used=response.retrieval_result.queries_used,
         dense_count=len(response.retrieval_result.dense_results),
         sparse_count=len(response.retrieval_result.sparse_results),
+        graph_count=len(response.retrieval_result.graph_results),
         fused_count=len(response.retrieval_result.fused_results),
         final_count=len(response.retrieval_result.documents),
         retrieval_time_ms=response.retrieval_result.retrieval_time_ms,

@@ -1,0 +1,119 @@
+{
+  "metrics": {
+    "faithfulness": 0.9819,
+    "answer_relevancy": 0.9,
+    "context_precision": 0.9495,
+    "context_recall": 0.8822
+  },
+  "num_samples": 12,
+  "details": [
+    {
+      "question": "Redis的ZSet底层使用什么数据结构？为什么选择它？",
+      "answer": "- **ZSet 底层使用的数据结构**：`ziplist` 或 `skiplist + hashtable`。[来源: tmpgu1j22fw.md]\n\n- **为什么选择跳表（Skip List）**：  \n  - 跳表是 ZSet 的核心数据结构，平均查找复杂度为 **O(log N)**。[来源: tmpgu1j22fw.md]  \n  - 相比平衡树，跳表 **实现简单**。[来源: t...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "什么是缓存穿透、缓存击穿和缓存雪崩？分别怎么解决？",
+      "answer": "- **缓存穿透**：查不存在的数据。  \n  解决方案：  \n  - 布隆过滤器：在缓存前拦截不存在的 key  \n  - 空值缓存：`SET key \"\" EX 60`  \n  - 参数校验：ID 格式不合法直接拒绝  \n  [来源: tmpgu1j22fw.md]\n\n- **缓存击穿**：热点 key 过期。  \n  解决方案：  \n  - 互斥锁：`SET lock_key 1 NX EX...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "微服务架构中服务注册与发现有哪些方案？API网关的作用是什么？",
+      "answer": "- **服务注册与发现方案**：\n  1. **Consul**：HashiCorp 出品，支持健康检查、KV存储。[来源: tmphfax73u8.md]\n  2. **Nacos**：阿里巴巴开源，集成配置中心。[来源: tmphfax73u8.md]\n  3. **Eureka**：Netflix 出品，Spring Cloud 生态。[来源: tmphfax73u8.md]\n\n- **AP...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.792,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Transformer中Self-Attention的计算公式是什么？为什么要除以根号dk？",
+      "answer": "- Self-Attention 的计算公式为：  \n  ```text\n  Attention(Q, K, V) = softmax(QK^T / √d_k) × V\n  ```  \n  其中 Q（Query）、K（Key）、V（Value）由输入线性变换得到。[来源: tmpxe7vyaw2.md]\n\n- 除以 `√d_k` 的原因是：防止点积过大导致 softmax 梯度消失。[来源: tm...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 0.8
+    },
+    {
+      "question": "Docker的多阶段构建有什么好处？Kubernetes控制平面包含哪些组件？",
+      "answer": "- **Docker 多阶段构建的好处**：减小最终镜像体积。[来源: tmpfz_a0c0u.md]\n\n- **Kubernetes 控制平面包含的组件**：\n  - **kube-apiserver**：集群入口，所有操作通过它。[来源: tmpfz_a0c0u.md]\n  - **etcd**：分布式 KV 存储，保存集群状态。[来源: tmpfz_a0c0u.md]\n  - **kube-...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8,
+      "context_precision": 0.833,
+      "context_recall": 1.0
+    },
+    {
+      "question": "数据库索引的B+树结构有什么特点？为什么MySQL选择B+树而不是B树或哈希索引？",
+      "answer": "- **B+ 树索引结构特点**  \n  - 所有数据存储在叶子节点，内部节点只存键值和指针。[来源: tmpa2iu4zn7.md]  \n  - 叶子节点通过双向链表连接，支持高效范围查询。[来源: tmpa2iu4zn7.md]  \n  - 树高通常为 3-4 层，意味着最多 3-4 次磁盘 I/O 即可定位任意记录。[来源: tmpa2iu4zn7.md]  \n  - 每个节点大小通常等于一...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.6,
+      "context_precision": 1.0,
+      "context_recall": 0.5
+    },
+    {
+      "question": "HTTPS的TLS握手过程是怎样的？如何防范XSS和CSRF攻击？",
+      "answer": "### 一、HTTPS 的 TLS 握手过程\n\n#### 1. TLS 1.2 握手（2-RTT）\n1. **Client Hello**：客户端发送支持的密码套件、随机数。  \n2. **Server Hello**：服务器发送选定套件、证书、随机数。  \n3. **客户端验证证书**：验证通过后生成预主密钥，并用服务器公钥加密发送。  \n4. **生成会话密钥**：双方使用三个随机数生成会话密...",
+      "num_contexts": 8,
+      "faithfulness": 0.95,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.854,
+      "context_recall": 0.909
+    },
+    {
+      "question": "TCP三次握手的过程是什么？为什么需要三次而不是两次？",
+      "answer": "- **TCP 三次握手过程**  \n  1. Client → Server: SYN, seq=x  \n  2. Server → Client: SYN+ACK, seq=y, ack=x+1  \n  3. Client → Server: ACK, seq=x+1, ack=y+1  \n  [来源: tmpc60_mksv.md]\n\n- **为什么需要三次而不是两次**  \n  - 防止已...",
+      "num_contexts": 8,
+      "faithfulness": 0.833,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "Python中GIL是什么？如何优化Python程序的性能？",
+      "answer": "## GIL 是什么？\n\n- GIL 是 CPython 的**全局解释器锁**。[来源: tmpmgdbm8z0.md]\n- 它限制了多线程的 CPU 并行能力。[来源: tmpmgdbm8z0.md]\n- GIL 在 I/O 等待时会释放。[来源: tmpmgdbm8z0.md]\n\n## 如何优化 Python 程序性能？\n\n### 1. 先定位性能瓶颈\n\n- 使用 `cProfile` 分析...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 0.6
+    },
+    {
+      "question": "系统设计中如何保证高可用？限流算法有哪些？",
+      "answer": "## 系统设计中如何保证高可用？\n\n文档中提到的“高可用核心方案”包括：\n\n- **冗余部署**：通过多副本、多机房（同城双活 / 异地多活）消除单点故障。 [来源: tmp0a6difr0.md]\n- **负载均衡**：将流量分发到多个实例，避免单节点过载。 [来源: tmp0a6difr0.md]\n- **故障转移（Failover）**：自动检测节点故障并切换到健康节点，例如 Redis S...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.915,
+      "context_recall": 1.0
+    },
+    {
+      "question": "LoRA微调的原理是什么？它相比全参数微调有什么优势？",
+      "answer": "- **LoRA微调的原理**：\n  - 将权重更新分解为两个低秩矩阵：ΔW = BA，其中 B∈R^(d×r)、A∈R^(r×k)，rank r 通常取 8~64。[来源: tmpz3cw7kuc.md]\n  - 训练时冻结原始权重 W，只训练 A 和 B 两个小矩阵。[来源: tmpz3cw7kuc.md]\n  - 通常对 Attention 层的 Q/V 投影矩阵施加 LoRA。[来源: t...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 1.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "在高并发系统中，缓存和数据库的一致性如何保证？有哪些常见的缓存策略？",
+      "answer": "### 缓存与数据库一致性保证\n\n- **先更新 DB，再删缓存**（推荐） [来源: tmpgu1j22fw.md]\n- **延迟双删**：更新 DB → 删缓存 → `sleep(500ms)` → 再删缓存 [来源: tmpgu1j22fw.md]\n- **订阅 binlog（Canal）异步更新缓存** [来源: tmpgu1j22fw.md]\n- **最终一致性**：设置合理 TTL 兜...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.8,
+      "context_precision": 1.0,
+      "context_recall": 0.778
+    }
+  ]
+}

@@ -1,14 +1,19 @@
 """稀疏检索 - BM25 关键词匹配"""
 
 import logging
+import re
 from typing import List
 
+import jieba
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
 from app.ingestion.indexer import HierarchicalIndexer
 
 logger = logging.getLogger(__name__)
+
+# 预编译正则：匹配英文单词和数字
+_EN_WORD_RE = re.compile(r'[a-zA-Z0-9]+')
 
 
 class SparseRetriever:
@@ -43,28 +48,26 @@ class SparseRetriever:
 
     def _tokenize(self, text: str) -> List[str]:
         """
-        简单分词策略：
-        - 英文按空格和标点拆分
-        - 中文按单字拆分
+        中文分词策略（jieba 词级分词）：
+        - 使用 jieba 进行中文词语级切分（而非单字）
+        - 英文/数字保持完整单词
+        - 过滤停用词和单字噪声
         """
-        tokens = []
-        current_word = ""
-        for char in text.lower():
-            if '\u4e00' <= char <= '\u9fff':
-                # 中文字符：先保存累积的英文单词，再单独加入中文字
-                if current_word:
-                    tokens.append(current_word)
-                    current_word = ""
-                tokens.append(char)
-            elif char.isalnum():
-                current_word += char
-            else:
-                if current_word:
-                    tokens.append(current_word)
-                    current_word = ""
-        if current_word:
-            tokens.append(current_word)
-        return tokens
+        # jieba 精确模式分词
+        tokens = jieba.lcut(text.lower())
+        # 过滤：只保留有意义的 token（中文>=2字 或 英文/数字）
+        result = []
+        for t in tokens:
+            t = t.strip()
+            if not t:
+                continue
+            # 纯英文/数字：保留
+            if _EN_WORD_RE.fullmatch(t):
+                result.append(t)
+            # 中文：至少2个字才有语义（过滤 "的"、"了" 等单字）
+            elif len(t) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in t):
+                result.append(t)
+        return result
 
     def retrieve(self, query: str, top_k: int = 10) -> List[Document]:
         """

@@ -30,6 +30,8 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "pydantic-settings>=2.5.0",
     "langchain-chroma>=1.1.0",
+    "networkx>=3.6.1",
+    "langchain-experimental>=0.4.2",
 ]
 
 [project.optional-dependencies]
