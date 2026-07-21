@@ -849,6 +849,105 @@ with tab_graph:
                             f'<span class="term-count"> ×{ent["degree"]}</span></span>'
                         )
                     st.markdown(top_html, unsafe_allow_html=True)
+
+                # ── 交互式图谱可视化 ──
+                st.divider()
+                st.markdown("##### 🌐 交互式知识图谱")
+                st.markdown(
+                    '<p class="explain">力导向布局 · 可拖拽/缩放 · 悬停查看关系 · 节点大小映射度数</p>',
+                    unsafe_allow_html=True,
+                )
+
+                # 可视化控制
+                vis_col1, vis_col2 = st.columns([3, 1])
+                with vis_col1:
+                    vis_max_nodes = st.slider(
+                        "最大显示节点数", 20, 200, 80, step=10,
+                        key="vis_max_nodes",
+                        help="节点过多时只展示度数最高的 N 个",
+                    )
+                with vis_col2:
+                    show_labels = st.checkbox("显示标签", value=True, key="vis_labels")
+
+                try:
+                    vis_resp = requests.get(f"{API_BASE_URL}/api/graph/visual")
+                    if vis_resp.status_code == 200:
+                        vis_data = vis_resp.json()
+                        if not vis_data.get("is_empty", True):
+                            from pyvis.network import Network
+                            import tempfile
+                            import os
+
+                            nodes = vis_data["nodes"]
+                            edges = vis_data["edges"]
+
+                            # 按度数排序取 top-N
+                            nodes_sorted = sorted(nodes, key=lambda x: x["degree"], reverse=True)
+                            top_nodes = nodes_sorted[:vis_max_nodes]
+                            top_node_ids = {n["id"] for n in top_nodes}
+
+                            # 只保留 top 节点之间的边
+                            filtered_edges = [
+                                e for e in edges
+                                if e["from"] in top_node_ids and e["to"] in top_node_ids
+                            ]
+
+                            # 构建 PyVis 网络
+                            net = Network(
+                                height="550px",
+                                width="100%",
+                                bgcolor="#0F172A",
+                                font_color="#E2E8F0",
+                                directed=True,
+                                notebook=False,
+                            )
+                            net.barnes_hut(
+                                gravity=-3000,
+                                central_gravity=0.3,
+                                spring_length=150,
+                                spring_strength=0.05,
+                            )
+
+                            # 节点颜色按度数渐变
+                            colors = ["#38BDF8", "#A78BFA", "#34D399", "#F59E0B", "#F472B6", "#FB923C"]
+                            for n in top_nodes:
+                                color_idx = n["degree"] % len(colors)
+                                net.add_node(
+                                    n["id"],
+                                    label=n["label"] if show_labels else "",
+                                    size=n["size"],
+                                    color=colors[color_idx],
+                                    title=f"{n['label']}\n度数: {n['degree']}",
+                                )
+
+                            for e in filtered_edges:
+                                net.add_edge(
+                                    e["from"],
+                                    e["to"],
+                                    title=e["relation"],
+                                    label=e["relation"] if show_labels else "",
+                                    color="#475569",
+                                    arrows="to",
+                                )
+
+                            # 生成 HTML 并嵌入
+                            html_path = os.path.join(tempfile.gettempdir(), "rag_graph.html")
+                            net.save_graph(html_path)
+
+                            # 读取并修正 PyVis 的 CDN 路径问题
+                            with open(html_path, "r", encoding="utf-8") as f:
+                                html_content = f.read()
+
+                            st.components.v1.html(html_content, height=580, scrolling=True)
+
+                            st.caption(
+                                f"📊 显示 {len(top_nodes)} 个节点 / {len(filtered_edges)} 条边"
+                                f"（共 {vis_data['num_nodes']} 节点 / {vis_data['num_edges']} 边）"
+                            )
+                        else:
+                            st.info("图谱为空，请先构建")
+                except requests.ConnectionError:
+                    st.error("无法获取可视化数据")
             else:
                 st.info("📂 知识图谱为空 — 点击「构建知识图谱」从已索引文档中抽取实体和关系")
     except requests.ConnectionError:

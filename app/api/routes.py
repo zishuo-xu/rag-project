@@ -490,6 +490,52 @@ async def find_graph_path(source: str, target: str):
     }
 
 
+@router.get("/api/graph/visual")
+async def get_graph_visual_data():
+    """
+    获取知识图谱可视化数据（nodes + edges）。
+
+    返回适合前端力导向图渲染的 JSON 格式。
+    """
+    from app.ingestion.graph_extractor import get_graph_builder
+    builder = get_graph_builder()
+    graph = builder.graph
+
+    if graph.number_of_nodes() == 0:
+        return {"nodes": [], "edges": [], "is_empty": True}
+
+    # 计算节点度数用于大小映射
+    degrees = dict(graph.degree())
+    max_degree = max(degrees.values()) if degrees else 1
+
+    nodes = []
+    for node in graph.nodes():
+        deg = degrees.get(node, 0)
+        nodes.append({
+            "id": node,
+            "label": node,
+            "degree": deg,
+            "size": 10 + (deg / max_degree) * 30,  # 10~40 映射
+        })
+
+    edges = []
+    for head, tail, data in graph.edges(data=True):
+        edges.append({
+            "from": head,
+            "to": tail,
+            "relation": data.get("relation", "相关"),
+            "source": data.get("source", ""),
+        })
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "is_empty": False,
+        "num_nodes": len(nodes),
+        "num_edges": len(edges),
+    }
+
+
 @router.delete("/api/graph")
 async def clear_graph():
     """清空知识图谱"""
