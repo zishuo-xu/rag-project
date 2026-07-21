@@ -227,7 +227,7 @@ def upload_document(file):
 def get_documents():
     """获取已索引文档列表"""
     try:
-        response = requests.get(f"{API_BASE_URL}/api/documents", timeout=5)
+        response = requests.get(f"{API_BASE_URL}/api/documents", timeout=30)
         return response.json()
     except Exception:
         return {"documents": [], "total": 0}
@@ -236,7 +236,7 @@ def get_documents():
 def check_health():
     """检查后端服务状态"""
     try:
-        response = requests.get(f"{API_BASE_URL}/api/health", timeout=3)
+        response = requests.get(f"{API_BASE_URL}/api/health", timeout=10)
         return response.json()
     except Exception:
         return None
@@ -694,7 +694,7 @@ with tab_trace:
 
     try:
         # 统计概览
-        stats_resp = requests.get(f"{API_BASE_URL}/api/traces/stats", timeout=5)
+        stats_resp = requests.get(f"{API_BASE_URL}/api/traces/stats", timeout=30)
         if stats_resp.status_code == 200:
             tstats = stats_resp.json()
             if tstats.get("total_traces", 0) > 0:
@@ -737,7 +737,7 @@ with tab_trace:
         st.divider()
 
         # 最近 traces 列表
-        traces_resp = requests.get(f"{API_BASE_URL}/api/traces?limit=10", timeout=5)
+        traces_resp = requests.get(f"{API_BASE_URL}/api/traces?limit=10", timeout=30)
         if traces_resp.status_code == 200:
             traces = traces_resp.json().get("traces", [])
             if traces:
@@ -804,7 +804,7 @@ with tab_graph:
     # 页面加载时检测是否有正在进行的构建（刷新页面后自动恢复进度显示）
     if not st.session_state.get("graph_building"):
         try:
-            _chk = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=3)
+            _chk = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=10)
             if _chk.status_code == 200 and _chk.json().get("status") == "building":
                 st.session_state.graph_building = True
         except Exception:
@@ -844,7 +844,7 @@ with tab_graph:
 
         while _time.time() - start_wait < max_wait:
             try:
-                p_resp = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=5)
+                p_resp = requests.get(f"{API_BASE_URL}/api/graph/build/progress", timeout=30)
                 if p_resp.status_code != 200:
                     break
                 prog = p_resp.json()
