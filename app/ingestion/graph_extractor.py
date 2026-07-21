@@ -289,6 +289,16 @@ class KnowledgeGraphBuilder:
                 # 更新进度
                 self.build_state["processed"] += 1
                 self.build_state["triples_extracted"] = total_triples
+
+                # 每 5 个单元做一次检查点保存（防止中途中断丢失全部进度）
+                if self.build_state["processed"] % 5 == 0:
+                    self._save()
+                    self._save_processed_ids(processed_ids | set(newly_processed_ids))
+                    logger.info(
+                        f"图谱构建检查点: {self.build_state['processed']}/{self.build_state['total']} "
+                        f"单元, {total_triples} 三元组"
+                    )
+
                 self._notify_progress(progress_callback)
 
         try:
