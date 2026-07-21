@@ -1,0 +1,5764 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "ChromaDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "原型开发"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Milvus"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "十亿级向量"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Pinecone"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "全托管 SaaS"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Weaviate"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "混合搜索"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "pgvector"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "PostgreSQL 扩展"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "新数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "FAISS"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Meta"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "独立数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "余弦相似度"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "文本"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "欧氏距离（L2）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "绝对距离"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "内积（IP）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "EXPLAIN"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "执行计划"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "慢查询日志"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "my.cnf"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "mysqldumpslow"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Top N 慢查询"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "pt-query-digest"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "对索引列使用函数"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "索引失效"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "隐式类型转换"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "LIKE 左模糊"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "NOT IN / NOT EXISTS"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "全表扫描"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "哈希索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "等值查询"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Memory 引擎"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "InnoDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "自适应哈希索引（AHI）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "全文索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "文本搜索"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "MySQL 5.6+"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "InnoDB 全文索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "中文"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "ngram 分词插件"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "大规模场景"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Elasticsearch"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "Flat（暴力搜索）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "小数据集"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "IVF（倒排文件）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "相关簇"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "HNSW（分层可导航小世界图）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "查询速度"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "PQ（乘积量化）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "向量"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "游标分页"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "上一页最后一条的 id"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "articles"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "WHERE id > 100000"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "ORDER BY id"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "LIMIT 10"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "id"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "10"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "关系型数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "B+ 树"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "MySQL InnoDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "PostgreSQL"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "默认索引结构"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "叶子节点"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "内部节点"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "键值和指针"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "双向链表"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "高效范围查询"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "磁盘 I/O"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "聚簇索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "完整行数据"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "二级索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "主键值"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "回表"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "覆盖索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "联合索引"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "最左前缀"
+    },
+    {
+      "type": "entity",
+      "source": "tmpa2iu4zn7.md",
+      "id": "最左列"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Docker"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "容器化平台"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "应用及其依赖"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "镜像（Image）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "只读模板"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "运行应用所需的代码"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "容器（Container）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "镜像的运行实例"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Dockerfile"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "镜像构建步骤"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "多阶段构建"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "最终镜像体积"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "bridge"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "docker0 网桥"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "host"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "宿主机网络栈"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "overlay"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "跨主机容器通信"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Swarm/K8s"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "none"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "完全隔离"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Volume"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Docker 管理的持久化存储"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Bind Mount"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "宿主机目录"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "tmpfs"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "内存存储"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "HTTP/2"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "二进制分帧"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "多路复用"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "HPACK 算法"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "服务器推送"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP 层的队头阻塞"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "HTTP/3（QUIC）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "UDP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "队头阻塞"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "0-RTT 建连（复用连接参数）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TLS 1.3"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "连接迁移（切换网络不断连）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TLS 1.2 握手（2-RTT）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "会话密钥"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TLS 1.3（1-RTT）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "AEAD"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "0-RTT（PSK 恢复）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "DoH（DNS over HTTPS）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "劫持"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "CDN"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "静态资源"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP/IP 四层模型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "应用层"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "HTTP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "用户交互"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "传输层"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "端到端通信"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "网络层"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "IP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "路由寻址"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "链路层"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "Ethernet"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "相邻节点传输"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP 三次握手"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "SYN"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "收发能力"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP 四次挥手"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "全双工"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TIME_WAIT"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "2MSL"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "TCP 拥塞控制"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "慢启动"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "HTTP/1.1"
+    },
+    {
+      "type": "entity",
+      "source": "tmpc60_mksv.md",
+      "id": "持久连接"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "全参数微调"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "所有权重"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "LoRA"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "低秩分解"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "QLoRA"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "4-bit 量化"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Adapter"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "小型适配器模块"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "RLHF"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "SFT"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "PPO 强化学习"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "DPO"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "偏好对"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "奖励模型训练"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "KV Cache"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "Key/Value"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "GQA"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "vLLM"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "PagedAttention"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "llama.cpp"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "GGUF 格式"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "RAG"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "知识密集型问答"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "微调"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "风格/格式/领域适配"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "Prompt Engineering"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Few-shot"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Chain-of-Thought（CoT）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "ReAct"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Self-Consistency"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "逐步推理"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "工具调用"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "多数投票"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "ViT"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "图像"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "投影层"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "LLM"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "GPT-4V"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "多模态模型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "LLaVA"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "Qwen-VL"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "AI Agent"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "规划"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "记忆"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Transformer"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Google"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Attention Is All You Need"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Self-Attention"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Multi-Head Attention"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Feed-Forward Network"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Layer Normalization"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "注意力权重"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "不同子空间的关系"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "GELU"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "SwiGLU"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "训练"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "位置编码"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "RoPE"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "预训练"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Next Token Prediction"
+    },
+    {
+      "type": "entity",
+      "source": "tmpxe7vyaw2.md",
+      "id": "AdamW"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "蓝绿部署"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "两套完整环境"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "流量"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "资源翻倍"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "金丝雀发布（Canary）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "5% 流量"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "新版本"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "指标"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Istio"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Argo Rollouts"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Flagger"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "requests"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "调度依据"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "limits"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "硬上限"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "OOMKill"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "livenessProbe"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "重启"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "readinessProbe"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Service"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "startupProbe"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "慢启动应用"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "微服务"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "分布式事务"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Saga 模式"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "长事务"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "补偿操作"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "TCC（Try-Confirm-Cancel）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "两阶段提交"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "事件驱动"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "消息队列"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "最终一致性"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Seata"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "分布式事务框架"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "AT/TCC/Saga/XA 模式"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "容器化打包"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Kubernetes（K8s）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "容器编排"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Helm"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "K8s 应用包管理器"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Service Mesh"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Metrics（指标）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Prometheus + Grafana"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Logging（日志）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "ELK（Elasticsearch + Logstash + Kibana）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Tracing（追踪）"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "跨服务调用瓶颈"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Kubernetes"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "控制平面（Control Plane）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "工作节点（Worker Node）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "kube-apiserver"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "集群入口"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "etcd"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "集群状态"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "kube-scheduler"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Pod"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "kube-controller-manager"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Deployment"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "kubelet"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "kube-proxy"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "容器"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "滚动更新（Rolling Update）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "稳定的网络入口"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "Ingress"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "七层路由"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "ConfigMap/Secret"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "配置和敏感数据"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "PV/PVC"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "持久化存储"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "HPA"
+    },
+    {
+      "type": "entity",
+      "source": "tmpfz_a0c0u.md",
+      "id": "水平自动伸缩"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "内置函数"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "纯 Python 循环"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "sum()"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "手动累加"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "map()"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "for 循环 + 函数调用"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "str.join()"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "字符串拼接"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "缓存（Memoization）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "lru_cache"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "functools"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "fibonacci"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "GIL（全局解释器锁）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "CPython"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "多线程的 CPU 并行能力"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "I/O 密集型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "asyncio"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "threading"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "CPU 密集型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "multiprocessing"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "C 扩展"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "Web 服务器"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "微服务架构"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "设计方法"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "独立部署的服务"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "轻量级通信机制"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "HTTP/REST"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "单体架构"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "独立部署"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "技术异构"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "弹性伸缩"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "故障隔离"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "领域驱动设计"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "限界上下文"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "服务边界"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Consul"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "健康检查"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "Nacos"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "配置中心"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "API 网关"
+    },
+    {
+      "type": "entity",
+      "source": "tmphfax73u8.md",
+      "id": "路由"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "RAG（Retrieval-Augmented Generation"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "结合"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "使用"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "增强"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "减少"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "支持"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "实现"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "RAG 系统"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "文档处理管道（Ingestion Pipeline）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "检索模块（Retrieval）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "生成模块（Generation）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Embedding 模型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "向量数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "BM25"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Cross-Encoder"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "文本分块"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "检索质量"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "Python 性能优化实战"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "性能分析工具"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "cProfile"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "line_profiler"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "py-spy"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "标准库"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "逐行分析"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "采样式分析器"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "火焰图"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "CPU 时间分布"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "查找操作"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "set"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "dict"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "频繁插入删除"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "collections.deque"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "计数"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "collections.Counter"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "生成器"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "列表"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "局部变量查找"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "全局变量查找"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "Pool(4)"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "cpu_heavy"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "NumPy"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "数值计算（向量化）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "Numba"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "JIT 编译数值函数"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "Cython"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "C 扩展编译"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "PyPy"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "替代解释器"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "polars"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "pandas"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "select_related"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "N+1 查询"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "prefetch_related"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "WHERE/ORDER BY 字段"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "SELECT *"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "只查需要的字段"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "大事务"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "小批次提交"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "__slots__"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "对象内存占用"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "array.array"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "list"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "大数据集"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "category"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "del"
+    },
+    {
+      "type": "entity",
+      "source": "tmpmgdbm8z0.md",
+      "id": "大对象"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Redis"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "5 种基础数据结构"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "String"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "SDS（简单动态字符串）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Hash"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "ziplist / hashtable"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "List"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "quicklist（ziplist + linkedlist）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Set"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "intset / hashtable"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "ZSet"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "ziplist / skiplist + hashtable"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "跳表（Skip List）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "平均 O(log N) 查找"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "RDB（快照）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "COW（Copy-On-Write）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "AOF（追加日志）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "aof 文件"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "重写（Rewrite）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "混合持久化（推荐）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "RDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "增量 AOF"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "主从复制"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "全量同步"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "增量同步"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "RedLock（多节点）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "N 个独立 Redis 节点"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "超过半数成功"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Martin Kleppmann"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "时钟跳跃问题"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "锁续期"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "看门狗机制"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Redisson"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "TTL/3"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "业务未完成锁就过期"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "大 Key 问题"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "String > 10KB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Hash/List/Set/ZSet 元素 > 5000"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "异步删除（UNLINK）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "热 Key 问题"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "redis-cli --hotkeys"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "本地缓存"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Pipeline"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "RTT 开销"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Lua 脚本"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "竞态"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Sentinel（哨兵）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "主节点"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "自动故障转移"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "新主"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Cluster（集群）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "slot"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "客户端重定向"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "MOVED"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "ASK"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Gossip 协议"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "状态信息"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "缓存穿透"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "布隆过滤器"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "缓存击穿"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "互斥锁"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "缓存雪崩"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "过期时间加随机偏移"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "多级缓存"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "Caffeine"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "缓存与数据库一致性"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "先更新 DB"
+    },
+    {
+      "type": "entity",
+      "source": "tmpgu1j22fw.md",
+      "id": "分布式锁"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "系统设计面试"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "将模糊需求转化为完整技术方案的能力"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "四步法"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "需求澄清"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "高层设计"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "深入设计"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "权衡讨论"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "规模估算"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "核心组件"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "关键模块"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "关系型（MySQL/PostgreSQL）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "强一致性"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "文档型（MongoDB）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "灵活 Schema"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "KV 存储（Redis/DynamoDB）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "低延迟"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "图数据库（Neo4j）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "社交关系"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "时序数据库（InfluxDB/TimescaleDB）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "监控指标"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "搜索引擎（Elasticsearch）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "全文检索"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "OWASP"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "OWASP Top 10（2021）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "注入攻击"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "认证失效"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "敏感数据泄露"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SQL 注入"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "XSS（跨站脚本）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "参数化查询（Prepared Statement）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "输出编码（HTML Entity）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "CSP 策略"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "HttpOnly Cookie"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "多因素认证（MFA）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "TOTP"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "全站 HTTPS（TLS 1.2+）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "存储加密"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "bcrypt/scrypt/Argon2"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "CSRF（跨站请求伪造）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "Cookie"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Cache-Aside"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Write-Through"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "缓存"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Write-Behind"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "DB"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Kafka"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "高吞吐"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "RabbitMQ"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "任务队列"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "RocketMQ"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "事务消息"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "Pulsar"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "多租户"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "短链系统"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "长链 → 短码映射"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "Feed 流（Timeline）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "推拉结合"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "秒杀系统"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "即时通讯（IM）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "WebSocket"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "CAP 定理"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "CP 或 AP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "多路召回"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "向量检索"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "语义匹配"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "关键词精确匹配"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "RRF（Reciprocal Rank Fusion）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "基于排名的融合策略"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Bi-Encoder"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "top-100"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "top-5"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Multi-Query"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "多个查询变体"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "HyDE（Hypothetical Document Embeddings）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "RAGAS 框架"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Faithfulness（忠实度）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Answer Relevancy（答案相关性）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Context Precision（上下文精确度）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpe3tzowz8.md",
+      "id": "Context Recall（上下文召回率）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "Content-Security-Policy"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "资源加载来源"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "XSS"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "X-Frame-Options"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "点击劫持"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "X-Content-Type-Options"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "MIME 嗅探"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "Strict-Transport-Security"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "HTTPS"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "X-XSS-Protection"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "CSP"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "AES-256-GCM"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "对称加密"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "认证加密一体化"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "KMS"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "密钥"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "ECDSA / Ed25519"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "RSA-2048"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SHA-256"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "完整性校验"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "HMAC"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "消息认证码"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SDL"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "威胁建模"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "STRIDE"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SAST"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SonarQube"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "日志流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "短链系统（URL Shortener）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Base62 编码"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "KV 存储"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "推模式（Fan-out on write）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "粉丝收件箱"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "IM"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "分布式系统"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "网络分区"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "CP"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "AP"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Raft"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Paxos"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "ZooKeeper"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Dynamo 风格"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Cassandra"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "Riak"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "因果一致性"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "COPS"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "L4"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "LVS"
+    },
+    {
+      "type": "entity",
+      "source": "tmpqbvzezdu.md",
+      "id": "L7"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Nginx"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "负载均衡"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "一致性哈希"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "限流实践"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "网关层限流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "服务层限流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "分布式限流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "自适应限流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Nginx（limit_req）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Kong"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Spring Cloud Gateway"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Sentinel"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Hystrix"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Guava RateLimiter"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Redis + Lua"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "集群级限流"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "系统负载（CPU"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "包含"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "QPS（读）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "缓存大小"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "二八定律"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "MySQL/PostgreSQL"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "关系型"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "MongoDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "文档型"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Redis/DynamoDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Neo4j"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "图数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "InfluxDB/TimescaleDB"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "时序数据库"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "搜索引擎"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "恶意页面"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "浏览器自动携带 Cookie"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "CSRF Token"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "SameSite Cookie"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "验证 Referer/Origin"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "请求来源"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "双重 Cookie"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "OAuth 2.0"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "授权码（code）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "客户端"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "授权服务器"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "access_token + refresh_token"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "资源服务器"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "Bearer token"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "JWT"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "Header.Payload.Signature"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "HMACSHA256"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "RBAC（基于角色）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "用户 → 角色 → 权限"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "ABAC（基于属性）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp41opiqoy.md",
+      "id": "用户属性"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "微调（Fine-tuning）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "低秩矩阵"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "原始权重 W"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "显存"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "4-bit 量化（NF4）"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "奖励模型"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Key/Value 缓存"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "CP 或 AP 的选择"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "L4（传输层）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "L7（应用层）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "冗余部署"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "单点故障"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "故障转移（Failover）"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "Redis Sentinel"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "熔断降级"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "级联故障"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "滑动窗口"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "边界突刺"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "漏桶算法"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "突发流量"
+    },
+    {
+      "type": "entity",
+      "source": "tmp0a6difr0.md",
+      "id": "令牌桶算法"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "现代 LLM"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "GELU/SwiGLU"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "Attention"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "softmax"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "√d_k"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "softmax 梯度消失"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "DeepSeek-V2"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "MoE"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "实时更新文档"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "重新训练"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "GPU 训练"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "算力"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "来源可追溯"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "幻觉"
+    },
+    {
+      "type": "entity",
+      "source": "tmpz3cw7kuc.md",
+      "id": "示例"
+    }
+  ],
+  "edges": [
+    {
+      "relation": "适合",
+      "source": "ChromaDB",
+      "target": "原型开发"
+    },
+    {
+      "relation": "支持",
+      "source": "Milvus",
+      "target": "十亿级向量"
+    },
+    {
+      "relation": "是",
+      "source": "Pinecone",
+      "target": "全托管 SaaS"
+    },
+    {
+      "relation": "内置",
+      "source": "Weaviate",
+      "target": "混合搜索"
+    },
+    {
+      "relation": "是",
+      "source": "pgvector",
+      "target": "PostgreSQL 扩展"
+    },
+    {
+      "relation": "无需",
+      "source": "pgvector",
+      "target": "新数据库"
+    },
+    {
+      "relation": "开源方",
+      "source": "FAISS",
+      "target": "Meta"
+    },
+    {
+      "relation": "非",
+      "source": "FAISS",
+      "target": "独立数据库"
+    },
+    {
+      "relation": "最常用于",
+      "source": "余弦相似度",
+      "target": "文本"
+    },
+    {
+      "relation": "衡量",
+      "source": "欧氏距离（L2）",
+      "target": "绝对距离"
+    },
+    {
+      "relation": "归一化后等价于",
+      "source": "内积（IP）",
+      "target": "余弦相似度"
+    },
+    {
+      "relation": "分析",
+      "source": "EXPLAIN",
+      "target": "执行计划"
+    },
+    {
+      "relation": "配置于",
+      "source": "慢查询日志",
+      "target": "my.cnf"
+    },
+    {
+      "relation": "分析",
+      "source": "mysqldumpslow",
+      "target": "Top N 慢查询"
+    },
+    {
+      "relation": "分析",
+      "source": "pt-query-digest",
+      "target": "Top N 慢查询"
+    },
+    {
+      "relation": "导致",
+      "source": "对索引列使用函数",
+      "target": "索引失效"
+    },
+    {
+      "relation": "导致",
+      "source": "隐式类型转换",
+      "target": "索引失效"
+    },
+    {
+      "relation": "无法使用",
+      "source": "LIKE 左模糊",
+      "target": "索引"
+    },
+    {
+      "relation": "导致",
+      "source": "NOT IN / NOT EXISTS",
+      "target": "全表扫描"
+    },
+    {
+      "relation": "支持",
+      "source": "哈希索引",
+      "target": "等值查询"
+    },
+    {
+      "relation": "默认使用",
+      "source": "Memory 引擎",
+      "target": "哈希索引"
+    },
+    {
+      "relation": "包含",
+      "source": "InnoDB",
+      "target": "自适应哈希索引（AHI）"
+    },
+    {
+      "relation": "用于",
+      "source": "全文索引",
+      "target": "文本搜索"
+    },
+    {
+      "relation": "支持",
+      "source": "MySQL 5.6+",
+      "target": "InnoDB 全文索引"
+    },
+    {
+      "relation": "需要",
+      "source": "中文",
+      "target": "ngram 分词插件"
+    },
+    {
+      "relation": "推荐",
+      "source": "大规模场景",
+      "target": "Elasticsearch"
+    },
+    {
+      "relation": "属于",
+      "source": "Elasticsearch",
+      "target": "搜索引擎"
+    },
+    {
+      "relation": "适合",
+      "source": "Flat（暴力搜索）",
+      "target": "小数据集"
+    },
+    {
+      "relation": "搜索",
+      "source": "IVF（倒排文件）",
+      "target": "相关簇"
+    },
+    {
+      "relation": "提升",
+      "source": "HNSW（分层可导航小世界图）",
+      "target": "查询速度"
+    },
+    {
+      "relation": "压缩",
+      "source": "PQ（乘积量化）",
+      "target": "向量"
+    },
+    {
+      "relation": "记住",
+      "source": "游标分页",
+      "target": "上一页最后一条的 id"
+    },
+    {
+      "relation": "示例",
+      "source": "游标分页",
+      "target": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;"
+    },
+    {
+      "relation": "基于",
+      "source": "游标分页",
+      "target": "id"
+    },
+    {
+      "relation": "查询",
+      "source": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;",
+      "target": "articles"
+    },
+    {
+      "relation": "包含",
+      "source": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;",
+      "target": "WHERE id > 100000"
+    },
+    {
+      "relation": "包含",
+      "source": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;",
+      "target": "ORDER BY id"
+    },
+    {
+      "relation": "包含",
+      "source": "SELECT * FROM articles WHERE id > 100000 ORDER BY id LIMIT 10;",
+      "target": "LIMIT 10"
+    },
+    {
+      "relation": "过滤",
+      "source": "WHERE id > 100000",
+      "target": "id"
+    },
+    {
+      "relation": "排序",
+      "source": "ORDER BY id",
+      "target": "id"
+    },
+    {
+      "relation": "限制",
+      "source": "LIMIT 10",
+      "target": "10"
+    },
+    {
+      "relation": "使用",
+      "source": "关系型数据库",
+      "target": "B+ 树"
+    },
+    {
+      "relation": "是",
+      "source": "B+ 树",
+      "target": "默认索引结构"
+    },
+    {
+      "relation": "包含",
+      "source": "B+ 树",
+      "target": "叶子节点"
+    },
+    {
+      "relation": "减少",
+      "source": "B+ 树",
+      "target": "磁盘 I/O"
+    },
+    {
+      "relation": "使用",
+      "source": "MySQL InnoDB",
+      "target": "B+ 树"
+    },
+    {
+      "relation": "使用",
+      "source": "PostgreSQL",
+      "target": "B+ 树"
+    },
+    {
+      "relation": "连接",
+      "source": "叶子节点",
+      "target": "双向链表"
+    },
+    {
+      "relation": "存储",
+      "source": "内部节点",
+      "target": "键值和指针"
+    },
+    {
+      "relation": "支持",
+      "source": "双向链表",
+      "target": "高效范围查询"
+    },
+    {
+      "relation": "存储",
+      "source": "聚簇索引",
+      "target": "完整行数据"
+    },
+    {
+      "relation": "存储",
+      "source": "二级索引",
+      "target": "主键值"
+    },
+    {
+      "relation": "需要",
+      "source": "二级索引",
+      "target": "回表"
+    },
+    {
+      "relation": "避免",
+      "source": "覆盖索引",
+      "target": "回表"
+    },
+    {
+      "relation": "遵循",
+      "source": "联合索引",
+      "target": "最左前缀"
+    },
+    {
+      "relation": "缺失导致",
+      "source": "最左列",
+      "target": "索引失效"
+    },
+    {
+      "relation": "是",
+      "source": "Docker",
+      "target": "容器化平台"
+    },
+    {
+      "relation": "打包",
+      "source": "Docker",
+      "target": "应用及其依赖"
+    },
+    {
+      "relation": "用于",
+      "source": "Docker",
+      "target": "容器化打包"
+    },
+    {
+      "relation": "是",
+      "source": "镜像（Image）",
+      "target": "只读模板"
+    },
+    {
+      "relation": "包含",
+      "source": "镜像（Image）",
+      "target": "运行应用所需的代码"
+    },
+    {
+      "relation": "是",
+      "source": "容器（Container）",
+      "target": "镜像的运行实例"
+    },
+    {
+      "relation": "定义",
+      "source": "Dockerfile",
+      "target": "镜像构建步骤"
+    },
+    {
+      "relation": "减小",
+      "source": "多阶段构建",
+      "target": "最终镜像体积"
+    },
+    {
+      "relation": "使用",
+      "source": "bridge",
+      "target": "docker0 网桥"
+    },
+    {
+      "relation": "共享",
+      "source": "host",
+      "target": "宿主机网络栈"
+    },
+    {
+      "relation": "支持",
+      "source": "overlay",
+      "target": "跨主机容器通信"
+    },
+    {
+      "relation": "使用",
+      "source": "Swarm/K8s",
+      "target": "overlay"
+    },
+    {
+      "relation": "提供",
+      "source": "none",
+      "target": "完全隔离"
+    },
+    {
+      "relation": "是",
+      "source": "Volume",
+      "target": "Docker 管理的持久化存储"
+    },
+    {
+      "relation": "挂载",
+      "source": "Bind Mount",
+      "target": "宿主机目录"
+    },
+    {
+      "relation": "是",
+      "source": "tmpfs",
+      "target": "内存存储"
+    },
+    {
+      "relation": "使用",
+      "source": "HTTP/2",
+      "target": "二进制分帧"
+    },
+    {
+      "relation": "支持",
+      "source": "HTTP/2",
+      "target": "多路复用"
+    },
+    {
+      "relation": "使用",
+      "source": "HTTP/2",
+      "target": "HPACK 算法"
+    },
+    {
+      "relation": "支持",
+      "source": "HTTP/2",
+      "target": "服务器推送"
+    },
+    {
+      "relation": "存在",
+      "source": "HTTP/2",
+      "target": "TCP 层的队头阻塞"
+    },
+    {
+      "relation": "基于",
+      "source": "HTTP/3（QUIC）",
+      "target": "UDP"
+    },
+    {
+      "relation": "解决",
+      "source": "HTTP/3（QUIC）",
+      "target": "队头阻塞"
+    },
+    {
+      "relation": "支持",
+      "source": "HTTP/3（QUIC）",
+      "target": "0-RTT 建连（复用连接参数）"
+    },
+    {
+      "relation": "内置",
+      "source": "HTTP/3（QUIC）",
+      "target": "TLS 1.3"
+    },
+    {
+      "relation": "支持",
+      "source": "HTTP/3（QUIC）",
+      "target": "连接迁移（切换网络不断连）"
+    },
+    {
+      "relation": "生成",
+      "source": "TLS 1.2 握手（2-RTT）",
+      "target": "会话密钥"
+    },
+    {
+      "relation": "使用",
+      "source": "TLS 1.3（1-RTT）",
+      "target": "AEAD"
+    },
+    {
+      "relation": "支持",
+      "source": "TLS 1.3（1-RTT）",
+      "target": "0-RTT（PSK 恢复）"
+    },
+    {
+      "relation": "防止",
+      "source": "DoH（DNS over HTTPS）",
+      "target": "劫持"
+    },
+    {
+      "relation": "缓存",
+      "source": "CDN",
+      "target": "静态资源"
+    },
+    {
+      "relation": "包含",
+      "source": "TCP/IP 四层模型",
+      "target": "应用层"
+    },
+    {
+      "relation": "包含",
+      "source": "应用层",
+      "target": "HTTP"
+    },
+    {
+      "relation": "负责",
+      "source": "应用层",
+      "target": "用户交互"
+    },
+    {
+      "relation": "包含",
+      "source": "传输层",
+      "target": "TCP"
+    },
+    {
+      "relation": "负责",
+      "source": "传输层",
+      "target": "端到端通信"
+    },
+    {
+      "relation": "包含",
+      "source": "网络层",
+      "target": "IP"
+    },
+    {
+      "relation": "负责",
+      "source": "网络层",
+      "target": "路由寻址"
+    },
+    {
+      "relation": "包含",
+      "source": "链路层",
+      "target": "Ethernet"
+    },
+    {
+      "relation": "负责",
+      "source": "链路层",
+      "target": "相邻节点传输"
+    },
+    {
+      "relation": "使用",
+      "source": "TCP 三次握手",
+      "target": "SYN"
+    },
+    {
+      "relation": "确保",
+      "source": "TCP 三次握手",
+      "target": "收发能力"
+    },
+    {
+      "relation": "基于",
+      "source": "TCP 四次挥手",
+      "target": "全双工"
+    },
+    {
+      "relation": "等待",
+      "source": "TIME_WAIT",
+      "target": "2MSL"
+    },
+    {
+      "relation": "包含",
+      "source": "TCP 拥塞控制",
+      "target": "慢启动"
+    },
+    {
+      "relation": "支持",
+      "source": "HTTP/1.1",
+      "target": "持久连接"
+    },
+    {
+      "relation": "更新",
+      "source": "全参数微调",
+      "target": "所有权重"
+    },
+    {
+      "relation": "使用",
+      "source": "LoRA",
+      "target": "低秩分解"
+    },
+    {
+      "relation": "使用",
+      "source": "LoRA",
+      "target": "低秩矩阵"
+    },
+    {
+      "relation": "冻结",
+      "source": "LoRA",
+      "target": "原始权重 W"
+    },
+    {
+      "relation": "降低",
+      "source": "LoRA",
+      "target": "显存"
+    },
+    {
+      "relation": "使用",
+      "source": "QLoRA",
+      "target": "4-bit 量化"
+    },
+    {
+      "relation": "使用",
+      "source": "QLoRA",
+      "target": "LoRA"
+    },
+    {
+      "relation": "使用",
+      "source": "QLoRA",
+      "target": "4-bit 量化（NF4）"
+    },
+    {
+      "relation": "插入",
+      "source": "Adapter",
+      "target": "小型适配器模块"
+    },
+    {
+      "relation": "包含",
+      "source": "RLHF",
+      "target": "SFT"
+    },
+    {
+      "relation": "使用",
+      "source": "RLHF",
+      "target": "PPO 强化学习"
+    },
+    {
+      "relation": "使用",
+      "source": "RLHF",
+      "target": "奖励模型"
+    },
+    {
+      "relation": "使用",
+      "source": "DPO",
+      "target": "偏好对"
+    },
+    {
+      "relation": "跳过",
+      "source": "DPO",
+      "target": "奖励模型训练"
+    },
+    {
+      "relation": "复用",
+      "source": "KV Cache",
+      "target": "Key/Value"
+    },
+    {
+      "relation": "复用",
+      "source": "KV Cache",
+      "target": "Key/Value 缓存"
+    },
+    {
+      "relation": "优化",
+      "source": "GQA",
+      "target": "KV Cache"
+    },
+    {
+      "relation": "使用",
+      "source": "vLLM",
+      "target": "PagedAttention"
+    },
+    {
+      "relation": "使用",
+      "source": "llama.cpp",
+      "target": "GGUF 格式"
+    },
+    {
+      "relation": "适用于",
+      "source": "RAG",
+      "target": "知识密集型问答"
+    },
+    {
+      "relation": "支持",
+      "source": "RAG",
+      "target": "实时更新文档"
+    },
+    {
+      "relation": "无需",
+      "source": "RAG",
+      "target": "GPU 训练"
+    },
+    {
+      "relation": "提供",
+      "source": "RAG",
+      "target": "来源可追溯"
+    },
+    {
+      "relation": "适用于",
+      "source": "微调",
+      "target": "风格/格式/领域适配"
+    },
+    {
+      "relation": "需要",
+      "source": "微调",
+      "target": "重新训练"
+    },
+    {
+      "relation": "需要",
+      "source": "微调",
+      "target": "算力"
+    },
+    {
+      "relation": "可能产生",
+      "source": "微调",
+      "target": "幻觉"
+    },
+    {
+      "relation": "包含",
+      "source": "Prompt Engineering",
+      "target": "Few-shot"
+    },
+    {
+      "relation": "包含",
+      "source": "Prompt Engineering",
+      "target": "Chain-of-Thought（CoT）"
+    },
+    {
+      "relation": "包含",
+      "source": "Prompt Engineering",
+      "target": "ReAct"
+    },
+    {
+      "relation": "包含",
+      "source": "Prompt Engineering",
+      "target": "Self-Consistency"
+    },
+    {
+      "relation": "提供",
+      "source": "Few-shot",
+      "target": "示例"
+    },
+    {
+      "relation": "引导",
+      "source": "Chain-of-Thought（CoT）",
+      "target": "逐步推理"
+    },
+    {
+      "relation": "支持",
+      "source": "ReAct",
+      "target": "工具调用"
+    },
+    {
+      "relation": "使用",
+      "source": "Self-Consistency",
+      "target": "多数投票"
+    },
+    {
+      "relation": "编码",
+      "source": "ViT",
+      "target": "图像"
+    },
+    {
+      "relation": "连接",
+      "source": "投影层",
+      "target": "LLM"
+    },
+    {
+      "relation": "属于",
+      "source": "GPT-4V",
+      "target": "多模态模型"
+    },
+    {
+      "relation": "属于",
+      "source": "LLaVA",
+      "target": "多模态模型"
+    },
+    {
+      "relation": "属于",
+      "source": "Qwen-VL",
+      "target": "多模态模型"
+    },
+    {
+      "relation": "包含",
+      "source": "AI Agent",
+      "target": "规划"
+    },
+    {
+      "relation": "包含",
+      "source": "AI Agent",
+      "target": "工具调用"
+    },
+    {
+      "relation": "包含",
+      "source": "AI Agent",
+      "target": "记忆"
+    },
+    {
+      "relation": "是基础架构",
+      "source": "Transformer",
+      "target": "LLM"
+    },
+    {
+      "relation": "包含",
+      "source": "Transformer",
+      "target": "Self-Attention"
+    },
+    {
+      "relation": "包含",
+      "source": "Transformer",
+      "target": "Multi-Head Attention"
+    },
+    {
+      "relation": "包含",
+      "source": "Transformer",
+      "target": "Feed-Forward Network"
+    },
+    {
+      "relation": "包含",
+      "source": "Transformer",
+      "target": "Layer Normalization"
+    },
+    {
+      "relation": "是基础架构",
+      "source": "Transformer",
+      "target": "现代 LLM"
+    },
+    {
+      "relation": "发表于",
+      "source": "Transformer",
+      "target": "Attention Is All You Need"
+    },
+    {
+      "relation": "提出",
+      "source": "Google",
+      "target": "Transformer"
+    },
+    {
+      "relation": "提出",
+      "source": "Attention Is All You Need",
+      "target": "Transformer"
+    },
+    {
+      "relation": "计算",
+      "source": "Self-Attention",
+      "target": "注意力权重"
+    },
+    {
+      "relation": "捕获",
+      "source": "Multi-Head Attention",
+      "target": "不同子空间的关系"
+    },
+    {
+      "relation": "使用",
+      "source": "Feed-Forward Network",
+      "target": "GELU"
+    },
+    {
+      "relation": "使用",
+      "source": "Feed-Forward Network",
+      "target": "SwiGLU"
+    },
+    {
+      "relation": "使用",
+      "source": "Feed-Forward Network",
+      "target": "GELU/SwiGLU"
+    },
+    {
+      "relation": "稳定",
+      "source": "Layer Normalization",
+      "target": "训练"
+    },
+    {
+      "relation": "采用",
+      "source": "位置编码",
+      "target": "RoPE"
+    },
+    {
+      "relation": "目标",
+      "source": "预训练",
+      "target": "Next Token Prediction"
+    },
+    {
+      "relation": "使用",
+      "source": "预训练",
+      "target": "AdamW"
+    },
+    {
+      "relation": "包含",
+      "source": "蓝绿部署",
+      "target": "两套完整环境"
+    },
+    {
+      "relation": "切换",
+      "source": "蓝绿部署",
+      "target": "流量"
+    },
+    {
+      "relation": "导致",
+      "source": "蓝绿部署",
+      "target": "资源翻倍"
+    },
+    {
+      "relation": "先导入",
+      "source": "金丝雀发布（Canary）",
+      "target": "5% 流量"
+    },
+    {
+      "relation": "观察",
+      "source": "金丝雀发布（Canary）",
+      "target": "指标"
+    },
+    {
+      "relation": "使用工具",
+      "source": "金丝雀发布（Canary）",
+      "target": "Istio"
+    },
+    {
+      "relation": "使用工具",
+      "source": "金丝雀发布（Canary）",
+      "target": "Argo Rollouts"
+    },
+    {
+      "relation": "使用工具",
+      "source": "金丝雀发布（Canary）",
+      "target": "Flagger"
+    },
+    {
+      "relation": "导到",
+      "source": "5% 流量",
+      "target": "新版本"
+    },
+    {
+      "relation": "是",
+      "source": "Istio",
+      "target": "Service Mesh"
+    },
+    {
+      "relation": "作为",
+      "source": "requests",
+      "target": "调度依据"
+    },
+    {
+      "relation": "设置",
+      "source": "limits",
+      "target": "硬上限"
+    },
+    {
+      "relation": "超出触发",
+      "source": "limits",
+      "target": "OOMKill"
+    },
+    {
+      "relation": "失败触发",
+      "source": "livenessProbe",
+      "target": "重启"
+    },
+    {
+      "relation": "失败摘除自",
+      "source": "readinessProbe",
+      "target": "Service"
+    },
+    {
+      "relation": "提供",
+      "source": "Service",
+      "target": "稳定的网络入口"
+    },
+    {
+      "relation": "适用",
+      "source": "startupProbe",
+      "target": "慢启动应用"
+    },
+    {
+      "relation": "面临挑战",
+      "source": "微服务",
+      "target": "分布式事务"
+    },
+    {
+      "relation": "拆分",
+      "source": "Saga 模式",
+      "target": "长事务"
+    },
+    {
+      "relation": "包含",
+      "source": "Saga 模式",
+      "target": "补偿操作"
+    },
+    {
+      "relation": "实现",
+      "source": "TCC（Try-Confirm-Cancel）",
+      "target": "两阶段提交"
+    },
+    {
+      "relation": "使用",
+      "source": "事件驱动",
+      "target": "消息队列"
+    },
+    {
+      "relation": "实现",
+      "source": "事件驱动",
+      "target": "最终一致性"
+    },
+    {
+      "relation": "使用",
+      "source": "最终一致性",
+      "target": "Dynamo 风格"
+    },
+    {
+      "relation": "是",
+      "source": "Seata",
+      "target": "分布式事务框架"
+    },
+    {
+      "relation": "支持",
+      "source": "Seata",
+      "target": "AT/TCC/Saga/XA 模式"
+    },
+    {
+      "relation": "用于",
+      "source": "Kubernetes（K8s）",
+      "target": "容器编排"
+    },
+    {
+      "relation": "是",
+      "source": "Helm",
+      "target": "K8s 应用包管理器"
+    },
+    {
+      "relation": "使用",
+      "source": "Metrics（指标）",
+      "target": "Prometheus + Grafana"
+    },
+    {
+      "relation": "使用",
+      "source": "Logging（日志）",
+      "target": "ELK（Elasticsearch + Logstash + Kibana）"
+    },
+    {
+      "relation": "定位",
+      "source": "Tracing（追踪）",
+      "target": "跨服务调用瓶颈"
+    },
+    {
+      "relation": "包含",
+      "source": "Kubernetes",
+      "target": "控制平面（Control Plane）"
+    },
+    {
+      "relation": "包含",
+      "source": "Kubernetes",
+      "target": "工作节点（Worker Node）"
+    },
+    {
+      "relation": "作为",
+      "source": "kube-apiserver",
+      "target": "集群入口"
+    },
+    {
+      "relation": "保存",
+      "source": "etcd",
+      "target": "集群状态"
+    },
+    {
+      "relation": "实现",
+      "source": "etcd",
+      "target": "强一致性"
+    },
+    {
+      "relation": "调度",
+      "source": "kube-scheduler",
+      "target": "Pod"
+    },
+    {
+      "relation": "包含",
+      "source": "Pod",
+      "target": "容器"
+    },
+    {
+      "relation": "运行",
+      "source": "kube-controller-manager",
+      "target": "Deployment"
+    },
+    {
+      "relation": "支持",
+      "source": "Deployment",
+      "target": "滚动更新（Rolling Update）"
+    },
+    {
+      "relation": "管理",
+      "source": "kubelet",
+      "target": "Pod"
+    },
+    {
+      "relation": "代理",
+      "source": "kube-proxy",
+      "target": "Service"
+    },
+    {
+      "relation": "实现",
+      "source": "Ingress",
+      "target": "七层路由"
+    },
+    {
+      "relation": "管理",
+      "source": "ConfigMap/Secret",
+      "target": "配置和敏感数据"
+    },
+    {
+      "relation": "声明",
+      "source": "PV/PVC",
+      "target": "持久化存储"
+    },
+    {
+      "relation": "实现",
+      "source": "HPA",
+      "target": "水平自动伸缩"
+    },
+    {
+      "relation": "优于",
+      "source": "内置函数",
+      "target": "纯 Python 循环"
+    },
+    {
+      "relation": "优于",
+      "source": "sum()",
+      "target": "手动累加"
+    },
+    {
+      "relation": "优于",
+      "source": "map()",
+      "target": "for 循环 + 函数调用"
+    },
+    {
+      "relation": "优于",
+      "source": "str.join()",
+      "target": "字符串拼接"
+    },
+    {
+      "relation": "使用",
+      "source": "缓存（Memoization）",
+      "target": "lru_cache"
+    },
+    {
+      "relation": "装饰",
+      "source": "lru_cache",
+      "target": "fibonacci"
+    },
+    {
+      "relation": "包含",
+      "source": "functools",
+      "target": "lru_cache"
+    },
+    {
+      "relation": "属于",
+      "source": "GIL（全局解释器锁）",
+      "target": "CPython"
+    },
+    {
+      "relation": "限制",
+      "source": "GIL（全局解释器锁）",
+      "target": "多线程的 CPU 并行能力"
+    },
+    {
+      "relation": "使用",
+      "source": "I/O 密集型",
+      "target": "asyncio"
+    },
+    {
+      "relation": "使用",
+      "source": "I/O 密集型",
+      "target": "threading"
+    },
+    {
+      "relation": "适合",
+      "source": "asyncio",
+      "target": "Web 服务器"
+    },
+    {
+      "relation": "使用",
+      "source": "CPU 密集型",
+      "target": "multiprocessing"
+    },
+    {
+      "relation": "使用",
+      "source": "CPU 密集型",
+      "target": "C 扩展"
+    },
+    {
+      "relation": "是",
+      "source": "微服务架构",
+      "target": "设计方法"
+    },
+    {
+      "relation": "包含",
+      "source": "微服务架构",
+      "target": "独立部署的服务"
+    },
+    {
+      "relation": "优于",
+      "source": "微服务架构",
+      "target": "单体架构"
+    },
+    {
+      "relation": "具有",
+      "source": "微服务架构",
+      "target": "独立部署"
+    },
+    {
+      "relation": "具有",
+      "source": "微服务架构",
+      "target": "技术异构"
+    },
+    {
+      "relation": "具有",
+      "source": "微服务架构",
+      "target": "弹性伸缩"
+    },
+    {
+      "relation": "具有",
+      "source": "微服务架构",
+      "target": "故障隔离"
+    },
+    {
+      "relation": "使用",
+      "source": "独立部署的服务",
+      "target": "轻量级通信机制"
+    },
+    {
+      "relation": "包含",
+      "source": "轻量级通信机制",
+      "target": "HTTP/REST"
+    },
+    {
+      "relation": "包含",
+      "source": "轻量级通信机制",
+      "target": "消息队列"
+    },
+    {
+      "relation": "包含",
+      "source": "领域驱动设计",
+      "target": "限界上下文"
+    },
+    {
+      "relation": "划分",
+      "source": "限界上下文",
+      "target": "服务边界"
+    },
+    {
+      "relation": "支持",
+      "source": "Consul",
+      "target": "健康检查"
+    },
+    {
+      "relation": "集成",
+      "source": "Nacos",
+      "target": "配置中心"
+    },
+    {
+      "relation": "处理",
+      "source": "API 网关",
+      "target": "路由"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "结合"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "使用"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "增强"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "减少"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "支持"
+    },
+    {
+      "relation": "检索增强生成）",
+      "source": "RAG（Retrieval-Augmented Generation",
+      "target": "实现"
+    },
+    {
+      "relation": "包含",
+      "source": "RAG 系统",
+      "target": "文档处理管道（Ingestion Pipeline）"
+    },
+    {
+      "relation": "包含",
+      "source": "RAG 系统",
+      "target": "检索模块（Retrieval）"
+    },
+    {
+      "relation": "包含",
+      "source": "RAG 系统",
+      "target": "生成模块（Generation）"
+    },
+    {
+      "relation": "使用",
+      "source": "文档处理管道（Ingestion Pipeline）",
+      "target": "Embedding 模型"
+    },
+    {
+      "relation": "存储",
+      "source": "文档处理管道（Ingestion Pipeline）",
+      "target": "向量数据库"
+    },
+    {
+      "relation": "使用",
+      "source": "检索模块（Retrieval）",
+      "target": "BM25"
+    },
+    {
+      "relation": "使用",
+      "source": "检索模块（Retrieval）",
+      "target": "Cross-Encoder"
+    },
+    {
+      "relation": "擅长",
+      "source": "BM25",
+      "target": "关键词精确匹配"
+    },
+    {
+      "relation": "精排",
+      "source": "Cross-Encoder",
+      "target": "top-100"
+    },
+    {
+      "relation": "影响",
+      "source": "文本分块",
+      "target": "检索质量"
+    },
+    {
+      "relation": "包含",
+      "source": "Python 性能优化实战",
+      "target": "性能分析工具"
+    },
+    {
+      "relation": "包含",
+      "source": "性能分析工具",
+      "target": "cProfile"
+    },
+    {
+      "relation": "包含",
+      "source": "性能分析工具",
+      "target": "line_profiler"
+    },
+    {
+      "relation": "包含",
+      "source": "性能分析工具",
+      "target": "py-spy"
+    },
+    {
+      "relation": "属于",
+      "source": "cProfile",
+      "target": "标准库"
+    },
+    {
+      "relation": "支持",
+      "source": "line_profiler",
+      "target": "逐行分析"
+    },
+    {
+      "relation": "是",
+      "source": "py-spy",
+      "target": "采样式分析器"
+    },
+    {
+      "relation": "生成",
+      "source": "py-spy",
+      "target": "火焰图"
+    },
+    {
+      "relation": "展示",
+      "source": "火焰图",
+      "target": "CPU 时间分布"
+    },
+    {
+      "relation": "使用",
+      "source": "查找操作",
+      "target": "set"
+    },
+    {
+      "relation": "使用",
+      "source": "查找操作",
+      "target": "dict"
+    },
+    {
+      "relation": "使用",
+      "source": "频繁插入删除",
+      "target": "collections.deque"
+    },
+    {
+      "relation": "使用",
+      "source": "计数",
+      "target": "collections.Counter"
+    },
+    {
+      "relation": "替代",
+      "source": "生成器",
+      "target": "列表"
+    },
+    {
+      "relation": "快于",
+      "source": "局部变量查找",
+      "target": "全局变量查找"
+    },
+    {
+      "relation": "执行",
+      "source": "Pool(4)",
+      "target": "cpu_heavy"
+    },
+    {
+      "relation": "用于",
+      "source": "NumPy",
+      "target": "数值计算（向量化）"
+    },
+    {
+      "relation": "用于",
+      "source": "Numba",
+      "target": "JIT 编译数值函数"
+    },
+    {
+      "relation": "用于",
+      "source": "Cython",
+      "target": "C 扩展编译"
+    },
+    {
+      "relation": "是",
+      "source": "PyPy",
+      "target": "替代解释器"
+    },
+    {
+      "relation": "替代",
+      "source": "polars",
+      "target": "pandas"
+    },
+    {
+      "relation": "解决",
+      "source": "select_related",
+      "target": "N+1 查询"
+    },
+    {
+      "relation": "解决",
+      "source": "prefetch_related",
+      "target": "N+1 查询"
+    },
+    {
+      "relation": "建立",
+      "source": "WHERE/ORDER BY 字段",
+      "target": "索引"
+    },
+    {
+      "relation": "优化为",
+      "source": "SELECT *",
+      "target": "只查需要的字段"
+    },
+    {
+      "relation": "拆分为",
+      "source": "大事务",
+      "target": "小批次提交"
+    },
+    {
+      "relation": "减少",
+      "source": "__slots__",
+      "target": "对象内存占用"
+    },
+    {
+      "relation": "替代",
+      "source": "array.array",
+      "target": "list"
+    },
+    {
+      "relation": "使用",
+      "source": "大数据集",
+      "target": "category"
+    },
+    {
+      "relation": "删除",
+      "source": "del",
+      "target": "大对象"
+    },
+    {
+      "relation": "提供",
+      "source": "Redis",
+      "target": "5 种基础数据结构"
+    },
+    {
+      "relation": "底层编码",
+      "source": "String",
+      "target": "SDS（简单动态字符串）"
+    },
+    {
+      "relation": "底层编码",
+      "source": "Hash",
+      "target": "ziplist / hashtable"
+    },
+    {
+      "relation": "底层编码",
+      "source": "List",
+      "target": "quicklist（ziplist + linkedlist）"
+    },
+    {
+      "relation": "底层编码",
+      "source": "Set",
+      "target": "intset / hashtable"
+    },
+    {
+      "relation": "底层编码",
+      "source": "ZSet",
+      "target": "ziplist / skiplist + hashtable"
+    },
+    {
+      "relation": "核心数据结构",
+      "source": "ZSet",
+      "target": "跳表（Skip List）"
+    },
+    {
+      "relation": "支持",
+      "source": "跳表（Skip List）",
+      "target": "平均 O(log N) 查找"
+    },
+    {
+      "relation": "使用",
+      "source": "RDB（快照）",
+      "target": "COW（Copy-On-Write）"
+    },
+    {
+      "relation": "写入",
+      "source": "AOF（追加日志）",
+      "target": "aof 文件"
+    },
+    {
+      "relation": "包含",
+      "source": "AOF（追加日志）",
+      "target": "重写（Rewrite）"
+    },
+    {
+      "relation": "结合",
+      "source": "混合持久化（推荐）",
+      "target": "RDB"
+    },
+    {
+      "relation": "结合",
+      "source": "混合持久化（推荐）",
+      "target": "增量 AOF"
+    },
+    {
+      "relation": "包含",
+      "source": "主从复制",
+      "target": "全量同步"
+    },
+    {
+      "relation": "包含",
+      "source": "主从复制",
+      "target": "增量同步"
+    },
+    {
+      "relation": "加锁于",
+      "source": "RedLock（多节点）",
+      "target": "N 个独立 Redis 节点"
+    },
+    {
+      "relation": "获取条件",
+      "source": "RedLock（多节点）",
+      "target": "超过半数成功"
+    },
+    {
+      "relation": "指出",
+      "source": "Martin Kleppmann",
+      "target": "时钟跳跃问题"
+    },
+    {
+      "relation": "影响",
+      "source": "时钟跳跃问题",
+      "target": "RedLock（多节点）"
+    },
+    {
+      "relation": "使用",
+      "source": "锁续期",
+      "target": "看门狗机制"
+    },
+    {
+      "relation": "实现方",
+      "source": "看门狗机制",
+      "target": "Redisson"
+    },
+    {
+      "relation": "续期频率",
+      "source": "看门狗机制",
+      "target": "TTL/3"
+    },
+    {
+      "relation": "防止",
+      "source": "看门狗机制",
+      "target": "业务未完成锁就过期"
+    },
+    {
+      "relation": "定义",
+      "source": "大 Key 问题",
+      "target": "String > 10KB"
+    },
+    {
+      "relation": "定义",
+      "source": "大 Key 问题",
+      "target": "Hash/List/Set/ZSet 元素 > 5000"
+    },
+    {
+      "relation": "解决",
+      "source": "大 Key 问题",
+      "target": "异步删除（UNLINK）"
+    },
+    {
+      "relation": "发现",
+      "source": "热 Key 问题",
+      "target": "redis-cli --hotkeys"
+    },
+    {
+      "relation": "解决",
+      "source": "热 Key 问题",
+      "target": "本地缓存"
+    },
+    {
+      "relation": "减少",
+      "source": "Pipeline",
+      "target": "RTT 开销"
+    },
+    {
+      "relation": "避免",
+      "source": "Lua 脚本",
+      "target": "竞态"
+    },
+    {
+      "relation": "监控",
+      "source": "Sentinel（哨兵）",
+      "target": "主节点"
+    },
+    {
+      "relation": "执行",
+      "source": "Sentinel（哨兵）",
+      "target": "自动故障转移"
+    },
+    {
+      "relation": "选举",
+      "source": "自动故障转移",
+      "target": "新主"
+    },
+    {
+      "relation": "包含",
+      "source": "Cluster（集群）",
+      "target": "slot"
+    },
+    {
+      "relation": "分配到",
+      "source": "slot",
+      "target": "主节点"
+    },
+    {
+      "relation": "使用",
+      "source": "客户端重定向",
+      "target": "MOVED"
+    },
+    {
+      "relation": "使用",
+      "source": "客户端重定向",
+      "target": "ASK"
+    },
+    {
+      "relation": "交换",
+      "source": "Gossip 协议",
+      "target": "状态信息"
+    },
+    {
+      "relation": "使用",
+      "source": "缓存穿透",
+      "target": "布隆过滤器"
+    },
+    {
+      "relation": "使用",
+      "source": "缓存击穿",
+      "target": "互斥锁"
+    },
+    {
+      "relation": "使用",
+      "source": "缓存雪崩",
+      "target": "过期时间加随机偏移"
+    },
+    {
+      "relation": "包含",
+      "source": "多级缓存",
+      "target": "Caffeine"
+    },
+    {
+      "relation": "包含",
+      "source": "多级缓存",
+      "target": "Redis"
+    },
+    {
+      "relation": "推荐",
+      "source": "缓存与数据库一致性",
+      "target": "先更新 DB"
+    },
+    {
+      "relation": "使用",
+      "source": "分布式锁",
+      "target": "Lua 脚本"
+    },
+    {
+      "relation": "考察",
+      "source": "系统设计面试",
+      "target": "将模糊需求转化为完整技术方案的能力"
+    },
+    {
+      "relation": "使用",
+      "source": "系统设计面试",
+      "target": "四步法"
+    },
+    {
+      "relation": "包含",
+      "source": "四步法",
+      "target": "需求澄清"
+    },
+    {
+      "relation": "包含",
+      "source": "四步法",
+      "target": "高层设计"
+    },
+    {
+      "relation": "包含",
+      "source": "四步法",
+      "target": "深入设计"
+    },
+    {
+      "relation": "包含",
+      "source": "四步法",
+      "target": "权衡讨论"
+    },
+    {
+      "relation": "确认",
+      "source": "需求澄清",
+      "target": "规模估算"
+    },
+    {
+      "relation": "画出",
+      "source": "高层设计",
+      "target": "核心组件"
+    },
+    {
+      "relation": "展开",
+      "source": "深入设计",
+      "target": "关键模块"
+    },
+    {
+      "relation": "包含",
+      "source": "规模估算",
+      "target": "QPS（读）"
+    },
+    {
+      "relation": "适用于",
+      "source": "关系型（MySQL/PostgreSQL）",
+      "target": "强一致性"
+    },
+    {
+      "relation": "使用",
+      "source": "强一致性",
+      "target": "Raft"
+    },
+    {
+      "relation": "使用",
+      "source": "强一致性",
+      "target": "Paxos"
+    },
+    {
+      "relation": "适用于",
+      "source": "文档型（MongoDB）",
+      "target": "灵活 Schema"
+    },
+    {
+      "relation": "适用于",
+      "source": "KV 存储（Redis/DynamoDB）",
+      "target": "低延迟"
+    },
+    {
+      "relation": "适用于",
+      "source": "图数据库（Neo4j）",
+      "target": "社交关系"
+    },
+    {
+      "relation": "适用于",
+      "source": "时序数据库（InfluxDB/TimescaleDB）",
+      "target": "监控指标"
+    },
+    {
+      "relation": "适用于",
+      "source": "搜索引擎（Elasticsearch）",
+      "target": "全文检索"
+    },
+    {
+      "relation": "发布",
+      "source": "OWASP",
+      "target": "OWASP Top 10（2021）"
+    },
+    {
+      "relation": "包含",
+      "source": "OWASP Top 10（2021）",
+      "target": "注入攻击"
+    },
+    {
+      "relation": "包含",
+      "source": "OWASP Top 10（2021）",
+      "target": "认证失效"
+    },
+    {
+      "relation": "包含",
+      "source": "OWASP Top 10（2021）",
+      "target": "敏感数据泄露"
+    },
+    {
+      "relation": "包含",
+      "source": "注入攻击",
+      "target": "SQL 注入"
+    },
+    {
+      "relation": "包含",
+      "source": "注入攻击",
+      "target": "XSS（跨站脚本）"
+    },
+    {
+      "relation": "防御",
+      "source": "认证失效",
+      "target": "多因素认证（MFA）"
+    },
+    {
+      "relation": "防御",
+      "source": "敏感数据泄露",
+      "target": "全站 HTTPS（TLS 1.2+）"
+    },
+    {
+      "relation": "防御",
+      "source": "SQL 注入",
+      "target": "参数化查询（Prepared Statement）"
+    },
+    {
+      "relation": "防御",
+      "source": "XSS（跨站脚本）",
+      "target": "输出编码（HTML Entity）"
+    },
+    {
+      "relation": "防御",
+      "source": "XSS（跨站脚本）",
+      "target": "CSP 策略"
+    },
+    {
+      "relation": "防御",
+      "source": "XSS（跨站脚本）",
+      "target": "HttpOnly Cookie"
+    },
+    {
+      "relation": "包含",
+      "source": "多因素认证（MFA）",
+      "target": "TOTP"
+    },
+    {
+      "relation": "使用",
+      "source": "存储加密",
+      "target": "bcrypt/scrypt/Argon2"
+    },
+    {
+      "relation": "利用",
+      "source": "CSRF（跨站请求伪造）",
+      "target": "Cookie"
+    },
+    {
+      "relation": "诱导用户访问",
+      "source": "CSRF（跨站请求伪造）",
+      "target": "恶意页面"
+    },
+    {
+      "relation": "利用",
+      "source": "CSRF（跨站请求伪造）",
+      "target": "浏览器自动携带 Cookie"
+    },
+    {
+      "relation": "管理方",
+      "source": "Cache-Aside",
+      "target": "应用层"
+    },
+    {
+      "relation": "先查",
+      "source": "Cache-Aside",
+      "target": "缓存"
+    },
+    {
+      "relation": "再查",
+      "source": "Cache-Aside",
+      "target": "DB"
+    },
+    {
+      "relation": "同步更新",
+      "source": "Write-Through",
+      "target": "缓存"
+    },
+    {
+      "relation": "异步批量写回",
+      "source": "Write-Behind",
+      "target": "DB"
+    },
+    {
+      "relation": "特点",
+      "source": "Kafka",
+      "target": "高吞吐"
+    },
+    {
+      "relation": "适用于",
+      "source": "Kafka",
+      "target": "日志流"
+    },
+    {
+      "relation": "适用场景",
+      "source": "RabbitMQ",
+      "target": "任务队列"
+    },
+    {
+      "relation": "支持",
+      "source": "RocketMQ",
+      "target": "事务消息"
+    },
+    {
+      "relation": "支持",
+      "source": "Pulsar",
+      "target": "多租户"
+    },
+    {
+      "relation": "核心",
+      "source": "短链系统",
+      "target": "长链 → 短码映射"
+    },
+    {
+      "relation": "包含",
+      "source": "Feed 流（Timeline）",
+      "target": "推拉结合"
+    },
+    {
+      "relation": "使用",
+      "source": "秒杀系统",
+      "target": "Redis"
+    },
+    {
+      "relation": "连接层",
+      "source": "即时通讯（IM）",
+      "target": "WebSocket"
+    },
+    {
+      "relation": "实际选择",
+      "source": "CAP 定理",
+      "target": "CP 或 AP"
+    },
+    {
+      "relation": "约束",
+      "source": "CAP 定理",
+      "target": "分布式系统"
+    },
+    {
+      "relation": "包含",
+      "source": "多路召回",
+      "target": "向量检索"
+    },
+    {
+      "relation": "包含",
+      "source": "多路召回",
+      "target": "BM25"
+    },
+    {
+      "relation": "使用",
+      "source": "多路召回",
+      "target": "RRF（Reciprocal Rank Fusion）"
+    },
+    {
+      "relation": "擅长",
+      "source": "向量检索",
+      "target": "语义匹配"
+    },
+    {
+      "relation": "属于",
+      "source": "RRF（Reciprocal Rank Fusion）",
+      "target": "基于排名的融合策略"
+    },
+    {
+      "relation": "召回",
+      "source": "Bi-Encoder",
+      "target": "top-100"
+    },
+    {
+      "relation": "送入",
+      "source": "top-5",
+      "target": "LLM"
+    },
+    {
+      "relation": "生成",
+      "source": "Multi-Query",
+      "target": "多个查询变体"
+    },
+    {
+      "relation": "使用",
+      "source": "HyDE（Hypothetical Document Embeddings）",
+      "target": "LLM"
+    },
+    {
+      "relation": "包含",
+      "source": "RAGAS 框架",
+      "target": "Faithfulness（忠实度）"
+    },
+    {
+      "relation": "包含",
+      "source": "RAGAS 框架",
+      "target": "Answer Relevancy（答案相关性）"
+    },
+    {
+      "relation": "包含",
+      "source": "RAGAS 框架",
+      "target": "Context Precision（上下文精确度）"
+    },
+    {
+      "relation": "包含",
+      "source": "RAGAS 框架",
+      "target": "Context Recall（上下文召回率）"
+    },
+    {
+      "relation": "限制",
+      "source": "Content-Security-Policy",
+      "target": "资源加载来源"
+    },
+    {
+      "relation": "防",
+      "source": "Content-Security-Policy",
+      "target": "XSS"
+    },
+    {
+      "relation": "防止",
+      "source": "X-Frame-Options",
+      "target": "点击劫持"
+    },
+    {
+      "relation": "防止",
+      "source": "X-Content-Type-Options",
+      "target": "MIME 嗅探"
+    },
+    {
+      "relation": "强制",
+      "source": "Strict-Transport-Security",
+      "target": "HTTPS"
+    },
+    {
+      "relation": "被替代为",
+      "source": "X-XSS-Protection",
+      "target": "CSP"
+    },
+    {
+      "relation": "属于",
+      "source": "AES-256-GCM",
+      "target": "对称加密"
+    },
+    {
+      "relation": "提供",
+      "source": "AES-256-GCM",
+      "target": "认证加密一体化"
+    },
+    {
+      "relation": "管理",
+      "source": "KMS",
+      "target": "密钥"
+    },
+    {
+      "relation": "优于",
+      "source": "ECDSA / Ed25519",
+      "target": "RSA-2048"
+    },
+    {
+      "relation": "用于",
+      "source": "SHA-256",
+      "target": "完整性校验"
+    },
+    {
+      "relation": "属于",
+      "source": "HMAC",
+      "target": "消息认证码"
+    },
+    {
+      "relation": "包含",
+      "source": "SDL",
+      "target": "威胁建模"
+    },
+    {
+      "relation": "使用",
+      "source": "威胁建模",
+      "target": "STRIDE"
+    },
+    {
+      "relation": "包含",
+      "source": "SAST",
+      "target": "SonarQube"
+    },
+    {
+      "relation": "使用",
+      "source": "短链系统（URL Shortener）",
+      "target": "Base62 编码"
+    },
+    {
+      "relation": "使用",
+      "source": "短链系统（URL Shortener）",
+      "target": "KV 存储"
+    },
+    {
+      "relation": "写入",
+      "source": "推模式（Fan-out on write）",
+      "target": "粉丝收件箱"
+    },
+    {
+      "relation": "使用",
+      "source": "IM",
+      "target": "WebSocket"
+    },
+    {
+      "relation": "导致选择",
+      "source": "网络分区",
+      "target": "CP"
+    },
+    {
+      "relation": "导致选择",
+      "source": "网络分区",
+      "target": "AP"
+    },
+    {
+      "relation": "导致",
+      "source": "网络分区",
+      "target": "CP 或 AP 的选择"
+    },
+    {
+      "relation": "实现",
+      "source": "ZooKeeper",
+      "target": "强一致性"
+    },
+    {
+      "relation": "实现",
+      "source": "Cassandra",
+      "target": "最终一致性"
+    },
+    {
+      "relation": "采用",
+      "source": "Cassandra",
+      "target": "Dynamo 风格"
+    },
+    {
+      "relation": "实现",
+      "source": "Riak",
+      "target": "最终一致性"
+    },
+    {
+      "relation": "使用",
+      "source": "因果一致性",
+      "target": "COPS"
+    },
+    {
+      "relation": "提供",
+      "source": "COPS",
+      "target": "因果一致性"
+    },
+    {
+      "relation": "工作于",
+      "source": "L4",
+      "target": "传输层"
+    },
+    {
+      "relation": "属于",
+      "source": "LVS",
+      "target": "L4"
+    },
+    {
+      "relation": "工作于",
+      "source": "L7",
+      "target": "应用层"
+    },
+    {
+      "relation": "属于",
+      "source": "Nginx",
+      "target": "L7"
+    },
+    {
+      "relation": "使用",
+      "source": "负载均衡",
+      "target": "一致性哈希"
+    },
+    {
+      "relation": "包含",
+      "source": "限流实践",
+      "target": "网关层限流"
+    },
+    {
+      "relation": "包含",
+      "source": "限流实践",
+      "target": "服务层限流"
+    },
+    {
+      "relation": "包含",
+      "source": "限流实践",
+      "target": "分布式限流"
+    },
+    {
+      "relation": "包含",
+      "source": "限流实践",
+      "target": "自适应限流"
+    },
+    {
+      "relation": "使用",
+      "source": "网关层限流",
+      "target": "Nginx（limit_req）"
+    },
+    {
+      "relation": "使用",
+      "source": "网关层限流",
+      "target": "Kong"
+    },
+    {
+      "relation": "使用",
+      "source": "网关层限流",
+      "target": "Spring Cloud Gateway"
+    },
+    {
+      "relation": "使用",
+      "source": "服务层限流",
+      "target": "Sentinel"
+    },
+    {
+      "relation": "使用",
+      "source": "服务层限流",
+      "target": "Hystrix"
+    },
+    {
+      "relation": "使用",
+      "source": "服务层限流",
+      "target": "Guava RateLimiter"
+    },
+    {
+      "relation": "使用",
+      "source": "分布式限流",
+      "target": "Redis + Lua"
+    },
+    {
+      "relation": "根据",
+      "source": "自适应限流",
+      "target": "系统负载（CPU"
+    },
+    {
+      "relation": "实现",
+      "source": "Redis + Lua",
+      "target": "集群级限流"
+    },
+    {
+      "relation": "RT）",
+      "source": "系统负载（CPU",
+      "target": "包含"
+    },
+    {
+      "relation": "依据",
+      "source": "缓存大小",
+      "target": "二八定律"
+    },
+    {
+      "relation": "属于",
+      "source": "MySQL/PostgreSQL",
+      "target": "关系型"
+    },
+    {
+      "relation": "属于",
+      "source": "MongoDB",
+      "target": "文档型"
+    },
+    {
+      "relation": "属于",
+      "source": "Redis/DynamoDB",
+      "target": "KV 存储"
+    },
+    {
+      "relation": "属于",
+      "source": "Neo4j",
+      "target": "图数据库"
+    },
+    {
+      "relation": "属于",
+      "source": "InfluxDB/TimescaleDB",
+      "target": "时序数据库"
+    },
+    {
+      "relation": "防御",
+      "source": "CSRF Token",
+      "target": "CSRF（跨站请求伪造）"
+    },
+    {
+      "relation": "防御",
+      "source": "SameSite Cookie",
+      "target": "CSRF（跨站请求伪造）"
+    },
+    {
+      "relation": "检查",
+      "source": "验证 Referer/Origin",
+      "target": "请求来源"
+    },
+    {
+      "relation": "防御",
+      "source": "双重 Cookie",
+      "target": "CSRF（跨站请求伪造）"
+    },
+    {
+      "relation": "包含",
+      "source": "OAuth 2.0",
+      "target": "授权码（code）"
+    },
+    {
+      "relation": "请求",
+      "source": "客户端",
+      "target": "授权服务器"
+    },
+    {
+      "relation": "访问",
+      "source": "客户端",
+      "target": "资源服务器"
+    },
+    {
+      "relation": "使用",
+      "source": "客户端",
+      "target": "Bearer token"
+    },
+    {
+      "relation": "返回",
+      "source": "授权服务器",
+      "target": "access_token + refresh_token"
+    },
+    {
+      "relation": "包含",
+      "source": "JWT",
+      "target": "Header.Payload.Signature"
+    },
+    {
+      "relation": "使用",
+      "source": "JWT",
+      "target": "HMACSHA256"
+    },
+    {
+      "relation": "映射",
+      "source": "RBAC（基于角色）",
+      "target": "用户 → 角色 → 权限"
+    },
+    {
+      "relation": "根据",
+      "source": "ABAC（基于属性）",
+      "target": "用户属性"
+    },
+    {
+      "relation": "包含",
+      "source": "微调（Fine-tuning）",
+      "target": "全参数微调"
+    },
+    {
+      "relation": "包含",
+      "source": "微调（Fine-tuning）",
+      "target": "LoRA"
+    },
+    {
+      "relation": "包含",
+      "source": "微调（Fine-tuning）",
+      "target": "Adapter"
+    },
+    {
+      "relation": "包含",
+      "source": "L4（传输层）",
+      "target": "LVS"
+    },
+    {
+      "relation": "包含",
+      "source": "L7（应用层）",
+      "target": "Nginx"
+    },
+    {
+      "relation": "消除",
+      "source": "冗余部署",
+      "target": "单点故障"
+    },
+    {
+      "relation": "使用",
+      "source": "故障转移（Failover）",
+      "target": "Redis Sentinel"
+    },
+    {
+      "relation": "防止",
+      "source": "熔断降级",
+      "target": "级联故障"
+    },
+    {
+      "relation": "避免",
+      "source": "滑动窗口",
+      "target": "边界突刺"
+    },
+    {
+      "relation": "无法应对",
+      "source": "漏桶算法",
+      "target": "突发流量"
+    },
+    {
+      "relation": "允许",
+      "source": "令牌桶算法",
+      "target": "突发流量"
+    },
+    {
+      "relation": "使用",
+      "source": "Attention",
+      "target": "softmax"
+    },
+    {
+      "relation": "防止",
+      "source": "√d_k",
+      "target": "softmax 梯度消失"
+    },
+    {
+      "relation": "使用",
+      "source": "DeepSeek-V2",
+      "target": "MoE"
+    }
+  ]
+}

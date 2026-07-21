@@ -1365,3 +1365,535 @@ Prefix dict has been built successfully.
 2026-07-21 23:56:58,332 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
 2026-07-21 23:56:58,332 - main - INFO - RAG 系统初始化完成
 INFO:     Application startup complete.
+INFO:     127.0.0.1:55711 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55713 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55715 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55717 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55719 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55721 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55723 - "GET /api/graph/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55725 - "GET /api/graph/triples?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55733 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55735 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55737 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55739 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55741 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55743 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55745 - "POST /api/graph/build HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55747 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55749 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55751 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55758 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55770 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55772 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55776 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55778 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55786 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55788 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55790 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55822 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55824 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55826 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55828 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55830 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55833 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55835 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55837 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55839 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55844 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55847 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55849 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55851 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55867 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55882 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55896 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55904 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55916 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-21 23:58:20,454 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:55923 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55932 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55935 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55937 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55940 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55942 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55948 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55950 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55952 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55955 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55957 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55961 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55983 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55985 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55988 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55996 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55999 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56001 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56004 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56016 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56018 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-21 23:59:03,358 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56021 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56023 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56025 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56027 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56029 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56037 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56040 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56043 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-21 23:59:19,967 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56045 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56048 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56051 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56053 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56056 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56058 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56061 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56063 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56065 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56067 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-21 23:59:39,398 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56101 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-21 23:59:41,576 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-21 23:59:41,586 - app.ingestion.graph_extractor - INFO - 知识图谱已保存: data/knowledge_graph.json
+2026-07-21 23:59:41,587 - app.ingestion.graph_extractor - INFO - 图谱构建检查点: 5/35 单元, 72 三元组
+INFO:     127.0.0.1:56115 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56121 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56153 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56155 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56170 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56175 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56177 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56179 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56181 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56190 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56247 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56249 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56251 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56253 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56255 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56258 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56260 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56262 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56265 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56269 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56271 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56273 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56275 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:00:27,918 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56283 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56295 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56313 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56315 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56317 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56325 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56329 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56332 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56335 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56367 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56369 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56371 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56373 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56375 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56377 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56379 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56381 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56383 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56385 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56387 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56389 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:01:10,271 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56391 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56393 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56416 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56443 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56457 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56462 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:01:22,703 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56467 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56470 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56472 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56474 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56476 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56480 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56486 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56494 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56498 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56500 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56502 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56506 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56539 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56542 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56544 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56549 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56565 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56568 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56571 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56573 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56576 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56589 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56600 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56605 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56616 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56621 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56623 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56645 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56661 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56674 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56677 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56719 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56727 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:02:29,056 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:56729 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56752 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56758 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56771 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56787 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56811 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56827 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56831 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56846 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56891 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56893 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56900 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56904 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56906 - "GET /api/traces/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56908 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56910 - "GET /api/documents HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56912 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56914 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56934 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56936 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56950 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56960 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56975 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56980 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56982 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56984 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:03:03,987 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-22 00:03:03,997 - app.ingestion.graph_extractor - INFO - 知识图谱已保存: data/knowledge_graph.json
+2026-07-22 00:03:03,998 - app.ingestion.graph_extractor - INFO - 图谱构建检查点: 10/35 单元, 147 三元组
+INFO:     127.0.0.1:56988 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56992 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56998 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57014 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57016 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57027 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57032 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:03:18,841 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57034 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57036 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57048 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57054 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57056 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57062 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:03:31,809 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57066 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57070 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57072 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57088 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57096 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57098 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57100 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:03:44,402 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57132 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57134 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57136 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57138 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57140 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57142 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57144 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57146 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57148 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57152 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57154 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57160 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57163 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57165 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57167 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57169 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57171 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57173 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:04:21,837 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57175 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57227 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57231 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57233 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57235 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57241 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57246 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57248 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:04:37,345 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+2026-07-22 00:04:37,352 - app.ingestion.graph_extractor - INFO - 知识图谱已保存: data/knowledge_graph.json
+2026-07-22 00:04:37,353 - app.ingestion.graph_extractor - INFO - 图谱构建检查点: 15/35 单元, 221 三元组
+INFO:     127.0.0.1:57252 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57256 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57258 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:04:43,897 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57262 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57286 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+2026-07-22 00:04:46,401 - httpx - INFO - HTTP Request: POST https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:57288 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57290 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'config.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:04:51,325 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [32898]
+WARNING:  WatchFiles detected changes in 'config.py'. Reloading...
+INFO:     Started server process [33850]
+INFO:     Waiting for application startup.
+2026-07-22 00:04:56,134 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-22 00:04:57,634 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:04:57,635 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:04:57,857 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:04:58,362 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:04:58,590 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:04:58,592 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-22 00:04:59,044 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:04:59,257 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:04:59,697 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:04:59,906 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-22 00:05:00,348 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:00,565 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:01,043 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:01,366 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:01,844 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:02,299 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:02,514 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 9227.96it/s]
+2026-07-22 00:05:03,033 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:03,491 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:03,935 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:04,394 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:04,860 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:05,090 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:05,665 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:06,553 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:07,040 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:07,258 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:08,334 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:08,977 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:09,426 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:09,869 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:05:10,377 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:10,593 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:11,048 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-22 00:05:11,058 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-22 00:05:11,268 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-22 00:05:11,720 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:11,722 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-22 00:05:12,253 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:05:12,707 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:12,936 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:13,393 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:13,859 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:14,088 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 7983.10it/s]
+2026-07-22 00:05:14,624 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:15,076 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:15,538 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:15,995 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:16,469 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:16,687 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:17,170 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:17,405 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:17,842 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:18,055 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:18,538 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:18,876 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:19,518 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:20,003 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:05:21,709 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:05:23,061 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-22 00:05:23,239 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 319 节点, 221 边
+2026-07-22 00:05:23,291 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-22 00:05:23,387 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-22 00:05:23,387 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.237 seconds.
+2026-07-22 00:05:23,624 - jieba - DEBUG - Loading model cost 0.237 seconds.
+Prefix dict has been built successfully.
+2026-07-22 00:05:23,624 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-22 00:05:23,644 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-22 00:05:23,644 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:05:23,747 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33850]
+INFO:     Started server process [33897]
+INFO:     Waiting for application startup.
+2026-07-22 00:05:27,793 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-22 00:05:28,864 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:05:28,865 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:05:29,074 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:29,596 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:29,945 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:29,945 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-22 00:05:30,598 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:30,829 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:31,291 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:31,515 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-22 00:05:31,992 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:32,236 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:32,693 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:32,922 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:33,379 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:33,835 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:34,065 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 35150.56it/s]
+2026-07-22 00:05:34,571 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:35,025 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:35,474 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:35,928 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:36,366 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:36,589 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:37,036 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:37,266 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:37,709 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:37,924 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:38,400 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:38,693 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:39,150 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:39,592 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:05:40,080 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:40,285 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:40,751 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-22 00:05:40,770 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-22 00:05:40,943 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-22 00:05:41,396 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:41,396 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-22 00:05:41,870 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:05:42,322 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:42,949 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:43,392 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:43,824 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:44,036 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11395.10it/s]
+2026-07-22 00:05:44,585 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:45,037 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:45,517 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:46,372 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:46,899 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:47,105 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:47,567 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:48,204 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:49,322 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:49,599 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:50,078 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:05:50,315 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:05:50,762 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:05:51,203 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:05:52,868 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:05:53,644 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-22 00:05:53,650 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 319 节点, 221 边
+2026-07-22 00:05:53,650 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-22 00:05:53,699 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-22 00:05:53,699 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.239 seconds.
+2026-07-22 00:05:53,938 - jieba - DEBUG - Loading model cost 0.239 seconds.
+Prefix dict has been built successfully.
+2026-07-22 00:05:53,938 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-22 00:05:53,960 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-22 00:05:53,960 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.
+INFO:     127.0.0.1:57296 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
+INFO:     127.0.0.1:57304 - "GET /api/graph/stats HTTP/1.1" 200 OK
+WARNING:  WatchFiles detected changes in 'app/ingestion/graph_extractor.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-07-22 00:06:00,934 - main - INFO - RAG 系统关闭
+INFO:     Application shutdown complete.
+INFO:     Finished server process [33897]
+INFO:     Started server process [33929]
+INFO:     Waiting for application startup.
+2026-07-22 00:06:04,832 - main - INFO - 正在初始化 RAG 系统...
+/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
+  return HuggingFaceEmbeddings(
+2026-07-22 00:06:05,991 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:06:05,992 - huggingface_hub.utils._http - WARNING - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-07-22 00:06:06,205 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:06,658 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:06,870 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:06,876 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
+2026-07-22 00:06:07,323 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:07,526 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config_sentence_transformers.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:07,956 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:08,156 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/README.md "HTTP/1.1 200 OK"
+2026-07-22 00:06:08,603 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:08,807 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/modules.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:09,860 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:10,066 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/sentence_bert_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:10,500 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:11,078 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:11,284 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 30010.64it/s]
+2026-07-22 00:06:11,789 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:12,219 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:12,648 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:13,080 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:13,518 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:13,724 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:14,146 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:14,351 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:14,780 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:15,046 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:15,486 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:15,693 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:16,159 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:16,592 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:06:17,058 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-small-zh-v1.5/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:17,261 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-small-zh-v1.5/7999e1d3359715c523056ef9478215996d62a620/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:17,694 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-small-zh-v1.5 "HTTP/1.1 200 OK"
+2026-07-22 00:06:17,713 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
+2026-07-22 00:06:17,892 - sentence_transformers.base.model - INFO - No device provided, using mps
+2026-07-22 00:06:18,331 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/modules.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:18,332 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
+2026-07-22 00:06:18,855 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:06:19,417 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:19,727 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:20,392 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:20,843 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:21,046 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 18736.22it/s]
+2026-07-22 00:06:21,546 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:21,999 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:22,447 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:22,881 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:23,334 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:23,544 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:24,008 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:24,227 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:24,676 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:24,898 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:25,344 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/BAAI/bge-reranker-base/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+2026-07-22 00:06:25,556 - httpx - INFO - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/BAAI/bge-reranker-base/2cfc18c9415c912f9d8155881c133215df768a70/tokenizer_config.json "HTTP/1.1 200 OK"
+2026-07-22 00:06:26,023 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+2026-07-22 00:06:26,481 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-07-22 00:06:28,097 - httpx - INFO - HTTP Request: GET https://huggingface.co/api/models/BAAI/bge-reranker-base "HTTP/1.1 200 OK"
+2026-07-22 00:06:29,159 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
+2026-07-22 00:06:29,162 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 319 节点, 221 边
+2026-07-22 00:06:29,162 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query
+Building prefix dict from the default dictionary ...
+2026-07-22 00:06:29,207 - jieba - DEBUG - Building prefix dict from the default dictionary ...
+Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+2026-07-22 00:06:29,207 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
+Loading model cost 0.234 seconds.
+2026-07-22 00:06:29,441 - jieba - DEBUG - Loading model cost 0.234 seconds.
+Prefix dict has been built successfully.
+2026-07-22 00:06:29,441 - jieba - DEBUG - Prefix dict has been built successfully.
+2026-07-22 00:06:29,462 - app.retrieval.sparse - INFO - BM25 索引构建完成: 65 个文档
+2026-07-22 00:06:29,462 - main - INFO - RAG 系统初始化完成
+INFO:     Application startup complete.

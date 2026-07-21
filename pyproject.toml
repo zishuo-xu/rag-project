@@ -33,6 +33,7 @@ dependencies = [
     "networkx>=3.6.1",
     "langchain-experimental>=0.4.2",
     "pyvis>=0.3.2",
+    "neo4j>=6.2.0",
 ]
 
 [project.optional-dependencies]
