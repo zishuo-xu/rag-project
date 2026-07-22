@@ -125,3 +125,40 @@ def test_run_populates_summary_results():
     result = pipe.run("问题")
     assert len(result.summary_results) == 1
     assert result.summary_results[0].page_content == "summary_hit"
+
+
+def test_gate_skip_returns_empty_with_flag():
+    """门控判定无需检索：跳过召回，gate_skipped=True"""
+    pipe, mocks = _make_pipeline()
+    mocks["crag_evaluator"].should_retrieve.return_value = (False, "闲聊")
+    result = pipe.run("你好")
+    assert result.gate_skipped is True
+    assert result.documents == []
+    assert "门控跳过检索" in result.crag_action
+    # 投机并行下改写已执行但结果被丢弃，召回不应发生
+    mocks["dense_retriever"].retrieve.assert_not_called()
+
+
+def test_gate_failure_defaults_to_retrieve():
+    """门控调用异常时默认检索"""
+    pipe, mocks = _make_pipeline()
+    mocks["crag_evaluator"].should_retrieve.side_effect = RuntimeError("LLM 超时")
+    # should_retrieve 内部已有 try/except，但即便异常穿透，gate() 也不应让管道崩溃
+    try:
+        result = pipe.run("问题")
+        gate_raised = False
+    except RuntimeError:
+        gate_raised = True
+    # CRAGEvaluator.should_retrieve 自身吞异常返回 (True, ...)；
+    # 若异常穿透则 gate() 必须改为内部 try/except（见 Step 2）
+    assert not gate_raised, "gate() 应吞掉异常并默认检索"
+
+
+def test_gate_disabled_no_speculation():
+    """use_crag_gate=False 时不调用门控，直接改写+检索"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_crag_gate = False
+    result = pipe.run("问题")
+    mocks["crag_evaluator"].should_retrieve.assert_not_called()
+    assert result.gate_skipped is False
+    assert len(result.documents) > 0

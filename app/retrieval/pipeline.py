@@ -72,7 +72,11 @@ class RetrievalPipeline:
         """判断是否需要检索。失败时默认检索（保守方向，不漏检索）"""
         if not (self._settings.use_crag_gate and self.crag_evaluator):
             return True, "门控未启用"
-        return self.crag_evaluator.should_retrieve(question)
+        try:
+            return self.crag_evaluator.should_retrieve(question)
+        except Exception as e:
+            logger.warning(f"门控判断失败，默认检索: {e}")
+            return True, f"门控异常: {e}"
 
     # ---- 阶段 2: 查询改写 ----
 
