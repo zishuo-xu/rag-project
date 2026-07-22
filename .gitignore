@@ -24,3 +24,4 @@ data/eval_dataset.json
 # OS
 .DS_Store
 Thumbs.db
+.worktrees/
