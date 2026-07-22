@@ -233,6 +233,98 @@ class RetrievalPipeline:
         fused = self.fuse(recall_results)
         return self.rerank(question, fused, top_k)
 
+    # ---- 阶段 7b: Self-RAG 迭代检索（F2，质量驱动终止） ----
+
+    def _iterative_retrieve(
+        self,
+        question: str,
+        initial_docs: List[Document],
+        top_k: int,
+        grade: str,
+        reason: str,
+        trace_id: str | None = None,
+    ) -> tuple[List[Document], int, str, str]:
+        """
+        Self-RAG 风格迭代检索：证据不足时精化查询、补充召回，直到满足终止条件。
+
+        终止判断标志（质量驱动，非资源/token 兜底）：
+        ① 充分性 sufficient：CRAG 评为 correct（证据已足以回答）
+        ② 收敛性 converged：本轮精化召回不到任何新增相关文档（精化已无效）
+        ③ 安全兜底 max_iterations：max_retrieval_iterations 硬上限（仅防失控）
+
+        Returns:
+            (final_docs, iterations_used, stop_reason, final_grade)
+        """
+        settings = self._settings
+        accumulated = list(initial_docs)
+        acc_ids = {d.metadata.get("chunk_id", id(d)) for d in accumulated}
+        iterations_used = 0
+        stop_reason = "max_iterations"
+
+        for _ in range(settings.max_retrieval_iterations):
+            # ① 充分性终止
+            if grade == "correct":
+                stop_reason = "sufficient"
+                break
+
+            # 精化查询（基于已有证据 + 缺口理由）
+            refined_q = self._refine_query(question, accumulated, reason)
+            recall_results = self.recall(
+                question, [refined_q], top_n=top_k,
+                channels=("dense", "sparse"), trace_id=trace_id,
+            )
+            new_ranked = self.rerank(
+                question, self.fuse(recall_results), top_k,
+                use_autocut=settings.use_autocut,
+                autocut_min_docs=settings.autocut_min_docs,
+            )
+
+            # ② 收敛性终止：无新增相关文档
+            new_docs = [
+                d for d in new_ranked
+                if d.metadata.get("chunk_id", id(d)) not in acc_ids
+            ]
+            if not new_docs:
+                stop_reason = "converged"
+                break
+
+            # 合并去重 + 重排，重新评估
+            accumulated = self.rerank(
+                question, accumulated + new_docs, top_k,
+                use_autocut=settings.use_autocut,
+                autocut_min_docs=settings.autocut_min_docs,
+            )
+            acc_ids = {d.metadata.get("chunk_id", id(d)) for d in accumulated}
+            iterations_used += 1
+            grade, _, reason = self.evaluate(question, accumulated)
+
+        # 边界：最后一轮重评恰好转为 correct，但循环已耗尽
+        if grade == "correct" and stop_reason == "max_iterations":
+            stop_reason = "sufficient"
+
+        return accumulated, iterations_used, stop_reason, grade
+
+    def _refine_query(
+        self, question: str, docs: List[Document], reason: str
+    ) -> str:
+        """调用查询精化；任何异常都优雅降级到原问题，不中断迭代。"""
+        if not self.query_transformer:
+            return question
+        try:
+            return self.query_transformer.refine(
+                question, self._evidence_summary(docs), reason
+            )
+        except Exception as e:
+            logger.warning(f"查询精化异常，回退原问题: {e}")
+            return question
+
+    @staticmethod
+    def _evidence_summary(
+        docs: List[Document], max_docs: int = 3, max_chars: int = 200
+    ) -> str:
+        """拼接前若干篇文档的截断内容，作为精化查询的证据上下文。"""
+        return "\n".join(d.page_content[:max_chars] for d in docs[:max_docs])
+
     # ---- 主编排 ----
 
     def run(
@@ -358,7 +450,21 @@ class RetrievalPipeline:
             grade, relevant_indices, reason = self.evaluate(question, result.documents)
             result.crag_grade = grade
 
-            if grade == "incorrect":
+            if settings.use_iterative_retrieval and self.query_transformer:
+                # F2 Self-RAG 迭代检索：correct/ambiguous/incorrect 统一走质量驱动迭代
+                final_docs, iters, stop_reason, final_grade = self._iterative_retrieve(
+                    question, result.documents, effective_top_k,
+                    grade, reason, trace_id=trace_id,
+                )
+                result.documents = final_docs
+                result.iterations_used = iters
+                result.iterative_stop_reason = stop_reason
+                result.crag_grade = "recovered" if final_grade == "correct" else final_grade
+                result.crag_action = (
+                    f"Self-RAG 迭代检索({stop_reason}, {iters}轮)"
+                    if iters > 0 else f"Self-RAG 评估({stop_reason})"
+                )
+            elif grade == "incorrect":
                 logger.info(f"CRAG: 检索不相关（{reason}），触发 HyDE 完整管道重检索")
                 retry_docs = self.remediate(question, effective_top_k, trace_id=trace_id)
                 if retry_docs:
@@ -380,6 +486,9 @@ class RetrievalPipeline:
                 "enabled": self.crag_evaluator is not None,
                 "grade": result.crag_grade,
                 "action": result.crag_action,
+                "iterative": settings.use_iterative_retrieval,
+                "iterations_used": result.iterations_used,
+                "stop_reason": result.iterative_stop_reason,
             })
 
         result.retrieval_time_ms = (time.time() - start_time) * 1000

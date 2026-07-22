@@ -35,6 +35,25 @@ HYDE_PROMPT = ChatPromptTemplate.from_template(
 回答（200字以内）："""
 )
 
+# Self-RAG 查询精化 Prompt（迭代检索：基于已有证据与缺口生成补充查询）
+REFINE_PROMPT = ChatPromptTemplate.from_template(
+    """你是一个检索查询优化器。当前检索到的证据还不足以完整回答问题，
+请基于"已有证据"和"检索缺口"，生成一个更精准的新查询，用于补充检索缺失的信息。
+
+要求：
+1. 新查询应聚焦于尚未覆盖的缺失信息，不要重复已有证据的内容。
+2. 只输出一行查询文本，不要编号、不要解释。
+
+原始问题: {question}
+
+已有证据摘要:
+{evidence}
+
+检索缺口/不足: {gap}
+
+新查询："""
+)
+
 
 class QueryTransformer:
     """
@@ -117,6 +136,40 @@ class QueryTransformer:
         except Exception as e:
             logger.warning(f"HyDE 生成失败: {e}, 回退到原始查询")
             return question
+
+    def refine(
+        self, question: str, evidence_summary: str, gap_reason: str = ""
+    ) -> str:
+        """
+        Self-RAG 查询精化：迭代检索时基于已有证据与缺口生成补充查询。
+
+        原理：当首轮检索证据不足（CRAG 评为 ambiguous/incorrect）时，
+        让 LLM 看到"已检索到什么 + 还缺什么"，针对性生成聚焦缺失信息的
+        新查询，避免重复召回已有内容。
+
+        Args:
+            question: 用户原始问题
+            evidence_summary: 已有证据的摘要文本
+            gap_reason: CRAG 评估给出的缺口/不足理由
+
+        Returns:
+            精化后的查询文本；失败时降级到 HyDE，再失败回退原问题
+        """
+        chain = REFINE_PROMPT | self.llm | StrOutputParser()
+        try:
+            refined = chain.invoke({
+                "question": question,
+                "evidence": evidence_summary or "（暂无）",
+                "gap": gap_reason or "信息不完整",
+            })
+            refined = refined.strip().split("\n")[0].strip()
+            if refined:
+                logger.info(f"查询精化: {refined[:40]}...")
+                return refined
+        except Exception as e:
+            logger.warning(f"查询精化失败: {e}, 降级到 HyDE")
+            return self.hyde(question)
+        return question
 
     def transform(
         self,
