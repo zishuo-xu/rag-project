@@ -365,11 +365,62 @@ def evaluate_rag(
     return report
 
 
+def _tokenize_for_eval(text: str) -> List[str]:
+    """
+    评估用分词：中文按字/词切分，英文/数字保持完整 token。
+    支持数字（如 "1963"）、英文（如 "API"）、中文词（如 "分布式"）。
+    """
+    import jieba
+    tokens = jieba.lcut(text.lower())
+    result = []
+    for t in tokens:
+        t = t.strip()
+        if not t:
+            continue
+        # 保留：英文/数字（含小数点）、中文>=2字
+        if re.fullmatch(r'[a-zA-Z0-9]+(?:\.[0-9]+)?', t):
+            result.append(t)
+        elif len(t) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in t):
+            result.append(t)
+        elif re.fullmatch(r'\d+[\u4e00-\u9fff]?[a-zA-Z\u4e00-\u9fff]*', t) and len(t) >= 2:
+            result.append(t)
+    return result
+
+
+def _token_f1(prediction: str, reference: str) -> float:
+    """
+    Token 级 F1 分数（含数字/英文/中文词）。
+    比纯空格分词更准确，适用于中文 QA 评估。
+    """
+    pred_tokens = _tokenize_for_eval(prediction)
+    ref_tokens = _tokenize_for_eval(reference)
+
+    if not ref_tokens:
+        return 1.0 if not pred_tokens else 0.0
+    if not pred_tokens:
+        return 0.0
+
+    pred_set = set(pred_tokens)
+    ref_set = set(ref_tokens)
+    common = pred_set & ref_set
+
+    if not common:
+        return 0.0
+
+    precision = len(common) / len(pred_set)
+    recall = len(common) / len(ref_set)
+    f1 = 2 * precision * recall / (precision + recall)
+    return f1
+
+
 def quick_evaluate(questions: List[str], ground_truths: List[str]) -> dict:
     """
-    快速评估 - 仅计算不依赖 LLM 的指标。
+    快速评估 - 仅计算不依赖 LLM 的指标（Token F1 + 关键词覆盖率）。
 
-    适用于快速验证检索质量。
+    优化：使用 token 级 F1（含数字/英文/中文词），替代原始空格分词 overlap，
+    消除数字型答案（如 "1963年"）的误判。
+
+    适用于快速验证检索质量，零 LLM 调用。
     """
     from app.generation.chain import RAGChain
 
@@ -379,24 +430,32 @@ def quick_evaluate(questions: List[str], ground_truths: List[str]) -> dict:
     for q, gt in zip(questions, ground_truths):
         response = chain.invoke(q)
 
-        # 简单的关键词覆盖率检查
-        gt_keywords = set(gt.lower().split())
-        answer_keywords = set(response.answer.lower().split())
-        overlap = len(gt_keywords & answer_keywords) / max(len(gt_keywords), 1)
+        # Token 级 F1（含数字/英文/中文词）
+        f1 = _token_f1(response.answer, gt)
+
+        # 关键词覆盖率（ground_truth 中的 token 在 answer 中出现的比例）
+        gt_tokens = set(_tokenize_for_eval(gt))
+        answer_tokens = set(_tokenize_for_eval(response.answer))
+        overlap = len(gt_tokens & answer_tokens) / max(len(gt_tokens), 1)
 
         results.append({
             "question": q,
             "ground_truth": gt,
             "answer": response.answer,
-            "keyword_overlap": overlap,
+            "token_f1": round(f1, 4),
+            "keyword_overlap": round(overlap, 4),
             "num_sources": len(response.sources),
             "retrieval_time_ms": response.retrieval_result.retrieval_time_ms,
         })
 
+    avg_f1 = sum(r["token_f1"] for r in results) / len(results)
     avg_overlap = sum(r["keyword_overlap"] for r in results) / len(results)
 
     return {
-        "metrics": {"keyword_overlap": avg_overlap},
+        "metrics": {
+            "token_f1": round(avg_f1, 4),
+            "keyword_overlap": round(avg_overlap, 4),
+        },
         "num_samples": len(questions),
         "details": results,
     }

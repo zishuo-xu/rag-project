@@ -286,6 +286,64 @@ class RAGChain:
         )
         return result
 
+    def compress_context(
+        self,
+        question: str,
+        documents: List[Document],
+        max_sentences_per_doc: int = 3,
+    ) -> List[Document]:
+        """
+        上下文压缩：抽取每个文档中与问题最相关的句子，减少噪声。
+
+        策略：基于关键词重叠度排序句子，保留 top-N（无LLM调用，纯算法）。
+
+        Args:
+            question: 用户问题
+            documents: 检索到的文档
+            max_sentences_per_doc: 每个文档最多保留的句子数
+
+        Returns:
+            压缩后的文档列表
+        """
+        import re as _re
+        # 提取问题关键词
+        q_tokens = set(_re.findall(r'[\u4e00-\u9fff]{2,}|[a-zA-Z0-9]+', question.lower()))
+        if not q_tokens:
+            return documents
+
+        compressed = []
+        for doc in documents:
+            # 按句子切分
+            sentences = _re.split(r'(?<=[。！？.!?\n])', doc.page_content)
+            sentences = [s.strip() for s in sentences if s.strip()]
+
+            if len(sentences) <= max_sentences_per_doc:
+                compressed.append(doc)
+                continue
+
+            # 计算每个句子与问题的关键词重叠度
+            scored = []
+            for sent in sentences:
+                s_tokens = set(_re.findall(r'[\u4e00-\u9fff]{2,}|[a-zA-Z0-9]+', sent.lower()))
+                overlap = len(q_tokens & s_tokens)
+                scored.append((overlap, sent))
+
+            # 保留重叠度最高的句子（保持原始顺序）
+            scored.sort(key=lambda x: -x[0])
+            top_sentences = set(s for _, s in scored[:max_sentences_per_doc])
+            kept = [s for s in sentences if s in top_sentences]
+
+            if kept:
+                new_doc = Document(
+                    page_content="".join(kept),
+                    metadata=doc.metadata.copy(),
+                )
+                compressed.append(new_doc)
+            else:
+                compressed.append(doc)
+
+        return compressed
+
     def generate(
         self,
         question: str,
@@ -305,6 +363,9 @@ class RAGChain:
         """
         if not documents:
             return FALLBACK_RESPONSE
+
+        # 上下文压缩：抽取相关句子减少噪声
+        documents = self.compress_context(question, documents)
 
         # 构建上下文
         context = self._format_context(documents)

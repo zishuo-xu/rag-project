@@ -142,6 +142,34 @@ class CRAGEvaluator:
         return filtered if filtered else documents
 
     @staticmethod
+    def validate_numeric_answer(question: str, documents: List[Document]) -> bool:
+        """
+        数字型答案精确匹配校验（零LLM调用）。
+
+        当问题询问时间/数量/年份时，检查检索结果中是否包含对应的数字信息。
+
+        Args:
+            question: 用户问题
+            documents: 检索到的文档
+
+        Returns:
+            True 表示检索结果中包含数字答案，False 表示缺失
+        """
+        # 判断问题是否在询问数字型信息
+        numeric_patterns = [
+            r'什么时候|哪一年|何时|多少|几个|几年|\d+年',
+            r'when|what year|how many|how much',
+        ]
+        is_numeric_q = any(re.search(p, question, re.IGNORECASE) for p in numeric_patterns)
+        if not is_numeric_q:
+            return True  # 非数字型问题，跳过校验
+
+        # 检查检索结果中是否包含数字信息
+        all_context = " ".join(doc.page_content for doc in documents)
+        has_numbers = bool(re.search(r'\d{2,}', all_context))
+        return has_numbers
+
+    @staticmethod
     def _extract_json(text: str) -> dict | None:
         """从 LLM 输出中提取 JSON"""
         json_match = re.search(r'\{[\s\S]*\}', text)

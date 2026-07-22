@@ -139,18 +139,43 @@ def smart_chunk(
     documents: List[Document],
     embeddings=None,
     use_semantic: bool = False,
+    short_doc_threshold: int = 1000,
 ) -> List[Document]:
     """
     智能分块入口 - 根据配置选择分块策略。
+
+    优化：短文档（< short_doc_threshold 字符）整段保留不切分，
+    避免小文档被切碎导致上下文丢失。
 
     Args:
         documents: 原始文档列表
         embeddings: Embedding 模型（语义分块时需要）
         use_semantic: 是否使用语义分块
+        short_doc_threshold: 短文档阈值（字符数），低于此值不切分
 
     Returns:
         分块后的 Document 列表
     """
-    if use_semantic and embeddings:
-        return semantic_chunk(documents, embeddings)
-    return recursive_chunk(documents)
+    # 分离短文档和长文档
+    short_docs = [d for d in documents if len(d.page_content) <= short_doc_threshold]
+    long_docs = [d for d in documents if len(d.page_content) > short_doc_threshold]
+
+    chunks: List[Document] = []
+
+    # 短文档：整段保留，只添加元数据
+    for i, doc in enumerate(short_docs):
+        doc.metadata.setdefault("chunk_id", f"{doc.metadata.get('doc_id', 'unknown')}_{i}")
+        doc.metadata.setdefault("position", 0)
+        chunks.append(doc)
+
+    if short_docs:
+        logger.info(f"短文档保留: {len(short_docs)} 篇 (<= {short_doc_threshold} 字符不切分)")
+
+    # 长文档：正常分块
+    if long_docs:
+        if use_semantic and embeddings:
+            chunks.extend(semantic_chunk(long_docs, embeddings))
+        else:
+            chunks.extend(recursive_chunk(long_docs))
+
+    return chunks

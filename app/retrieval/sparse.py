@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 # 预编译正则：匹配英文单词和数字
 _EN_WORD_RE = re.compile(r'[a-zA-Z0-9]+')
+# 数字+量词/单位组合（如 "1963年"、"100ms"、"5000万"）
+_NUM_UNIT_RE = re.compile(r'\d+[\u4e00-\u9fff]?[a-zA-Z\u4e00-\u9fff]*')
 
 
 class SparseRetriever:
@@ -48,11 +50,15 @@ class SparseRetriever:
 
     def _tokenize(self, text: str) -> List[str]:
         """
-        中文分词策略（jieba 词级分词）：
+        中文分词策略（jieba 词级分词 + 数字量词保留）：
         - 使用 jieba 进行中文词语级切分（而非单字）
         - 英文/数字保持完整单词
+        - 数字+量词组合保留（如 "1963年"、"100ms"）
         - 过滤停用词和单字噪声
         """
+        # 先提取数字+单位组合作为额外 token
+        num_units = _NUM_UNIT_RE.findall(text.lower())
+
         # jieba 精确模式分词
         tokens = jieba.lcut(text.lower())
         # 过滤：只保留有意义的 token（中文>=2字 或 英文/数字）
@@ -67,6 +73,12 @@ class SparseRetriever:
             # 中文：至少2个字才有语义（过滤 "的"、"了" 等单字）
             elif len(t) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in t):
                 result.append(t)
+
+        # 补充数字+量词组合 token（解决 "1963年" 被拆散的问题）
+        for nu in num_units:
+            if nu not in result and len(nu) >= 2:
+                result.append(nu)
+
         return result
 
     def retrieve(self, query: str, top_k: int = 10) -> List[Document]:
