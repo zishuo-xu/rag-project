@@ -1,119 +1,191 @@
 {
   "metrics": {
-    "faithfulness": 0.9819,
-    "answer_relevancy": 0.9,
-    "context_precision": 0.9495,
-    "context_recall": 0.8822
+    "faithfulness": 0.8225,
+    "answer_relevancy": 0.32,
+    "context_precision": 0.8497,
+    "context_recall": 0.8213
   },
-  "num_samples": 12,
+  "num_samples": 20,
   "details": [
     {
       "question": "Redis的ZSet底层使用什么数据结构？为什么选择它？",
-      "answer": "- **ZSet 底层使用的数据结构**：`ziplist` 或 `skiplist + hashtable`。[来源: tmpgu1j22fw.md]\n\n- **为什么选择跳表（Skip List）**：  \n  - 跳表是 ZSet 的核心数据结构，平均查找复杂度为 **O(log N)**。[来源: tmpgu1j22fw.md]  \n  - 相比平衡树，跳表 **实现简单**。[来源: t...",
+      "answer": "根据参考文档，Redis的ZSet底层使用 **ziplist / skiplist + hashtable** 数据结构。[来源: 文档1]\n\n文档中未涉及为什么选择这种数据结构的具体原因。",
       "num_contexts": 8,
       "faithfulness": 1.0,
-      "answer_relevancy": 0.8,
+      "answer_relevancy": 0.6,
       "context_precision": 1.0,
       "context_recall": 1.0
     },
     {
       "question": "什么是缓存穿透、缓存击穿和缓存雪崩？分别怎么解决？",
-      "answer": "- **缓存穿透**：查不存在的数据。  \n  解决方案：  \n  - 布隆过滤器：在缓存前拦截不存在的 key  \n  - 空值缓存：`SET key \"\" EX 60`  \n  - 参数校验：ID 格式不合法直接拒绝  \n  [来源: tmpgu1j22fw.md]\n\n- **缓存击穿**：热点 key 过期。  \n  解决方案：  \n  - 互斥锁：`SET lock_key 1 NX EX...",
+      "answer": "根据提供的参考文档，仅能回答“缓存雪崩”的定义和解决方案，文档中未涉及“缓存穿透”和“缓存击穿”的相关信息。\n\n### 缓存雪崩\n- **定义**：大量 key 同时过期。\n- **解决方案**：\n  - 过期时间加随机偏移：`EX base + random(0, 300)` [来源: tmpgu1j22fw.md]\n  - 多级缓存：本地缓存（Caffeine）+ Redis [来源: tmp...",
       "num_contexts": 8,
-      "faithfulness": 1.0,
-      "answer_relevancy": 1.0,
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.4,
       "context_precision": 1.0,
       "context_recall": 1.0
     },
     {
-      "question": "微服务架构中服务注册与发现有哪些方案？API网关的作用是什么？",
-      "answer": "- **服务注册与发现方案**：\n  1. **Consul**：HashiCorp 出品，支持健康检查、KV存储。[来源: tmphfax73u8.md]\n  2. **Nacos**：阿里巴巴开源，集成配置中心。[来源: tmphfax73u8.md]\n  3. **Eureka**：Netflix 出品，Spring Cloud 生态。[来源: tmphfax73u8.md]\n\n- **AP...",
-      "num_contexts": 8,
+      "question": "Kafka如何保证消息不丢失？从生产端、Broker端、消费端三个层面说明。",
+      "answer": "根据提供的参考文档，文档中仅涉及了“Producer 发送半消息（Half Message）到 Broker”以及“Broker 存储半消息（对 Consumer 不可见）”和“若 Broker 长时间未收到确认，主动回查 Producer 事务状态”等内容，这些内容与Kafka的消息不丢失机制无关。\n\n因此，基于现有文档，**无法从生产端、Broker端、消费端三个层面说明Kafka如何保证消息...",
+      "num_contexts": 1,
       "faithfulness": 1.0,
-      "answer_relevancy": 0.8,
-      "context_precision": 0.792,
+      "answer_relevancy": 0.0,
+      "context_precision": 1.0,
       "context_recall": 1.0
     },
     {
-      "question": "Transformer中Self-Attention的计算公式是什么？为什么要除以根号dk？",
-      "answer": "- Self-Attention 的计算公式为：  \n  ```text\n  Attention(Q, K, V) = softmax(QK^T / √d_k) × V\n  ```  \n  其中 Q（Query）、K（Key）、V（Value）由输入线性变换得到。[来源: tmpxe7vyaw2.md]\n\n- 除以 `√d_k` 的原因是：防止点积过大导致 softmax 梯度消失。[来源: tm...",
+      "question": "Kafka的存储设计为什么能实现高吞吐？涉及哪些操作系统层面的优化？",
+      "answer": "根据提供的参考文档，关于Kafka的存储设计能实现高吞吐的原因以及涉及的操作系统层面优化，文档中仅包含以下有限信息：\n\n- **存储设计**：每个 Partition 对应磁盘上一组 Segment 文件（.log + .）[来源: tmpynrzfq87.md]\n- **消息顺序性**：Kafka 使用 key-based partitioner [来源: tmpynrzfq87.md]\n\n**...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.2,
+      "context_recall": 1.0
+    },
+    {
+      "question": "CAP定理的含义是什么？在实际系统设计中如何做取舍？",
+      "answer": "根据参考文档，CAP 定理的含义是：**分布式系统不可能同时满足以下三个特性，最多只能同时满足其中两个** [来源: tmprcf5fqfh.md]。\n\n关于在实际系统设计中如何做取舍，文档指出：\n- **网络分区不可避免，所以实际是 CP 或 AP 的选择** [来源: tmp0a6difr0.md, tmpqbvzezdu.md]。\n- **CAP 不是非黑即白，可以在不同操作上做不同取舍**...",
       "num_contexts": 8,
       "faithfulness": 1.0,
       "answer_relevancy": 1.0,
-      "context_precision": 1.0,
-      "context_recall": 0.8
-    },
-    {
-      "question": "Docker的多阶段构建有什么好处？Kubernetes控制平面包含哪些组件？",
-      "answer": "- **Docker 多阶段构建的好处**：减小最终镜像体积。[来源: tmpfz_a0c0u.md]\n\n- **Kubernetes 控制平面包含的组件**：\n  - **kube-apiserver**：集群入口，所有操作通过它。[来源: tmpfz_a0c0u.md]\n  - **etcd**：分布式 KV 存储，保存集群状态。[来源: tmpfz_a0c0u.md]\n  - **kube-...",
-      "num_contexts": 8,
-      "faithfulness": 1.0,
-      "answer_relevancy": 0.8,
-      "context_precision": 0.833,
+      "context_precision": 0.897,
       "context_recall": 1.0
     },
     {
-      "question": "数据库索引的B+树结构有什么特点？为什么MySQL选择B+树而不是B树或哈希索引？",
-      "answer": "- **B+ 树索引结构特点**  \n  - 所有数据存储在叶子节点，内部节点只存键值和指针。[来源: tmpa2iu4zn7.md]  \n  - 叶子节点通过双向链表连接，支持高效范围查询。[来源: tmpa2iu4zn7.md]  \n  - 树高通常为 3-4 层，意味着最多 3-4 次磁盘 I/O 即可定位任意记录。[来源: tmpa2iu4zn7.md]  \n  - 每个节点大小通常等于一...",
+      "question": "Raft协议的Leader选举过程是怎样的？有哪些安全性保证？",
+      "answer": "根据提供的参考文档，文档中仅描述了Raft协议中日志复制的流程，**未涉及Leader选举过程及其安全性保证**。\n\n文档中提到的内容为：\n- 客户端请求发送给Leader\n- Leader追加日志并发送AppendEntries给Follower\n- 多数节点确认后Leader提交（commit）\n\n[来源: tmprcf5fqfh.md]\n\n对于您询问的“Leader选举过程”和“安全性保证”...",
+      "num_contexts": 1,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 1.0,
+      "context_recall": 0.375
+    },
+    {
+      "question": "Prometheus的PromQL如何计算API的P99延迟和错误率？",
+      "answer": "基于提供的文档，关于PromQL计算API的P99延迟和错误率的信息如下：\n\n- **P99延迟**：文档中提到了“P99 延迟”作为监控指标，并给出了PromQL常用查询的示例格式（`# P99 延迟`），但**未提供具体的PromQL计算表达式**。[来源: tmpjoed4s8o.md]\n- **错误率**：文档中提到了告警规则示例（`summary: \"API 错误率超过 5%\"`），但*...",
+      "num_contexts": 8,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.643,
+      "context_recall": 1.0
+    },
+    {
+      "question": "什么是SLI、SLO和SLA？Error Budget如何计算和使用？",
+      "answer": "根据提供的参考文档，回答如下：\n\n### 1. 什么是SLI、SLO和SLA？\n\n- **SLI（Service Level Indicator）**：服务质量指标（如可用性99%）。[来源: tmpjoed4s8o.md]\n- **SLO**：文档中仅提及该术语，未给出具体定义。[来源: knowledge_graph]\n- **SLA**：文档中未涉及该术语的定义。\n\n### 2. Error...",
+      "num_contexts": 8,
+      "faithfulness": 0.25,
+      "answer_relevancy": 0.2,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "金丝雀发布的完整流程是什么？与蓝绿部署相比有什么优势？",
+      "answer": "根据提供的参考文档，无法完整回答您的问题。\n\n1.  **关于金丝雀发布的完整流程**：文档中仅提到了“金丝雀发布（Canary）”这一名称，**未涉及**其具体流程或步骤。[来源: tmpfz_a0c0u.md]\n2.  **关于与蓝绿部署相比的优势**：文档中仅分别列出了蓝绿部署和金丝雀发布的名称，**未涉及**两者之间的比较或金丝雀发布的优势。[来源: tmpfz_a0c0u.md]\n\n因此...",
+      "num_contexts": 2,
+      "faithfulness": 0.0,
+      "answer_relevancy": 0.0,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "DORA四大指标是什么？Elite团队的水平如何？",
+      "answer": "根据提供的参考文档，DORA 四大指标中仅提及了“部署导致故障的比例”这一项，且 Elite 团队的水平为：**< 5%** [来源: tmpf3la902z.md]。\n\n文档中未涉及 DORA 四大指标中的其他三项（如部署频率、变更前置时间、服务恢复时间等），也未提供关于 Elite 团队在其他指标上的具体水平。",
+      "num_contexts": 1,
+      "faithfulness": 0.25,
+      "answer_relevancy": 0.6,
+      "context_precision": 1.0,
+      "context_recall": 1.0
+    },
+    {
+      "question": "gRPC相比REST有哪些优势？它基于什么协议和序列化方式？",
+      "answer": "根据提供的文档，回答如下：\n\n1.  **gRPC相比REST的优势**：文档中未明确列出gRPC相比REST的优势，仅提到了两者在浏览器支持上的差异：gRPC需要gRPC-Web代理，而REST是原生支持。[来源: 文档2]\n2.  **gRPC基于的协议**：gRPC基于HTTP/2多路复用。[来源: 文档3]\n3.  **gRPC的序列化方式**：文档中未涉及gRPC的序列化方式。",
+      "num_contexts": 8,
+      "faithfulness": 0.75,
+      "answer_relevancy": 0.4,
+      "context_precision": 0.5,
+      "context_recall": 1.0
+    },
+    {
+      "question": "如何保证POST接口的幂等性？有哪些常见方案？",
+      "answer": "根据提供的参考文档，关于POST接口的幂等性，文档中仅提到以下内容：\n\n- **POST 幂等方案**：文档标题为“幂等性设计- POST：非幂等（需额外设计）”，并列出“POST 幂等方案”作为子标题，但**未提供任何具体方案内容**。[来源: tmprjuhngyd.md]\n\n- **知识图谱关联**：文档显示POST与“Token”和“version”存在共现关系，但未说明这些元素如何用于实...",
+      "num_contexts": 8,
+      "faithfulness": 0.6,
+      "answer_relevancy": 0.0,
+      "context_precision": 0.698,
+      "context_recall": 1.0
+    },
+    {
+      "question": "在微服务架构中，分布式事务有哪些解决方案？TCC和Saga模式有什么区别？",
+      "answer": "基于提供的参考文档，回答如下：\n\n在微服务架构中，分布式事务的解决方案包括：\n- **Saga 模式**：将长事务拆为多个本地事务 + 补偿操作 [来源: tmphfax73u8.md]\n- **TCC（Try-Confirm-Cancel）**：业务层面实现两阶段提交 [来源: tmphfax73u8.md]\n- **Seata**：阿里巴巴开源的分布式事务框架，支持 AT/TCC/Saga/X...",
       "num_contexts": 8,
       "faithfulness": 1.0,
       "answer_relevancy": 0.6,
+      "context_precision": 0.833,
+      "context_recall": 0.889
+    },
+    {
+      "question": "Kafka和Redis都能做消息队列，它们的设计目标和适用场景有什么不同？",
+      "answer": "根据提供的文档，关于Kafka和Redis的设计目标与适用场景的差异，文档中仅提及以下信息：\n\n- **Kafka**：高吞吐、日志流、事件溯源 [来源: tmpqbvzezdu.md] [来源: tmp0a6difr0.md]\n- **Redis**：文档中未明确说明其作为消息队列的设计目标或适用场景，仅提到它是“不仅仅是 KV 缓存，它提供 5 种基础数据结构和多种高级数据结构” [来源: t...",
+      "num_contexts": 4,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4,
+      "context_precision": 0.806,
+      "context_recall": 0.4
+    },
+    {
+      "question": "在Kubernetes微服务中，如何同时实现服务高可用和可观测性？涉及哪些组件？",
+      "answer": "根据提供的参考文档，文档中仅提到了“监控与可观测性三大支柱”和“可观测性三大支柱”的概念，但**没有涉及**以下内容：\n\n- Kubernetes微服务环境\n- 服务高可用的实现方法\n- 同时实现高可用和可观测性的具体方案\n- 相关的组件名称或架构\n\n因此，基于现有文档，**无法回答**“在Kubernetes微服务中，如何同时实现服务高可用和可观测性？涉及哪些组件？”这一问题。\n\n[来源: tm...",
+      "num_contexts": 2,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.0,
       "context_precision": 1.0,
-      "context_recall": 0.5
+      "context_recall": 0.25
     },
     {
-      "question": "HTTPS的TLS握手过程是怎样的？如何防范XSS和CSRF攻击？",
-      "answer": "### 一、HTTPS 的 TLS 握手过程\n\n#### 1. TLS 1.2 握手（2-RTT）\n1. **Client Hello**：客户端发送支持的密码套件、随机数。  \n2. **Server Hello**：服务器发送选定套件、证书、随机数。  \n3. **客户端验证证书**：验证通过后生成预主密钥，并用服务器公钥加密发送。  \n4. **生成会话密钥**：双方使用三个随机数生成会话密...",
-      "num_contexts": 8,
-      "faithfulness": 0.95,
-      "answer_relevancy": 1.0,
-      "context_precision": 0.854,
-      "context_recall": 0.909
-    },
-    {
-      "question": "TCP三次握手的过程是什么？为什么需要三次而不是两次？",
-      "answer": "- **TCP 三次握手过程**  \n  1. Client → Server: SYN, seq=x  \n  2. Server → Client: SYN+ACK, seq=y, ack=x+1  \n  3. Client → Server: ACK, seq=x+1, ack=y+1  \n  [来源: tmpc60_mksv.md]\n\n- **为什么需要三次而不是两次**  \n  - 防止已...",
-      "num_contexts": 8,
-      "faithfulness": 0.833,
-      "answer_relevancy": 1.0,
+      "question": "分布式系统中的限流算法有哪些？它们和API网关的限流功能是什么关系？",
+      "answer": "根据提供的参考文档，无法完整回答您的问题。以下是基于文档的有限信息：\n\n- 文档中提到了**限流实践**，包括网关层限流（如Nginx、Kong、Spring Cloud Gateway）和服务层限流（如Sentinel、Hystrix、Guava RateLimiter）[来源: tmp0a6difr0.md]。\n- 文档中提到了**API网关**的认证功能（如验证Token、API Key），...",
+      "num_contexts": 2,
+      "faithfulness": 1.0,
+      "answer_relevancy": 0.4,
       "context_precision": 1.0,
-      "context_recall": 1.0
+      "context_recall": 0.545
     },
     {
-      "question": "Python中GIL是什么？如何优化Python程序的性能？",
-      "answer": "## GIL 是什么？\n\n- GIL 是 CPython 的**全局解释器锁**。[来源: tmpmgdbm8z0.md]\n- 它限制了多线程的 CPU 并行能力。[来源: tmpmgdbm8z0.md]\n- GIL 在 I/O 等待时会释放。[来源: tmpmgdbm8z0.md]\n\n## 如何优化 Python 程序性能？\n\n### 1. 先定位性能瓶颈\n\n- 使用 `cProfile` 分析...",
-      "num_contexts": 8,
+      "question": "Snowflake算法的结构是怎样的？它和Redis实现分布式锁有什么关系？",
+      "answer": "根据提供的文档，可以回答您的问题如下：\n\n- **Snowflake算法的结构**：Snowflake算法使用64位结构，由“时间戳+机器ID+序列号”组成，具有有序、高性能的特点，但存在时钟回拨问题。[来源: tmprcf5fqfh.md]\n\n- **与Redis实现分布式锁的关系**：文档中未涉及Snowflake算法与Redis实现分布式锁之间的任何关系或联系。[来源: tmprcf5fqf...",
+      "num_contexts": 1,
       "faithfulness": 1.0,
       "answer_relevancy": 1.0,
       "context_precision": 1.0,
-      "context_recall": 0.6
+      "context_recall": 0.667
     },
     {
-      "question": "系统设计中如何保证高可用？限流算法有哪些？",
-      "answer": "## 系统设计中如何保证高可用？\n\n文档中提到的“高可用核心方案”包括：\n\n- **冗余部署**：通过多副本、多机房（同城双活 / 异地多活）消除单点故障。 [来源: tmp0a6difr0.md]\n- **负载均衡**：将流量分发到多个实例，避免单节点过载。 [来源: tmp0a6difr0.md]\n- **故障转移（Failover）**：自动检测节点故障并切换到健康节点，例如 Redis S...",
+      "question": "如何设计一个高可用的秒杀系统？需要用到哪些中间件和技术？",
+      "answer": "根据提供的参考文档，无法完整回答“如何设计一个高可用的秒杀系统”以及“需要用到哪些中间件和技术”。\n\n文档中仅涉及以下相关但零散的信息：\n\n- **消息队列**：文档提到消息队列是分布式系统中实现异步通信和解耦的核心中间件 [来源: tmpynrzfq87.md]，但未说明其在秒杀系统中的具体设计或用法。\n- **一致性模型**：文档提到强一致性可通过 Raft/Paxos 实现（如 etcd、Z...",
       "num_contexts": 8,
       "faithfulness": 1.0,
-      "answer_relevancy": 1.0,
-      "context_precision": 0.915,
-      "context_recall": 1.0
+      "answer_relevancy": 0.0,
+      "context_precision": 0.417,
+      "context_recall": 0.643
     },
     {
-      "question": "LoRA微调的原理是什么？它相比全参数微调有什么优势？",
-      "answer": "- **LoRA微调的原理**：\n  - 将权重更新分解为两个低秩矩阵：ΔW = BA，其中 B∈R^(d×r)、A∈R^(r×k)，rank r 通常取 8~64。[来源: tmpz3cw7kuc.md]\n  - 训练时冻结原始权重 W，只训练 A 和 B 两个小矩阵。[来源: tmpz3cw7kuc.md]\n  - 通常对 Attention 层的 Q/V 投影矩阵施加 LoRA。[来源: t...",
-      "num_contexts": 8,
+      "question": "OpenTelemetry的Collector架构是怎样的？它如何与Prometheus和Jaeger配合？",
+      "answer": "根据提供的文档，关于OpenTelemetry的Collector架构及其与Prometheus和Jaeger的配合，文档中仅包含以下信息：\n\n- **Collector** 被描述为“独立代理，接收/处理/导出遥测数据”。\n- **Exporter** 的功能是“将数据发送到后端（Prometheus/Jaeger/OTLP）”，并提及了“OTLP/Jaeger”和“batch/filter”以...",
+      "num_contexts": 2,
       "faithfulness": 1.0,
-      "answer_relevancy": 1.0,
+      "answer_relevancy": 0.4,
       "context_precision": 1.0,
-      "context_recall": 1.0
+      "context_recall": 0.889
     },
     {
-      "question": "在高并发系统中，缓存和数据库的一致性如何保证？有哪些常见的缓存策略？",
-      "answer": "### 缓存与数据库一致性保证\n\n- **先更新 DB，再删缓存**（推荐） [来源: tmpgu1j22fw.md]\n- **延迟双删**：更新 DB → 删缓存 → `sleep(500ms)` → 再删缓存 [来源: tmpgu1j22fw.md]\n- **订阅 binlog（Canal）异步更新缓存** [来源: tmpgu1j22fw.md]\n- **最终一致性**：设置合理 TTL 兜...",
+      "question": "GitOps的核心理念是什么？ArgoCD如何实现持续部署？与传统的CI/CD流水线有什么区别？",
+      "answer": "根据提供的文档，回答如下：\n\n1.  **GitOps的核心理念**：GitOps 以 Git 仓库作为基础设施的唯一事实来源（Single Source of Truth）。[来源: tmpf3la902z.md]\n\n2.  **ArgoCD如何实现持续部署**：文档中仅提到 ArgoCD 与“变更”和“状态”存在共现关系，但**未具体说明 ArgoCD 如何实现持续部署的机制或工作流**。[来...",
       "num_contexts": 8,
       "faithfulness": 1.0,
-      "answer_relevancy": 0.8,
+      "answer_relevancy": 0.4,
       "context_precision": 1.0,
-      "context_recall": 0.778
+      "context_recall": 0.769
     }
   ]
 }
