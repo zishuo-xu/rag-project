@@ -1,0 +1,317 @@
+{
+  "version": "1.0",
+  "num_samples": 31,
+  "description": "基于 cmrc2018 中文阅读理解数据集的 RAG 检索测试集（来源：moka-ai/m3e-base 评测数据）",
+  "samples": [
+    {
+      "id": 0,
+      "question": "范廷颂是什么时候被任为主教的？",
+      "ground_truth": "1963年",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 1,
+      "question": "1990年，范廷颂担任什么职务？",
+      "ground_truth": "1990年被擢升为天主教河内总教区宗座署理",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 2,
+      "question": "岸本早未的服装风格受到谁的影响？",
+      "ground_truth": "安室奈美惠",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 3,
+      "question": "米象的俗称是什么？",
+      "ground_truth": "米虫、谷牛，中国北方地区称为麦甲",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 4,
+      "question": "除米象的正确做法是什么？",
+      "ground_truth": "正确的做法是将生虫大米置于阴凉通风处，让米象慢慢爬出，再筛；亦可采用磷他锌加有机酸熏杀。",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 5,
+      "question": "大卫·克劳斯的职业是什么？",
+      "ground_truth": "演员",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 6,
+      "question": "大卫·克劳斯出生在哪儿？",
+      "ground_truth": "德国汉堡以北的小镇Henstedt-Ulzburg",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 7,
+      "question": "什么是巴士系数？",
+      "ground_truth": "巴士系数是软件开发中关于软件项目成员之间信息集中及共享度的一个衡量指标。",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 8,
+      "question": "JR东日本所属的月台区在哪里？",
+      "ground_truth": "JR东日本所属的月台区是位于车站二楼",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 9,
+      "question": "由地面车站改为高架车站是在什么时候？",
+      "ground_truth": "1998年3月29日由地面车站改建为高架车站。",
+      "metadata": {
+        "source": "cmrc_people_geo.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 10,
+      "question": "凤凰卫视资讯台与香港电视台主流频道保持一致，体现在哪？",
+      "ground_truth": "凤凰卫视资讯台会在每晚20点档《凤凰正点播报》开始前播放国歌，播放版本与香港电视台主流频道一致",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 11,
+      "question": "2013年，凤凰卫视资讯台有什么变化？",
+      "ground_truth": "凤凰卫视资讯台于2013年开播高清版，此时标清版为切边播出。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 12,
+      "question": "半领彩鹬的繁殖期是什么时候？",
+      "ground_truth": "繁殖期约为7月至翌年2月",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 13,
+      "question": "半领彩鹬常被捕猎的原因是什么？",
+      "ground_truth": "半领彩鹬是在智利及阿根廷等地是民间传统上的赛鸟，因此多有被捕猎的纪录。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 14,
+      "question": "如果食用半带裸颊鲷的话，适合怎样烹饪？",
+      "ground_truth": "美味的食用鱼，适合煮汤或红烧。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 15,
+      "question": "潘德夫现效力于哪支球队？",
+      "ground_truth": "现时效力意甲球队热拿亚 。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 16,
+      "question": "潘德夫18岁时被哪家足球俱乐部签下？",
+      "ground_truth": "意甲劲旅国际米兰",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 17,
+      "question": "《写给西藏的歌——和平的艺术》这张专辑什么时候公开发行的？",
+      "ground_truth": "专辑在北京奥运会开幕的当日，即2008年8月8日公开发行。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 18,
+      "question": "写给西藏的歌这张专辑的目的是什么？",
+      "ground_truth": "本专辑宣称是为了支援西藏，促进西藏地区的和平和基本人权，包括言论自由和宗教自由，以及表示对第十四世达赖喇嘛·丹增嘉措的支持。",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 19,
+      "question": "八斗子渔港的渔港等级是多少？",
+      "ground_truth": "第一类渔港",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 20,
+      "question": "八斗子渔港的机关是什么？",
+      "ground_truth": "农委会渔业署",
+      "metadata": {
+        "source": "cmrc_nature_sports.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 21,
+      "question": "在什么地方发现的乌马托鳞片属？",
+      "ground_truth": "模式种是发现于俄罗斯西伯利亚布列亚河（Bureya）盆地上侏罗统的瓦赫拉梅耶夫乌马托鳞片(\"Umaltolepis vachrameevii\" Krassilov,1972",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 22,
+      "question": "丁谓字什么？",
+      "ground_truth": "字谓之，后更字公言",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 23,
+      "question": "丁谓是哪里人?",
+      "ground_truth": "北宋时期苏州长州（今江苏苏州）人",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 24,
+      "question": "《初恋的回忆》是哪一年的美国电影？",
+      "ground_truth": "2002年",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 25,
+      "question": "《初恋的回忆》改编自哪一本小说？",
+      "ground_truth": "《\"\"》",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 26,
+      "question": "《太平天历》起到了什么作用？",
+      "ground_truth": "《太平天历》虽然数据不够准确，但颁行是对清朝「正朔」的公然否定，宣告与清朝朝廷彻底决裂，在太平天国早期的斗争中起了巨大的政治鼓动作用。",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 27,
+      "question": "哪些节气在双月十六日？",
+      "ground_truth": "小满、大暑、秋分、小雪、大寒",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 28,
+      "question": "沃蒂夫教堂的起源与什么有关？",
+      "ground_truth": "弗朗茨·约瑟夫皇帝遇刺事件",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 29,
+      "question": "1853年2月18日，皇帝正在城墙散步时，发生了什么事情？",
+      "ground_truth": "匈牙利民族主义者János Libényi用刀刺中皇帝的颈项，皇帝受伤流血，但是他坚固的高衣领挽救了他的性命",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": 30,
+      "question": "《小咩的管家》是谁的作品？",
+      "ground_truth": "宫城理子",
+      "metadata": {
+        "source": "cmrc_culture_history.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    }
+  ]
+}
