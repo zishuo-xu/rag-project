@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage
 from sse_starlette.sse import EventSourceResponse
 
@@ -142,13 +142,23 @@ async def _stream_response(
 # ============ Documents 端点 ============
 
 @router.post("/api/documents/upload", response_model=UploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    chunk_strategy: str = Form("recursive"),
+):
     """
     上传文档并建立索引。
 
     支持格式：PDF, TXT, Markdown
+    chunk_strategy: recursive（默认，递归字符分块）| semantic（语义分块）
     """
     chain = get_rag_chain()
+
+    if chunk_strategy not in ("recursive", "semantic"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"不支持的 chunk_strategy: {chunk_strategy}，支持: recursive, semantic",
+        )
 
     # 保存上传文件到临时目录
     suffix = Path(file.filename).suffix
@@ -167,7 +177,11 @@ async def upload_document(file: UploadFile = File(...)):
 
         # 加载 -> 分块 -> 索引
         docs = load_document(tmp_path)
-        chunks = smart_chunk(docs)
+        chunks = smart_chunk(
+            docs,
+            embeddings=chain.indexer.embeddings if chunk_strategy == "semantic" else None,
+            use_semantic=(chunk_strategy == "semantic"),
+        )
         chain.indexer.index_documents(chunks)
 
         # #11: 增量更新 BM25 索引（避免全量重建）
