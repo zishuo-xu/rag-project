@@ -60,6 +60,7 @@ class RetrievalPipeline:
         graph_retriever=None,
         parent_child_retriever=None,
         crag_evaluator=None,
+        query_router=None,
         settings=None,
     ):
         self.indexer = indexer
@@ -70,6 +71,7 @@ class RetrievalPipeline:
         self.graph_retriever = graph_retriever
         self.parent_child_retriever = parent_child_retriever
         self.crag_evaluator = crag_evaluator
+        self.query_router = query_router
         self._settings = settings or get_settings()
 
     # ---- 阶段 1: 门控 ----
@@ -287,6 +289,25 @@ class RetrievalPipeline:
             logger.info(f"门控跳过检索: {gate_reason}")
             return result
 
+        # F4 查询路由：按查询类型自适应调整检索深度(top_k)与降噪强度(autocut_min_docs)
+        effective_top_k = top_k
+        effective_autocut_min = settings.autocut_min_docs
+        if settings.use_query_router and self.query_router:
+            decision = self.query_router.route(question)
+            result.query_type = decision.query_type
+            if decision.top_k is not None:
+                effective_top_k = decision.top_k
+            if decision.autocut_min_docs is not None:
+                effective_autocut_min = decision.autocut_min_docs
+            if trace_id:
+                tracer.start_span(trace_id, "query_routing")
+                tracer.end_span(trace_id, "query_routing", {
+                    "query_type": decision.query_type,
+                    "effective_top_k": effective_top_k,
+                    "autocut_min_docs": effective_autocut_min,
+                    "reason": decision.reason,
+                })
+
         # ③ 多路召回
         if trace_id:
             tracer.start_span(trace_id, "multi_recall")
@@ -316,10 +337,10 @@ class RetrievalPipeline:
             tracer.start_span(trace_id, "rerank")
         result.pre_autocut_count = len(result.fused_results)
         result.reranked_results = self.rerank(
-            question, result.fused_results, top_k,
+            question, result.fused_results, effective_top_k,
             use_rerank=use_rerank,
             use_autocut=settings.use_autocut,
-            autocut_min_docs=settings.autocut_min_docs,
+            autocut_min_docs=effective_autocut_min,
         )
         result.documents = result.reranked_results
         if trace_id:
@@ -339,7 +360,7 @@ class RetrievalPipeline:
 
             if grade == "incorrect":
                 logger.info(f"CRAG: 检索不相关（{reason}），触发 HyDE 完整管道重检索")
-                retry_docs = self.remediate(question, top_k, trace_id=trace_id)
+                retry_docs = self.remediate(question, effective_top_k, trace_id=trace_id)
                 if retry_docs:
                     result.documents = retry_docs
                     result.crag_grade = "recovered"

@@ -20,6 +20,7 @@ from app.retrieval.query_transform import QueryTransformer
 from app.retrieval.graph_retriever import GraphRetriever
 from app.retrieval.parent_child import ParentChildRetriever
 from app.retrieval.crag import CRAGEvaluator
+from app.retrieval.router import QueryRouter
 from app.retrieval.cache import get_semantic_cache
 from app.generation.prompts import (
     RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, DIRECT_ANSWER_PROMPT, FALLBACK_RESPONSE,
@@ -82,6 +83,10 @@ class RAGChain:
         if settings.use_crag:
             self.crag_evaluator = CRAGEvaluator()
 
+        self.query_router: QueryRouter | None = (
+            QueryRouter() if settings.use_query_router else None
+        )
+
         self.semantic_cache = get_semantic_cache() if settings.cache_enabled else None
 
         self.use_query_transform = use_query_transform
@@ -110,6 +115,7 @@ class RAGChain:
             graph_retriever=self.graph_retriever,
             parent_child_retriever=self.parent_child_retriever,
             crag_evaluator=self.crag_evaluator,
+            query_router=self.query_router,
         )
 
         logger.info(

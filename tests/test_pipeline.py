@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 from langchain_core.documents import Document
 
 from app.retrieval.pipeline import RetrievalPipeline, ALL_CHANNELS
+from app.retrieval.router import RoutingDecision
 
 
 def _doc(content, chunk_id=None):
@@ -40,6 +41,9 @@ def _make_pipeline(**overrides):
     crag.should_retrieve.return_value = (True, "需要检索")
     crag.evaluate_relevance.return_value = ("correct", [1], "相关")
 
+    router = MagicMock()
+    router.route.return_value = RoutingDecision("factual", reason="默认")
+
     settings = MagicMock()
     settings.retrieval_top_k = 5
     settings.rerank_top_n = 20
@@ -57,7 +61,7 @@ def _make_pipeline(**overrides):
         indexer=indexer, dense_retriever=dense, sparse_retriever=sparse,
         reranker=reranker, query_transformer=transformer,
         graph_retriever=graph, parent_child_retriever=pc,
-        crag_evaluator=crag, settings=settings,
+        crag_evaluator=crag, query_router=router, settings=settings,
     )
     kwargs.update(overrides)
     pipe = RetrievalPipeline(**kwargs)
@@ -293,6 +297,42 @@ def test_autocut_disabled_keeps_fixed_top_k():
     mocks["settings"].use_autocut = False
     result = pipe.run("问题")
     assert len(result.documents) <= 5
+
+
+def test_query_router_sets_query_type():
+    """F4 use_query_router=True：记录路由判定的 query_type"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_query_router = True
+    result = pipe.run("什么是缓存穿透？")
+    mocks["query_router"].route.assert_called_once_with("什么是缓存穿透？")
+    assert result.query_type == "factual"
+
+
+def test_query_router_widens_top_k():
+    """F4 路由返回更大 top_k → 最终文档数上限提升"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_query_router = True
+    mocks["query_router"].route.return_value = RoutingDecision(
+        "comparative", top_k=8, autocut_min_docs=3, reason="对比型"
+    )
+    mocks["dense_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10, embedding=None: [_doc(f"d{q}{j}") for j in range(6)]
+    )
+    mocks["sparse_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10: [_doc(f"s{q}{j}") for j in range(6)]
+    )
+    result = pipe.run("A和B的区别")
+    assert result.query_type == "comparative"
+    assert len(result.documents) <= 8
+
+
+def test_query_router_disabled_no_route_call():
+    """F4 use_query_router=False：不调用路由器，query_type 为空（回归保护）"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_query_router = False
+    result = pipe.run("问题")
+    mocks["query_router"].route.assert_not_called()
+    assert result.query_type == ""
 
 
 def test_remediate_failure_keeps_original():
