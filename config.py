@@ -56,6 +56,18 @@ class Settings(BaseSettings):
     use_crag: bool = True
     crag_relevance_threshold: float = 0.5
 
+    # 检索管道接线
+    use_summary_recall: bool = True  # L1 摘要索引作为第5路召回
+    use_crag_gate: bool = True       # CRAG 门控：判断是否需要检索
+    recall_max_workers: int = 6      # 多路召回线程池大小
+
+    # 并发控制
+    max_concurrent_requests: int = 4   # /api/chat 并发闸门
+    request_queue_timeout: float = 30.0  # 排队超时秒数，超时返回503
+
+    # LLM 思考模式（DeepSeek reasoning）
+    llm_thinking_enabled: bool = False  # False=关闭思考，直接输出，更快更省token
+
     # 语义缓存
     cache_enabled: bool = True
     cache_threshold: float = 0.92
@@ -72,3 +84,10 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """获取全局配置单例"""
     return Settings()
+
+
+def get_llm_extra_body() -> dict | None:
+    """LLM extra_body 参数：关闭思考模式时返回禁用参数，开启时返回 None"""
+    if get_settings().llm_thinking_enabled:
+        return None
+    return {"thinking": {"type": "disabled"}}

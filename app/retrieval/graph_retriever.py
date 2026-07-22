@@ -20,7 +20,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 from app.ingestion.graph_extractor import get_graph_builder, KnowledgeGraphBuilder
 
 logger = logging.getLogger(__name__)
@@ -58,6 +58,7 @@ class GraphRetriever:
             temperature=0,
             request_timeout=30,
             max_retries=2,
+            extra_body=get_llm_extra_body(),
         )
         self.max_hops = settings.graph_max_hops
         self.max_entities = settings.graph_max_entities

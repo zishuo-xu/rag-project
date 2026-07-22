@@ -16,6 +16,9 @@ wheels/
 data/chroma_db/
 data/eval_dataset.json
 
+# Logs
+*.log
+
 # IDE
 .idea/
 .vscode/

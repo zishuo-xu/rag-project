@@ -11,17 +11,23 @@ from typing import List, Optional
 import numpy as np
 from openai import OpenAI
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
 
 def _get_judge_llm() -> OpenAI:
-    """获取评估用 LLM 客户端（DeepSeek）"""
+    """获取评估用 LLM 客户端（DeepSeek）
+
+    设置 timeout + max_retries，避免单次 judge 调用挂起拖垮整轮评估
+    （OpenAI 客户端默认超时 600s，过长）。
+    """
     settings = get_settings()
     return OpenAI(
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
+        timeout=120.0,
+        max_retries=2,
     )
 
 
@@ -37,6 +43,7 @@ def _llm_judge(prompt: str) -> str:
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         max_tokens=2048,
+        extra_body=get_llm_extra_body(),
     )
     return resp.choices[0].message.content or ""
 

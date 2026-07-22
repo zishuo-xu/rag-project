@@ -1,0 +1,359 @@
+"""检索管道 - 门控/改写/多路召回/融合/重排/评估/补救 七阶段"""
+
+import logging
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from typing import List
+
+from langchain_core.documents import Document
+
+from config import get_settings
+from app.retrieval.crag import CRAGEvaluator
+from app.retrieval.fusion import reciprocal_rank_fusion
+from app.observability.tracing import get_tracer
+
+logger = logging.getLogger(__name__)
+
+ALL_CHANNELS = ("dense", "sparse", "graph", "parent_child", "summary")
+
+
+@dataclass
+class RetrievalResult:
+    """检索结果封装"""
+    documents: List[Document]
+    dense_results: List[Document] = field(default_factory=list)
+    sparse_results: List[Document] = field(default_factory=list)
+    graph_results: List[Document] = field(default_factory=list)
+    summary_results: List[Document] = field(default_factory=list)
+    fused_results: List[Document] = field(default_factory=list)
+    reranked_results: List[Document] = field(default_factory=list)
+    queries_used: List[str] = field(default_factory=list)
+    retrieval_time_ms: float = 0
+    crag_grade: str = ""    # correct / ambiguous / incorrect / recovered
+    crag_action: str = ""   # 采取的动作描述
+    gate_skipped: bool = False  # 门控判定无需检索
+
+
+class RetrievalPipeline:
+    """
+    检索管道：[门控] -> 改写 -> 五路召回 -> RRF融合 -> 重排 -> CRAG评估 -> [补救]
+
+    每个阶段是独立方法，可单独测试；remediate() 复用 recall/fuse/rerank
+    组成完整 mini-pipeline，保证补救结果同样经过融合与精排。
+    """
+
+    def __init__(
+        self,
+        indexer,
+        dense_retriever,
+        sparse_retriever,
+        *,
+        reranker=None,
+        query_transformer=None,
+        graph_retriever=None,
+        parent_child_retriever=None,
+        crag_evaluator=None,
+        settings=None,
+    ):
+        self.indexer = indexer
+        self.dense_retriever = dense_retriever
+        self.sparse_retriever = sparse_retriever
+        self.reranker = reranker
+        self.query_transformer = query_transformer
+        self.graph_retriever = graph_retriever
+        self.parent_child_retriever = parent_child_retriever
+        self.crag_evaluator = crag_evaluator
+        self._settings = settings or get_settings()
+
+    # ---- 阶段 1: 门控 ----
+
+    def gate(self, question: str) -> tuple[bool, str]:
+        """判断是否需要检索。失败时默认检索（保守方向，不漏检索）"""
+        if not (self._settings.use_crag_gate and self.crag_evaluator):
+            return True, "门控未启用"
+        try:
+            return self.crag_evaluator.should_retrieve(question)
+        except Exception as e:
+            logger.warning(f"门控判断失败，默认检索: {e}")
+            return True, f"门控异常: {e}"
+
+    # ---- 阶段 2: 查询改写 ----
+
+    def transform(
+        self, question: str, strategy: str, use_query_transform: bool = True
+    ) -> List[str]:
+        if use_query_transform and self.query_transformer:
+            return self.query_transformer.transform(question, strategy)
+        return [question]
+
+    # ---- 阶段 3: 多路召回 ----
+
+    def recall(
+        self,
+        question: str,
+        queries: List[str],
+        top_n: int | None = None,
+        channels=ALL_CHANNELS,
+        trace_id: str | None = None,
+    ) -> dict:
+        """
+        并行执行各召回路，结果按 channel 聚合。
+
+        Returns:
+            {channel: [Document, ...]}，channels 中每个 key 都存在
+        """
+        settings = self._settings
+        top_n = top_n or settings.rerank_top_n
+        results: dict[str, List[Document]] = {c: [] for c in channels}
+
+        # 批量预计算 query embedding，分发给 dense 各查询变体（每变体省 1 次编码）
+        query_embeddings: list = [None] * len(queries)
+        if "dense" in channels and len(queries) > 1:
+            try:
+                query_embeddings = self.indexer.embeddings.embed_documents(queries)
+            except Exception as e:
+                logger.debug(f"批量 embedding 失败，回退到逐个计算: {e}")
+
+        def _dense(q, emb):
+            return self.dense_retriever.retrieve(q, top_k=top_n, embedding=emb)
+
+        def _sparse(q):
+            return self.sparse_retriever.retrieve(q, top_k=top_n)
+
+        def _graph():
+            if self.graph_retriever:
+                return self.graph_retriever.retrieve(question, top_k=3)
+            return []
+
+        def _pc():
+            if self.parent_child_retriever and self.parent_child_retriever.has_index():
+                return self.parent_child_retriever.retrieve(question, top_k=3)
+            return []
+
+        def _summary():
+            return self.indexer.hierarchical_search(
+                question, top_k=settings.retrieval_top_k
+            )
+
+        with ThreadPoolExecutor(max_workers=settings.recall_max_workers) as executor:
+            futures = {}
+            if "dense" in channels:
+                for i, q in enumerate(queries):
+                    futures[executor.submit(_dense, q, query_embeddings[i])] = "dense"
+            if "sparse" in channels:
+                for q in queries:
+                    futures[executor.submit(_sparse, q)] = "sparse"
+            if "graph" in channels:
+                futures[executor.submit(_graph)] = "graph"
+            if "parent_child" in channels:
+                futures[executor.submit(_pc)] = "parent_child"
+            if "summary" in channels and settings.use_summary_recall:
+                futures[executor.submit(_summary)] = "summary"
+
+            for future in as_completed(futures):
+                channel = futures[future]
+                try:
+                    results[channel].extend(future.result())
+                except Exception as e:
+                    logger.warning(f"{channel} 召回失败: {e}")
+
+        for ch in ("dense", "sparse"):
+            if ch in results:
+                results[ch] = self._deduplicate(results[ch])
+        return results
+
+    # ---- 阶段 4: RRF 融合 ----
+
+    def fuse(self, recall_results: dict) -> List[Document]:
+        fusion_inputs = [
+            recall_results.get("dense", []),
+            recall_results.get("sparse", []),
+        ]
+        for ch in ("graph", "parent_child", "summary"):
+            if recall_results.get(ch):
+                fusion_inputs.append(recall_results[ch])
+        return reciprocal_rank_fusion(fusion_inputs)
+
+    # ---- 阶段 5: 重排 ----
+
+    def rerank(
+        self,
+        question: str,
+        documents: List[Document],
+        top_k: int,
+        use_rerank: bool = True,
+    ) -> List[Document]:
+        if use_rerank and self.reranker:
+            return self.reranker.rerank(question, documents, top_k=top_k)
+        return documents[:top_k]
+
+    # ---- 阶段 6: CRAG 评估（数字型问题走零 LLM 快速路径） ----
+
+    def evaluate(
+        self, question: str, documents: List[Document]
+    ) -> tuple[str, List[int], str]:
+        if not documents:
+            return "incorrect", [], "无检索结果"
+        if not CRAGEvaluator.validate_numeric_answer(question, documents):
+            return "incorrect", [], "数字型问题但检索结果缺少数字信息（零LLM校验）"
+        return self.crag_evaluator.evaluate_relevance(question, documents)
+
+    # ---- 阶段 7: 补救（完整 mini-pipeline：HyDE + 双路召回 + RRF + 重排） ----
+
+    def remediate(
+        self, question: str, top_k: int, trace_id: str | None = None
+    ) -> List[Document]:
+        if not self.query_transformer:
+            return []
+        hyde_queries = self.query_transformer.transform(question, "hyde")
+        recall_results = self.recall(
+            question, hyde_queries, top_n=top_k,
+            channels=("dense", "sparse"), trace_id=trace_id,
+        )
+        fused = self.fuse(recall_results)
+        return self.rerank(question, fused, top_k)
+
+    # ---- 主编排 ----
+
+    def run(
+        self,
+        question: str,
+        top_k: int | None = None,
+        *,
+        query_strategy: str = "multi_query",
+        use_query_transform: bool = True,
+        use_rerank: bool = True,
+        trace_id: str | None = None,
+    ) -> RetrievalResult:
+        settings = self._settings
+        top_k = top_k or settings.retrieval_top_k
+        start_time = time.time()
+        tracer = get_tracer()
+
+        result = RetrievalResult(documents=[])
+
+        # ① 门控 + ② 改写：投机并行（门控 false 时丢弃改写结果，换 2-5s 延迟）
+        if trace_id:
+            tracer.start_span(trace_id, "gate_transform")
+        need_retrieval, gate_reason = True, "门控未启用"
+        speculative = (
+            settings.use_crag_gate
+            and self.crag_evaluator
+            and use_query_transform
+            and self.query_transformer
+        )
+        if speculative:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                gate_future = executor.submit(self.gate, question)
+                transform_future = executor.submit(
+                    self.transform, question, query_strategy
+                )
+                need_retrieval, gate_reason = gate_future.result()
+                queries = transform_future.result()
+        else:
+            need_retrieval, gate_reason = self.gate(question)
+            queries = self.transform(question, query_strategy, use_query_transform)
+        result.queries_used = queries
+        if trace_id:
+            tracer.end_span(trace_id, "gate_transform", {
+                "need_retrieval": need_retrieval,
+                "gate_reason": gate_reason,
+                "speculative": speculative,
+                "num_queries": len(queries),
+            })
+
+        if not need_retrieval:
+            result.gate_skipped = True
+            result.crag_action = f"门控跳过检索: {gate_reason}"
+            result.retrieval_time_ms = (time.time() - start_time) * 1000
+            logger.info(f"门控跳过检索: {gate_reason}")
+            return result
+
+        # ③ 多路召回
+        if trace_id:
+            tracer.start_span(trace_id, "multi_recall")
+        recall_results = self.recall(question, queries, trace_id=trace_id)
+        result.dense_results = recall_results["dense"]
+        result.sparse_results = recall_results["sparse"]
+        result.graph_results = recall_results.get("graph", [])
+        result.summary_results = recall_results.get("summary", [])
+        if trace_id:
+            tracer.end_span(trace_id, "multi_recall", {
+                "dense_hits": len(result.dense_results),
+                "sparse_hits": len(result.sparse_results),
+                "graph_hits": len(result.graph_results),
+                "pc_hits": len(recall_results.get("parent_child", [])),
+                "summary_hits": len(result.summary_results),
+            })
+
+        # ④ RRF 融合
+        if trace_id:
+            tracer.start_span(trace_id, "rrf_fusion")
+        result.fused_results = self.fuse(recall_results)
+        if trace_id:
+            tracer.end_span(trace_id, "rrf_fusion", {"fused": len(result.fused_results)})
+
+        # ⑤ 重排
+        if trace_id:
+            tracer.start_span(trace_id, "rerank")
+        result.reranked_results = self.rerank(
+            question, result.fused_results, top_k, use_rerank=use_rerank
+        )
+        result.documents = result.reranked_results
+        if trace_id:
+            tracer.end_span(trace_id, "rerank", {
+                "enabled": use_rerank, "final": len(result.documents),
+            })
+
+        # ⑥ CRAG 评估 + ⑦ 补救
+        if trace_id:
+            tracer.start_span(trace_id, "crag_evaluation")
+        if self.crag_evaluator:
+            grade, relevant_indices, reason = self.evaluate(question, result.documents)
+            result.crag_grade = grade
+
+            if grade == "incorrect":
+                logger.info(f"CRAG: 检索不相关（{reason}），触发 HyDE 完整管道重检索")
+                retry_docs = self.remediate(question, top_k, trace_id=trace_id)
+                if retry_docs:
+                    result.documents = retry_docs
+                    result.crag_grade = "recovered"
+                    result.crag_action = "HyDE 完整管道重检索"
+                else:
+                    result.crag_action = "补救失败，保留原结果"
+            elif grade == "ambiguous":
+                result.crag_action = "过滤不相关文档"
+                result.documents = self.crag_evaluator.filter_relevant_docs(
+                    result.documents, relevant_indices
+                )
+            else:
+                result.crag_action = "直接使用"
+
+        if trace_id:
+            tracer.end_span(trace_id, "crag_evaluation", {
+                "enabled": self.crag_evaluator is not None,
+                "grade": result.crag_grade,
+                "action": result.crag_action,
+            })
+
+        result.retrieval_time_ms = (time.time() - start_time) * 1000
+        logger.info(
+            f"检索完成: {result.retrieval_time_ms:.0f}ms, "
+            f"dense={len(result.dense_results)}, sparse={len(result.sparse_results)}, "
+            f"fused={len(result.fused_results)}, final={len(result.documents)}, "
+            f"crag={result.crag_grade or 'off'}"
+        )
+        return result
+
+    @staticmethod
+    def _deduplicate(documents: List[Document]) -> List[Document]:
+        """基于 chunk_id 去重"""
+        seen = set()
+        unique = []
+        for doc in documents:
+            key = doc.metadata.get("chunk_id", id(doc))
+            if key not in seen:
+                seen.add(key)
+                unique.append(doc)
+        return unique

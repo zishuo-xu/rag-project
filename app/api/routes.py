@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage
 from sse_starlette.sse import EventSourceResponse
 
@@ -43,6 +43,33 @@ def set_rag_chain(chain: RAGChain):
     _rag_chain = chain
 
 
+# 并发闸门（在 main.py lifespan 中初始化）
+_concurrency_gate: asyncio.Semaphore | None = None
+
+
+def get_concurrency_gate() -> asyncio.Semaphore | None:
+    """获取全局并发闸门"""
+    return _concurrency_gate
+
+
+def set_concurrency_gate(gate: asyncio.Semaphore | None):
+    """设置全局并发闸门"""
+    global _concurrency_gate
+    _concurrency_gate = gate
+
+
+async def _acquire_gate(gate: asyncio.Semaphore) -> bool:
+    """获取闸门许可，超时返回 False"""
+    settings = get_settings()
+    try:
+        await asyncio.wait_for(
+            gate.acquire(), timeout=settings.request_queue_timeout
+        )
+        return True
+    except asyncio.TimeoutError:
+        return False
+
+
 # ============ Chat 端点 ============
 
 @router.post("/api/chat", response_model=ChatResponse)
@@ -51,6 +78,8 @@ async def chat(request: ChatRequest):
     对话接口 - 支持普通和流式两种模式。
 
     完整流程：查询改写 -> 多路召回 -> RRF融合 -> Rerank -> LLM生成
+    并发闸门限制同时处理的请求数，超出排队，排队超时返回 503。
+    同步阻塞的 chain 调用通过 asyncio.to_thread 移出事件循环。
     """
     chain = get_rag_chain()
 
@@ -62,12 +91,29 @@ async def chat(request: ChatRequest):
             _stream_response(chain, request, chat_history)
         )
 
-    # 非流式：完整调用
-    response = chain.invoke(
-        question=request.question,
-        chat_history=chat_history,
-        top_k=request.top_k,
-    )
+    # 非流式：闸门内执行完整调用（同步阻塞调用移出事件循环）
+    gate = get_concurrency_gate()
+    if gate is not None:
+        if not await _acquire_gate(gate):
+            raise HTTPException(
+                status_code=503, detail="服务繁忙，请求排队超时，请稍后重试"
+            )
+        try:
+            response = await asyncio.to_thread(
+                chain.invoke,
+                question=request.question,
+                chat_history=chat_history,
+                top_k=request.top_k,
+            )
+        finally:
+            gate.release()
+    else:
+        response = await asyncio.to_thread(
+            chain.invoke,
+            question=request.question,
+            chat_history=chat_history,
+            top_k=request.top_k,
+        )
 
     return _build_chat_response(response)
 
@@ -77,77 +123,109 @@ async def _stream_response(
     request: ChatRequest,
     chat_history: list,
 ) -> AsyncGenerator[dict, None]:
-    """SSE 流式响应生成器"""
-    for event in chain.invoke_stream(
-        question=request.question,
-        chat_history=chat_history,
-        top_k=request.top_k,
-    ):
-        if event["type"] == "cache_hit":
-            response: RAGResponse = event["data"]
-            sources = [
-                {
-                    "content": doc.page_content[:200],
-                    "source": doc.metadata.get("source", ""),
-                    "score": doc.metadata.get("rerank_score"),
+    """SSE 流式响应生成器（闸门在流结束后释放）"""
+    gate = get_concurrency_gate()
+    if gate is not None:
+        if not await _acquire_gate(gate):
+            yield {
+                "event": "error",
+                "data": json.dumps(
+                    {"detail": "服务繁忙，请求排队超时，请稍后重试"},
+                    ensure_ascii=False,
+                ),
+            }
+            return
+
+    try:
+        event_iter = chain.invoke_stream(
+            question=request.question,
+            chat_history=chat_history,
+            top_k=request.top_k,
+        )
+        while True:
+            # 同步生成器逐事件移出事件循环，None 为耗尽哨兵
+            event = await asyncio.to_thread(next, event_iter, None)
+            if event is None:
+                break
+            if event["type"] == "cache_hit":
+                response: RAGResponse = event["data"]
+                sources = [
+                    {
+                        "content": doc.page_content[:200],
+                        "source": doc.metadata.get("source", ""),
+                        "score": doc.metadata.get("rerank_score"),
+                    }
+                    for doc in response.sources
+                ]
+                yield {
+                    "event": "cache_hit",
+                    "data": json.dumps({
+                        "answer": response.answer,
+                        "sources": sources,
+                        "total_time_ms": response.total_time_ms,
+                    }, ensure_ascii=False),
                 }
-                for doc in response.sources
-            ]
-            yield {
-                "event": "cache_hit",
-                "data": json.dumps({
-                    "answer": response.answer,
-                    "sources": sources,
-                    "total_time_ms": response.total_time_ms,
-                }, ensure_ascii=False),
-            }
-        elif event["type"] == "retrieval":
-            retrieval = event["data"]
-            yield {
-                "event": "retrieval",
-                "data": json.dumps({
-                    "queries_used": retrieval.queries_used,
-                    "dense_count": len(retrieval.dense_results),
-                    "sparse_count": len(retrieval.sparse_results),
-                    "fused_count": len(retrieval.fused_results),
-                    "final_count": len(retrieval.documents),
-                    "retrieval_time_ms": retrieval.retrieval_time_ms,
-                    "crag_grade": retrieval.crag_grade,
-                    "crag_action": retrieval.crag_action,
-                }, ensure_ascii=False),
-            }
-        elif event["type"] == "token":
-            yield {"event": "token", "data": event["data"]}
-        elif event["type"] == "done":
-            response: RAGResponse = event["data"]
-            sources = [
-                {
-                    "content": doc.page_content[:200],
-                    "source": doc.metadata.get("source", ""),
-                    "score": doc.metadata.get("rerank_score"),
+            elif event["type"] == "retrieval":
+                retrieval = event["data"]
+                yield {
+                    "event": "retrieval",
+                    "data": json.dumps({
+                        "queries_used": retrieval.queries_used,
+                        "dense_count": len(retrieval.dense_results),
+                        "sparse_count": len(retrieval.sparse_results),
+                        "fused_count": len(retrieval.fused_results),
+                        "final_count": len(retrieval.documents),
+                        "retrieval_time_ms": retrieval.retrieval_time_ms,
+                        "crag_grade": retrieval.crag_grade,
+                        "summary_count": len(retrieval.summary_results),
+                        "crag_action": retrieval.crag_action,
+                    }, ensure_ascii=False),
                 }
-                for doc in response.sources
-            ]
-            yield {
-                "event": "done",
-                "data": json.dumps({
-                    "sources": sources,
-                    "total_time_ms": response.total_time_ms,
-                    "cache_hit": response.cache_hit,
-                }, ensure_ascii=False),
-            }
+            elif event["type"] == "token":
+                yield {"event": "token", "data": event["data"]}
+            elif event["type"] == "done":
+                response: RAGResponse = event["data"]
+                sources = [
+                    {
+                        "content": doc.page_content[:200],
+                        "source": doc.metadata.get("source", ""),
+                        "score": doc.metadata.get("rerank_score"),
+                    }
+                    for doc in response.sources
+                ]
+                yield {
+                    "event": "done",
+                    "data": json.dumps({
+                        "sources": sources,
+                        "total_time_ms": response.total_time_ms,
+                        "cache_hit": response.cache_hit,
+                    }, ensure_ascii=False),
+                }
+    finally:
+        if gate is not None:
+            gate.release()
 
 
 # ============ Documents 端点 ============
 
 @router.post("/api/documents/upload", response_model=UploadResponse)
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    chunk_strategy: str = Form("recursive"),
+):
     """
     上传文档并建立索引。
 
     支持格式：PDF, TXT, Markdown
+    chunk_strategy: recursive（默认，递归字符分块）| semantic（语义分块）
     """
     chain = get_rag_chain()
+
+    if chunk_strategy not in ("recursive", "semantic"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"不支持的 chunk_strategy: {chunk_strategy}，支持: recursive, semantic",
+        )
 
     # 保存上传文件到临时目录
     suffix = Path(file.filename).suffix
@@ -166,7 +244,11 @@ async def upload_document(file: UploadFile = File(...)):
 
         # 加载 -> 分块 -> 索引
         docs = load_document(tmp_path)
-        chunks = smart_chunk(docs)
+        chunks = smart_chunk(
+            docs,
+            embeddings=chain.indexer.embeddings if chunk_strategy == "semantic" else None,
+            use_semantic=(chunk_strategy == "semantic"),
+        )
         chain.indexer.index_documents(chunks)
 
         # #11: 增量更新 BM25 索引（避免全量重建）

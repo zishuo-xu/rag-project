@@ -8,7 +8,7 @@ from typing import List, Tuple
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,7 @@ class CRAGEvaluator:
             max_tokens=256,
             request_timeout=30,
             max_retries=2,
+            extra_body=get_llm_extra_body(),
         )
         self.threshold = settings.crag_relevance_threshold
 
