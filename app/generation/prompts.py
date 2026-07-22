@@ -58,3 +58,9 @@ FALLBACK_RESPONSE = (
     "2. 上传更多相关文档\n"
     "3. 将问题拆分为更具体的小问题"
 )
+
+# 门控判定无需检索时的直接回答 Prompt
+DIRECT_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", "你是一个乐于助人的 AI 助手。用户的问题不依赖知识库文档，请基于通用知识直接回答，保持简洁友好。如果问题涉及你不知道的特定文档内容，请说明。"),
+    ("human", "{question}"),
+])
