@@ -17,11 +17,17 @@ logger = logging.getLogger(__name__)
 
 
 def _get_judge_llm() -> OpenAI:
-    """获取评估用 LLM 客户端（DeepSeek）"""
+    """获取评估用 LLM 客户端（DeepSeek）
+
+    设置 timeout + max_retries，避免单次 judge 调用挂起拖垮整轮评估
+    （OpenAI 客户端默认超时 600s，过长）。
+    """
     settings = get_settings()
     return OpenAI(
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
+        timeout=120.0,
+        max_retries=2,
     )
 
 
