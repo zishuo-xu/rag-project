@@ -40,6 +40,8 @@ class RetrievalDetail(BaseModel):
     fused_count: int = 0
     final_count: int = 0
     retrieval_time_ms: float = 0
+    crag_grade: str = Field(default="", description="CRAG 评级: correct/ambiguous/incorrect/recovered")
+    crag_action: str = Field(default="", description="CRAG 采取的动作")
 
 
 class ChatResponse(BaseModel):
@@ -48,6 +50,7 @@ class ChatResponse(BaseModel):
     sources: List[SourceDocument] = Field(default_factory=list, description="引用来源")
     retrieval_detail: RetrievalDetail = Field(default_factory=RetrievalDetail)
     total_time_ms: float = 0
+    cache_hit: bool = Field(default=False, description="是否命中语义缓存")
 
 
 # ============ Document 相关 ============

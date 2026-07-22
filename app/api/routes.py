@@ -83,7 +83,25 @@ async def _stream_response(
         chat_history=chat_history,
         top_k=request.top_k,
     ):
-        if event["type"] == "retrieval":
+        if event["type"] == "cache_hit":
+            response: RAGResponse = event["data"]
+            sources = [
+                {
+                    "content": doc.page_content[:200],
+                    "source": doc.metadata.get("source", ""),
+                    "score": doc.metadata.get("rerank_score"),
+                }
+                for doc in response.sources
+            ]
+            yield {
+                "event": "cache_hit",
+                "data": json.dumps({
+                    "answer": response.answer,
+                    "sources": sources,
+                    "total_time_ms": response.total_time_ms,
+                }, ensure_ascii=False),
+            }
+        elif event["type"] == "retrieval":
             retrieval = event["data"]
             yield {
                 "event": "retrieval",
@@ -94,6 +112,8 @@ async def _stream_response(
                     "fused_count": len(retrieval.fused_results),
                     "final_count": len(retrieval.documents),
                     "retrieval_time_ms": retrieval.retrieval_time_ms,
+                    "crag_grade": retrieval.crag_grade,
+                    "crag_action": retrieval.crag_action,
                 }, ensure_ascii=False),
             }
         elif event["type"] == "token":
@@ -113,6 +133,7 @@ async def _stream_response(
                 "data": json.dumps({
                     "sources": sources,
                     "total_time_ms": response.total_time_ms,
+                    "cache_hit": response.cache_hit,
                 }, ensure_ascii=False),
             }
 
@@ -633,6 +654,8 @@ def _build_chat_response(response: RAGResponse) -> ChatResponse:
         fused_count=len(response.retrieval_result.fused_results),
         final_count=len(response.retrieval_result.documents),
         retrieval_time_ms=response.retrieval_result.retrieval_time_ms,
+        crag_grade=response.retrieval_result.crag_grade,
+        crag_action=response.retrieval_result.crag_action,
     )
 
     return ChatResponse(
@@ -640,4 +663,5 @@ def _build_chat_response(response: RAGResponse) -> ChatResponse:
         sources=sources,
         retrieval_detail=retrieval_detail,
         total_time_ms=response.total_time_ms,
+        cache_hit=response.cache_hit,
     )

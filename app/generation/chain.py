@@ -5,6 +5,7 @@ import time
 from typing import List, Optional, Generator
 from dataclasses import dataclass, field
 
+import numpy as np
 from langchain_core.documents import Document
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
@@ -18,6 +19,9 @@ from app.retrieval.fusion import reciprocal_rank_fusion
 from app.retrieval.reranker import Reranker
 from app.retrieval.query_transform import QueryTransformer
 from app.retrieval.graph_retriever import GraphRetriever
+from app.retrieval.parent_child import ParentChildRetriever
+from app.retrieval.crag import CRAGEvaluator
+from app.retrieval.cache import get_semantic_cache
 from app.generation.prompts import RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, FALLBACK_RESPONSE
 from app.observability.tracing import get_tracer
 
@@ -35,6 +39,8 @@ class RetrievalResult:
     reranked_results: List[Document] = field(default_factory=list)
     queries_used: List[str] = field(default_factory=list)
     retrieval_time_ms: float = 0
+    crag_grade: str = ""  # correct / ambiguous / incorrect
+    crag_action: str = ""  # 采取的动作描述
 
 
 @dataclass
@@ -44,18 +50,23 @@ class RAGResponse:
     sources: List[Document]
     retrieval_result: RetrievalResult
     total_time_ms: float = 0
+    cache_hit: bool = False
 
 
 class RAGChain:
     """
     RAG 完整管道：
-    Query Transform -> Multi-Recall -> RRF Fusion -> Rerank -> Generate
+    [Cache Check] -> [CRAG: Should Retrieve?] -> Query Transform -> Multi-Recall
+    -> RRF Fusion -> Rerank -> [CRAG: Evaluate] -> (if incorrect: HyDE Re-retrieve)
+    -> Generate -> [Cache Put]
 
     支持：
-    - 多路召回（Dense + Sparse）
+    - 多路召回（Dense + Sparse + Graph + Parent-Child）
     - 查询改写（Multi-Query / HyDE）
     - RRF 融合
     - Cross-Encoder 重排序
+    - CRAG 自纠正检索
+    - 语义缓存
     - 流式输出
     - 对话历史
     """
@@ -78,6 +89,22 @@ class RAGChain:
         self.query_transformer = QueryTransformer() if use_query_transform else None
         self.graph_retriever = GraphRetriever() if (use_graph and settings.graph_enabled) else None
 
+        # Parent-Child 检索器
+        self.parent_child_retriever: ParentChildRetriever | None = None
+        if settings.use_parent_child:
+            try:
+                self.parent_child_retriever = ParentChildRetriever(embeddings=self.indexer.embeddings)
+            except Exception as e:
+                logger.warning(f"Parent-Child 初始化失败: {e}")
+
+        # CRAG 评估器
+        self.crag_evaluator: CRAGEvaluator | None = None
+        if settings.use_crag:
+            self.crag_evaluator = CRAGEvaluator()
+
+        # 语义缓存
+        self.semantic_cache = get_semantic_cache() if settings.cache_enabled else None
+
         self.use_query_transform = use_query_transform
         self.use_rerank = use_rerank
         self.use_graph = use_graph and settings.graph_enabled
@@ -94,12 +121,15 @@ class RAGChain:
 
         logger.info(
             f"RAGChain 初始化: query_transform={use_query_transform}, "
-            f"rerank={use_rerank}, strategy={query_strategy}"
+            f"rerank={use_rerank}, strategy={query_strategy}, "
+            f"parent_child={self.parent_child_retriever is not None}, "
+            f"crag={self.crag_evaluator is not None}, "
+            f"cache={self.semantic_cache is not None}"
         )
 
     def retrieve(self, question: str, top_k: int | None = None, trace_id: str | None = None) -> RetrievalResult:
         """
-        执行完整的检索流程。
+        执行完整的检索流程（含 Parent-Child + CRAG）。
 
         Args:
             question: 用户问题
@@ -166,12 +196,28 @@ class RAGChain:
                 "hits": len(result.graph_results),
             })
 
+        # Step 2.6: Parent-Child 检索（大块上下文补充）
+        pc_results: List[Document] = []
+        if self.parent_child_retriever and self.parent_child_retriever.has_index():
+            if trace_id:
+                tracer.start_span(trace_id, "parent_child_retrieval")
+            try:
+                pc_results = self.parent_child_retriever.retrieve(question, top_k=3)
+            except Exception as e:
+                logger.warning(f"Parent-Child 检索失败: {e}")
+            if trace_id:
+                tracer.end_span(trace_id, "parent_child_retrieval", {
+                    "hits": len(pc_results),
+                })
+
         # Step 3: RRF 融合
         if trace_id:
             tracer.start_span(trace_id, "rrf_fusion")
         fusion_inputs = [result.dense_results, result.sparse_results]
         if result.graph_results:
             fusion_inputs.append(result.graph_results)
+        if pc_results:
+            fusion_inputs.append(pc_results)
         result.fused_results = reciprocal_rank_fusion(fusion_inputs)
         if trace_id:
             tracer.end_span(trace_id, "rrf_fusion", {"fused": len(result.fused_results)})
@@ -192,11 +238,51 @@ class RAGChain:
                 "final": len(result.documents),
             })
 
+        # Step 5: CRAG 自纠正评估
+        if trace_id:
+            tracer.start_span(trace_id, "crag_evaluation")
+        if self.crag_evaluator and result.documents:
+            grade, relevant_indices, reason = self.crag_evaluator.evaluate_relevance(
+                question, result.documents
+            )
+            result.crag_grade = grade
+
+            if grade == "incorrect":
+                # 补救：用 HyDE 策略重新检索
+                result.crag_action = "HyDE 重检索"
+                logger.info("CRAG: 检索结果不相关，触发 HyDE 重检索")
+                if self.query_transformer:
+                    hyde_queries = self.query_transformer.transform(question, "hyde")
+                    retry_dense = []
+                    for q in hyde_queries:
+                        retry_dense.extend(self.dense_retriever.retrieve(q, top_k=top_k))
+                    if retry_dense:
+                        result.documents = self._deduplicate(retry_dense)[:top_k]
+                        result.crag_grade = "recovered"
+                else:
+                    result.crag_action = "无可用补救策略"
+            elif grade == "ambiguous":
+                # 保留相关文档
+                result.crag_action = "过滤不相关文档"
+                result.documents = self.crag_evaluator.filter_relevant_docs(
+                    result.documents, relevant_indices
+                )
+            else:
+                result.crag_action = "直接使用"
+
+        if trace_id:
+            tracer.end_span(trace_id, "crag_evaluation", {
+                "enabled": self.crag_evaluator is not None,
+                "grade": result.crag_grade,
+                "action": result.crag_action,
+            })
+
         result.retrieval_time_ms = (time.time() - start_time) * 1000
         logger.info(
             f"检索完成: {result.retrieval_time_ms:.0f}ms, "
             f"dense={len(result.dense_results)}, sparse={len(result.sparse_results)}, "
-            f"fused={len(result.fused_results)}, final={len(result.documents)}"
+            f"fused={len(result.fused_results)}, final={len(result.documents)}, "
+            f"crag={result.crag_grade or 'off'}"
         )
         return result
 
@@ -276,19 +362,36 @@ class RAGChain:
         top_k: int | None = None,
     ) -> RAGResponse:
         """
-        完整 RAG 调用：检索 + 生成（自动记录 Trace）。
-
-        Args:
-            question: 用户问题
-            chat_history: 对话历史
-            top_k: 检索文档数
-
-        Returns:
-            RAGResponse 包含回答、来源和检索详情
+        完整 RAG 调用：[缓存检查] + 检索 + 生成 + [缓存写入]（自动记录 Trace）。
         """
         tracer = get_tracer()
         trace_id = tracer.start_trace(question)
         start_time = time.time()
+
+        # 语义缓存检查
+        if self.semantic_cache and not chat_history:
+            try:
+                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                cached = self.semantic_cache.get(q_embedding)
+                if cached:
+                    tracer.start_span(trace_id, "cache_hit")
+                    tracer.end_span(trace_id, "cache_hit", {"question": cached.question[:50]})
+                    total_time = (time.time() - start_time) * 1000
+                    tracer.end_trace(trace_id, answer_preview=cached.answer)
+                    # 重建 sources 为 Document
+                    source_docs = [
+                        Document(page_content=s.get("content", ""), metadata={"source": s.get("source", "")})
+                        for s in cached.sources
+                    ]
+                    return RAGResponse(
+                        answer=cached.answer,
+                        sources=source_docs,
+                        retrieval_result=RetrievalResult(documents=source_docs),
+                        total_time_ms=total_time,
+                        cache_hit=True,
+                    )
+            except Exception as e:
+                logger.warning(f"缓存检查失败: {e}")
 
         # 检索
         retrieval_result = self.retrieve(question, top_k=top_k, trace_id=trace_id)
@@ -304,6 +407,18 @@ class RAGChain:
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=answer)
 
+        # 写入缓存
+        if self.semantic_cache and not chat_history:
+            try:
+                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                sources_data = [
+                    {"content": doc.page_content[:200], "source": doc.metadata.get("source", "")}
+                    for doc in retrieval_result.documents
+                ]
+                self.semantic_cache.put(question, q_embedding, answer, sources_data)
+            except Exception as e:
+                logger.warning(f"缓存写入失败: {e}")
+
         return RAGResponse(
             answer=answer,
             sources=retrieval_result.documents,
@@ -318,9 +433,10 @@ class RAGChain:
         top_k: int | None = None,
     ) -> Generator[dict, None, None]:
         """
-        流式 RAG 调用（自动记录 Trace）。
+        流式 RAG 调用（含缓存检查 + 自动记录 Trace）。
 
         Yields:
+            {"type": "cache_hit", "data": RAGResponse}  -- 缓存命中时
             {"type": "retrieval", "data": RetrievalResult}
             {"type": "token", "data": str}
             {"type": "done", "data": RAGResponse}
@@ -328,6 +444,33 @@ class RAGChain:
         tracer = get_tracer()
         trace_id = tracer.start_trace(question)
         start_time = time.time()
+
+        # 语义缓存检查
+        if self.semantic_cache and not chat_history:
+            try:
+                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                cached = self.semantic_cache.get(q_embedding)
+                if cached:
+                    tracer.start_span(trace_id, "cache_hit")
+                    tracer.end_span(trace_id, "cache_hit", {"question": cached.question[:50]})
+                    total_time = (time.time() - start_time) * 1000
+                    tracer.end_trace(trace_id, answer_preview=cached.answer)
+                    source_docs = [
+                        Document(page_content=s.get("content", ""), metadata={"source": s.get("source", "")})
+                        for s in cached.sources
+                    ]
+                    response = RAGResponse(
+                        answer=cached.answer,
+                        sources=source_docs,
+                        retrieval_result=RetrievalResult(documents=source_docs),
+                        total_time_ms=total_time,
+                        cache_hit=True,
+                    )
+                    yield {"type": "cache_hit", "data": response}
+                    yield {"type": "done", "data": response}
+                    return
+            except Exception as e:
+                logger.warning(f"缓存检查失败: {e}")
 
         # 检索阶段
         retrieval_result = self.retrieve(question, top_k=top_k, trace_id=trace_id)
@@ -346,6 +489,19 @@ class RAGChain:
 
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=full_answer)
+
+        # 写入缓存
+        if self.semantic_cache and not chat_history:
+            try:
+                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                sources_data = [
+                    {"content": doc.page_content[:200], "source": doc.metadata.get("source", "")}
+                    for doc in retrieval_result.documents
+                ]
+                self.semantic_cache.put(question, q_embedding, full_answer, sources_data)
+            except Exception as e:
+                logger.warning(f"缓存写入失败: {e}")
+
         response = RAGResponse(
             answer=full_answer,
             sources=retrieval_result.documents,

@@ -45,6 +45,23 @@ class Settings(BaseSettings):
     graph_max_entities: int = 5  # 每次查询最多匹配实体数
     graph_persist_path: str = "./data/knowledge_graph.json"
 
+    # Parent-Child 检索
+    use_parent_child: bool = True
+    parent_chunk_size: int = 1024
+    child_chunk_size: int = 200
+    chroma_child_collection: str = "child_chunks"
+    chroma_parent_collection: str = "parent_chunks"
+
+    # CRAG 自纠正检索
+    use_crag: bool = True
+    crag_relevance_threshold: float = 0.5
+
+    # 语义缓存
+    cache_enabled: bool = True
+    cache_threshold: float = 0.92
+    cache_ttl: int = 3600
+    cache_max_size: int = 200
+
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""

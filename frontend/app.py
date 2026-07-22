@@ -414,6 +414,24 @@ def render_retrieval_dashboard(detail: dict):
     queries = detail.get("queries_used", [])
     meta_html = '<div class="rd-meta">'
     meta_html += f'<span>⏱ 检索耗时 <b style="color:#FBBF24">{detail.get("retrieval_time_ms", 0):.0f}ms</b></span>'
+
+    # CRAG 评级标签
+    crag_grade = detail.get("crag_grade", "")
+    if crag_grade:
+        grade_colors = {
+            "correct": "#34D399", "recovered": "#38BDF8",
+            "ambiguous": "#FBBF24", "incorrect": "#F87171",
+        }
+        grade_labels = {
+            "correct": "✅ 质量良好", "recovered": "🔄 已补救",
+            "ambiguous": "⚠️ 部分相关", "incorrect": "❌ 不相关",
+        }
+        color = grade_colors.get(crag_grade, "#94A3B8")
+        label = grade_labels.get(crag_grade, crag_grade)
+        action = detail.get("crag_action", "")
+        title = f'{label}' + (f' ({action})' if action else '')
+        meta_html += f'<span style="color:{color};font-weight:600">CRAG: {title}</span>'
+
     for q in queries[:3]:
         q_escaped = q[:40].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         meta_html += f'<span class="q-tag">🔍 {q_escaped}</span>'
@@ -676,7 +694,8 @@ def run_chat_turn(prompt: str):
                 retrieval_detail = {}
                 sources = []
                 event_type = ""
-
+                cache_hit = False
+            
                 # 管道阶段指示器 + 打字动画
                 stage_placeholder = st.empty()
                 render_stage_track(0, stage_placeholder)
@@ -685,7 +704,7 @@ def run_chat_turn(prompt: str):
                     '<div class="typing-dots"><span></span><span></span><span></span></div>',
                     unsafe_allow_html=True,
                 )
-
+            
                 tokens_started = False
                 for line in response.iter_lines():
                     if not line:
@@ -695,7 +714,22 @@ def run_chat_turn(prompt: str):
                         event_type = line[6:].strip()
                     elif line.startswith("data:"):
                         sse_data = line[5:].strip()
-                        if event_type == "token":
+                        if event_type == "cache_hit":
+                            # 缓存命中：直接显示答案
+                            cache_data = json.loads(sse_data)
+                            full_answer = cache_data.get("answer", "")
+                            sources = cache_data.get("sources", [])
+                            cache_hit = True
+                            stage_placeholder.markdown(
+                                '<div class="stage-track" style="border-color:#F59E0B">'
+                                '<span class="stage-item done"><span class="dot" style="background:#F59E0B"></span>'
+                                '\u26a1 缓存命中</span>'
+                                '<span class="stage-sep" style="color:#F59E0B">\u2014 \u8df3\u8fc7\u5168\u94fe\u8def</span>'
+                                '</div>',
+                                unsafe_allow_html=True,
+                            )
+                            placeholder.markdown(full_answer)
+                        elif event_type == "token":
                             if not tokens_started:
                                 tokens_started = True
                                 render_stage_track(3, stage_placeholder)
@@ -707,20 +741,23 @@ def run_chat_turn(prompt: str):
                         elif event_type == "done":
                             done_data = json.loads(sse_data)
                             sources = done_data.get("sources", [])
-
-                placeholder.markdown(full_answer)
-                # 阶段全部完成
-                stage_placeholder.markdown(
-                    '<div class="stage-track">'
-                    + "".join(
-                        f'<span class="stage-item done"><span class="dot"></span>{s}</span>'
-                        + ('<span class="stage-sep">›</span>' if i < 3 else "")
-                        for i, s in enumerate(["查询改写", "多路召回", "融合重排", "流式生成"])
+                            if done_data.get("cache_hit"):
+                                cache_hit = True
+            
+                if not cache_hit:
+                    placeholder.markdown(full_answer)
+                    # 阶段全部完成
+                    stage_placeholder.markdown(
+                        '<div class="stage-track">'
+                        + "".join(
+                            f'<span class="stage-item done"><span class="dot"></span>{s}</span>'
+                            + ('<span class="stage-sep">\u203a</span>' if i < 3 else "")
+                            for i, s in enumerate(["查询改写", "多路召回", "融合重排", "流式生成"])
+                        )
+                        + '<span class="stage-sep" style="color:#34D399">\u2713</span>'
+                        + '</div>',
+                        unsafe_allow_html=True,
                     )
-                    + '<span class="stage-sep" style="color:#34D399">✓</span>'
-                    + '</div>',
-                    unsafe_allow_html=True,
-                )
 
                 # 检索仪表盘（可视化）
                 detail_display = {**retrieval_detail, "sources_count": len(sources)}
