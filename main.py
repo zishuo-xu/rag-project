@@ -1,5 +1,9 @@
 """FastAPI 应用入口 - RAG 系统 API 服务"""
 
+import os
+os.environ.setdefault("HF_HUB_OFFLINE", "1")  # 跳过 HuggingFace 网络检查，加速启动
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
 import logging
 from contextlib import asynccontextmanager
 
