@@ -59,12 +59,12 @@
 | 编排框架 | LangChain | 生态完善、组件丰富、面试认可度高 |
 | 后端 API | FastAPI | 异步高性能、自动 OpenAPI 文档、类型安全 |
 | 前端 | Streamlit | 快速搭建 Demo、Python 原生、4个Tab可视化 |
-| LLM | 通义千问 qwen3.8-max-preview | 中文能力强、API 兼容 OpenAI 格式 |
-| Embedding | all-MiniLM-L6-v2（本地）| 零成本、低延迟、384维 |
+| LLM | DeepSeek（OpenAI 兼容接口）| 中文能力强、可切换任意兼容服务、支持思考模式开关 |
+| Embedding | BAAI/bge-small-zh-v1.5（本地）| 中文优化、零成本、低延迟 |
 | 向量数据库 | ChromaDB | 轻量、本地持久化、零运维 |
-| 重排序 | cross-encoder/ms-marco-MiniLM-L-6-v2 | 免费本地运行、精度好 |
+| 重排序 | BAAI/bge-reranker-base（本地）| 中文 cross-encoder、免费本地运行、精度好 |
 | 稀疏检索 | rank-bm25 + jieba | 中文词级分词、精确术语匹配 |
-| 评估 | 自实现 RAGAS 四维 | LLM-as-Judge，避免依赖冲突 |
+| 评估 | 自实现 RAGAS 四维 + CMRC 检索命中 | LLM-as-Judge + 零 LLM 检索评估双轨 |
 | 可观测性 | 自研轻量 Tracer | 线程安全、瀑布图、阶段耗时统计 |
 
 ### 2.3 设计原则（面试必答）
@@ -197,16 +197,30 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 | Context Precision | 检索质量 | 相关文档是否排在前面 | 加权 Precision@K |
 | Context Recall | 检索质量 | 是否检索到了所有相关信息 | 标准答案声明 → 上下文归因 |
 
-#### 实际评估结果（12 题测试集）
+#### 实际评估结果
 
-| 指标 | 得分 | 合格线 | 状态 |
-|------|------|--------|------|
-| Faithfulness | **0.9167** | >0.90 | ✓ |
-| Answer Relevancy | **0.9333** | >0.85 | ✓ |
-| Context Precision | **0.9650** | >0.85 | ✓ |
-| Context Recall | **0.9130** | >0.90 | ✓ |
+**检索质量（CMRC，零 LLM，决定性指标）**：
 
-**面试话术**: "我使用 LLM-as-Judge 方法实现了 RAGAS 四维评估。在 12 道覆盖 10 个技术领域的测试题上，四项指标均超过合格线。其中 Context Precision 达到 0.965，说明我的多路召回+重排架构能有效把相关文档排到前面。"
+| 指标 | 得分 | 目标 | 状态 |
+|------|------|------|------|
+| 命中率 | **100%（31/31）** | ≥90.32% | ✓ |
+| 关键词覆盖率 | **100%** | — | ✓ |
+| 平均检索耗时 | ~5.1s/题 | — | 检索（embedding+rerank）为冷查询瓶颈 |
+
+**生成质量（RAGAS 四维，DeepSeek 生成+评判，20 题）**：
+
+| 指标 | 得分 | 说明 |
+|------|------|------|
+| Faithfulness | 0.82 | |
+| Answer Relevancy | 0.32 | 关思考模式后答案偏简短所致（已对照验证 judge 正常）|
+| Context Precision | 0.85 | |
+| Context Recall | 0.82 | |
+
+> ⚠️ **口径 caveat**：RAGAS 基线由 qwen 生成+评判，本轮换成 DeepSeek，**不同口径不可直接对比**。
+> 检索质量以与 LLM 解耦的 CMRC 评估为准（100%）；RAGAS 反映的是「DeepSeek+关思考」配置下的生成质量。
+> 详见 [验证报告](./superpowers/reports/2026-07-22-task11-validation-report.md)。
+
+**面试话术**: "我用双轨评估：RAGAS 四维（LLM-as-Judge）衡量生成质量，CMRC 命中评估（零 LLM）衡量检索质量。换 LLM 后我特意用 CMRC 这个与模型解耦的尺子来公平地证明检索接线有效——命中率 100%。同时我诚实标注了 RAGAS 的跨模型口径问题，不拿不可比的数字直接报喜。"
 
 ### 3.6 可观测性
 
@@ -233,6 +247,65 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 4. Hybrid + Rerank（最终方案）
 
 返回各策略的**耗时、命中数、与最终结果重叠度**，直观证明每一层组件的增益。
+
+### 3.8 统一检索管道与并发治理（本次迭代核心）
+
+这是本项目第二轮迭代的主体工作，包含 4 个可作为面试叙事的设计决策。
+
+#### 决策一：把检索重构为统一的 7 阶段管道 `RetrievalPipeline`
+
+**问题**：原本检索逻辑散落在 `chain.py` 里，查询改写、多路召回、融合、重排、CRAG 耦合在一个大方法中，难以单独测试和扩展。
+
+**做法**：抽出 `app/retrieval/pipeline.py`，把检索定义为 7 个职责单一的阶段：
+
+```
+gate(要不要检索) → transform(查询改写) → recall(多路并行召回) → fuse(RRF)
+→ rerank(精排) → evaluate(CRAG分级) → remediate(不合格则补救)
+```
+
+`chain.py` 退化为**薄编排层**，只负责「调 pipeline 拿文档 → 拼 prompt → 生成」，`retrieve()` 委托给 `pipeline.run()`。
+
+**面试话术**：「我把检索从生成链里解耦成独立的 `RetrievalPipeline`，7 个阶段各自可测、可开关、可替换。这样 CRAG 补救这种『管道中再嵌一条小管道』的逻辑才有清晰的落点，而不是往大方法里继续堆 if。」
+
+#### 决策二：把 5 个『半成品』特性真正接进主管道
+
+**问题**：代码库里已有 Summary 摘要索引、CRAG 门控、CRAG 补救、Parent-Child、Graph 等模块，但大多**写了没接进主链路**（dead feature）。
+
+**做法**：用配置开关把它们逐一接入 `RetrievalPipeline`，并补离线行为测试：
+
+| 特性 | 接入方式 | 开关 |
+|------|----------|------|
+| Summary 召回 | 作为**第 5 路**参与并行召回 + RRF | `use_summary_recall` |
+| CRAG 门控 | `gate()` 判断是否需要检索，可跳过检索直接生成 | `use_crag_gate` |
+| CRAG 补救 | `evaluate()` 分级后，不合格走 `remediate()`（HyDE+重召回+RRF+重排）| `use_crag` |
+| Parent-Child / Graph | 作为召回通道并入 `ALL_CHANNELS` | `use_parent_child` / `graph_enabled` |
+
+**验证**：与 LLM 解耦的 CMRC 检索评估 **命中率 100%（31/31）、覆盖率 100%**。
+
+**面试话术**：「接半成品比写新功能更难，因为要在不破坏既有行为的前提下把它们织进主链路。我用配置开关 + 离线行为测试（含 mutation testing）保证每接一个特性都可验证、可回滚。」
+
+#### 决策三：并发治理——闸门 + 解除事件循环阻塞 + 排队超时
+
+**问题**：`/api/chat` 是 CPU（embedding/rerank）+ IO（LLM）混合负载，高并发下会打满事件循环和下游 LLM。
+
+**做法**：
+1. **`asyncio.Semaphore` 闸门**：`max_concurrent_requests` 限制同时在途请求数（lifespan 中创建）
+2. **`asyncio.to_thread`**：把同步的检索/生成放到线程池，**解除对事件循环的阻塞**
+3. **排队超时 503**：`request_queue_timeout` 内拿不到闸门信号量就返回 503，快速失败而非无限堆积
+4. **语义缓存**：embedding 相似度命中缓存，重复查询毫秒级返回，吸收热点负载
+
+**面试话术**：「FastAPI 是异步的，但我的检索是同步阻塞调用，直接 await 会卡死事件循环。所以我用 `to_thread` 卸载到线程池，再用 Semaphore 做准入控制、超时返回 503 做快速失败。语义缓存则让重复查询绕过整条管道。」
+
+#### 决策四：eval 驱动 + 测量严谨（识别跨模型混淆）
+
+**问题**：迭代中途把 LLM 从 qwen 换成 DeepSeek，导致 RAGAS 四维「生成模型 + 评判模型」同时变化，**与历史基线不可比**。
+
+**做法**：
+1. 识别出混淆后，改用**与 LLM 解耦的 CMRC 检索评估**作为检索质量的决定性指标（命中率 100%）
+2. 对 `answer_relevancy=0.32` 的异常低值做**对照实验**：用好答案测 judge 能正确打 1.0 → 证明不是 bug，而是「关思考模式后答案偏简短」的真实信号
+3. 落地 **思考模式开关** `llm_thinking_enabled`（DeepSeek reasoning 模型用 `extra_body={"thinking":{"type":"disabled"}}` 关闭，避免 reasoning_content 吃掉 max_tokens）
+
+**面试话术**：「换模型后 RAGAS 全线下跌，我没有直接报喜或报忧，而是先定位这是『换模型导致的不同口径』混淆，再用无 LLM 的 CMRC 评估给出检索质量的公平结论。评估指标本身也要被审视，不能拿来就用。」
 
 ---
 
@@ -313,19 +386,27 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 
 ### Q7: "系统的瓶颈在哪里？怎么优化？"
 
-> 通过内置 Trace 分析，瓶颈主要在两个阶段：
-> 1. **Query Transform**（~2-5s）：需要调用 LLM 生成查询变体 → 可缓存热门查询
-> 2. **Generation**（~3-10s）：LLM API 调用 → 已用流式输出优化体感
+> 通过并发 bench 的瓶颈分析（冷查询，并发=1）：
+> 1. **检索阶段是主要瓶颈**（~5s，占总延迟 84%）：本地 embedding + cross-encoder rerank 是 CPU 密集计算，rerank 尤其耗时
+> 2. **生成阶段**（~1s）：DeepSeek 关思考模式后较快，已用流式输出优化体感
 >
-> 检索阶段（Embedding + BM25 + Rerank）通常在 200ms 以内。
+> 已落地的优化：
+> - **语义缓存**：重复查询命中缓存，P95 从 ~8.9s 压到 ~53ms（bench 实测）
+> - **多路召回并行**：线程池并发执行 5 路召回（`recall_max_workers`）
+> - **to_thread 卸载**：同步检索不阻塞事件循环，保证高并发吞吐
 >
-> 优化方向：Redis 缓存热门查询、异步任务队列、模型量化。
+> 进一步优化方向：reranker 蒸馏/量化、embedding 批处理、GPU 加速、热门查询预热。
 
 ### Q8: "如果让你重新设计，会怎么改？"
 
-> 1. **自适应检索**：根据 query 复杂度动态决定是否改写、是否多路、是否精排
-> 2. **Graph RAG**：构建知识图谱支持关系推理和多跳问答
-> 3. **Agentic RAG**：引入 Tool-Use Agent，支持多步推理
+> 已经做了的（第二轮迭代）：
+> - **Graph RAG**：零 LLM 快速构建知识图谱，实体多跳召回（作为召回通道之一）
+> - **Parent-Child / CRAG 门控与补救 / 语义缓存**：均已接入统一管道
+>
+> 下一步想做的：
+> 1. **自适应检索**：根据 query 复杂度动态决定是否改写、是否多路、是否精排（CRAG 门控是雏形）
+> 2. **Agentic RAG**：引入 Tool-Use Agent，支持多步推理与迭代检索
+> 3. **检索延迟优化**：reranker 蒸馏/量化、GPU 加速（当前冷查询瓶颈在 rerank）
 > 4. **向量库升级**：迁移到 Qdrant/Milvus 支持规模化
 > 5. **评估闭环**：线上反馈 → 自动标注 → 策略迭代
 
@@ -340,12 +421,18 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 | `app/ingestion/loader.py` | 多格式文档加载（PDF/TXT/MD） | 90 |
 | `app/ingestion/chunker.py` | 递归分块 + 语义分块 | 157 |
 | `app/ingestion/indexer.py` | 层级索引（L1摘要 + L2明细） | 253 |
+| `app/ingestion/graph_extractor.py` | 知识图谱抽取（零 LLM） | 649 |
+| `app/retrieval/pipeline.py` | ★ RetrievalPipeline 7 阶段统一编排 | 359 |
 | `app/retrieval/dense.py` | 向量检索 | 53 |
 | `app/retrieval/sparse.py` | BM25 + jieba 中文分词 | 123 |
+| `app/retrieval/graph_retriever.py` | Graph 多跳召回 | 363 |
+| `app/retrieval/parent_child.py` | Parent-Child 检索 | 207 |
 | `app/retrieval/fusion.py` | RRF 融合 + 加权融合 | 106 |
 | `app/retrieval/reranker.py` | Cross-Encoder 精排 | 112 |
 | `app/retrieval/query_transform.py` | Multi-Query + HyDE | 134 |
-| `app/generation/chain.py` | RAG 完整管道（检索+生成+Trace） | 360 |
+| `app/retrieval/crag.py` | CRAG 门控/评估/补救 | 191 |
+| `app/retrieval/cache.py` | 语义缓存 | 159 |
+| `app/generation/chain.py` | RAG 薄编排层（委托 pipeline + 生成 + Trace） | 422 |
 | `app/generation/prompts.py` | Prompt 模板 | 61 |
 | `app/observability/tracing.py` | 轻量级 Trace（线程安全） | 146 |
 | `app/api/routes.py` | 全部 API 端点 | 460 |
@@ -353,7 +440,8 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 | `app/evaluation/metrics.py` | RAGAS 四维评估（LLM-as-Judge） | 403 |
 | `app/evaluation/dataset.py` | 评估数据集管理 | 123 |
 | `frontend/app.py` | Streamlit 前端（4 Tab） | 793 |
-| `run_eval.py` | 评估运行脚本 | 54 |
+| `run_eval.py` | RAGAS 四维评估脚本 | 54 |
+| `run_retrieval_eval.py` | CMRC 检索命中评估（零 LLM） | 90 |
 | `run_concurrency_bench.py` | 并发性能评测 | 315 |
 
 ---
@@ -366,8 +454,9 @@ event: done        → 完成信号 + 来源列表 + 总耗时
 
 2. 核心设计决策（2min）
    ① 多路召回为什么必要 → 消融实验数据支撑
-   ② 分块策略怎么选 → 语义 vs 递归的 trade-off
-   ③ 评估怎么做 → RAGAS 四维 + 自建高难度测试集
+   ② 统一检索管道 RetrievalPipeline（7阶段重构）+ 5 个半成品接入
+   ③ 并发治理（Semaphore闸门 + to_thread + 503）
+   ④ 评估怎么做 → RAGAS 四维 + CMRC 零LLM检索评估双轨
 
 3. 工程亮点（1min）
    ① 内置 Trace 可观测 / 瀑布图
@@ -376,10 +465,10 @@ event: done        → 完成信号 + 来源列表 + 总耗时
    ④ 前端 4 Tab 全链路可视化
 
 4. 评估结果（30s）
-   "12 题测试集，四项指标均 >0.9，Context Precision 达 0.965"
+   "CMRC 检索命中率 100%（31/31）；并诚实标注 RAGAS 的跨模型口径问题"
 
 5. 扩展思考（30s）
-   "下一步想做自适应检索 / Graph RAG / Agentic RAG"
+   "下一步想做自适应检索 / Agentic RAG / reranker 延迟优化"
 ```
 
 ---
