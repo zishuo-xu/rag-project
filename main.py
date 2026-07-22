@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from app.api.routes import router, set_rag_chain
+from app.api.routes import router, set_rag_chain, set_concurrency_gate
 from app.generation.chain import RAGChain
 
 # 配置日志
@@ -41,6 +41,11 @@ async def lifespan(app: FastAPI):
         query_strategy="multi_query",
     )
     set_rag_chain(rag_chain)
+
+    # 并发闸门：限制同时处理的 chat 请求数，防止高并发打爆 LLM
+    import asyncio
+    set_concurrency_gate(asyncio.Semaphore(settings.max_concurrent_requests))
+    logger.info(f"并发闸门: max_concurrent_requests={settings.max_concurrent_requests}")
 
     # 构建 BM25 索引（如果有已索引的文档）
     try:
