@@ -193,6 +193,138 @@ st.markdown("""
 
     /* Tab 样式 */
     .stTabs [data-baseweb="tab"] { border-radius: 8px 8px 0 0; }
+
+    /* ===== 动画 ===== */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseGlow {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+    }
+    @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+    }
+    @keyframes dotBounce {
+        0%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-5px); }
+    }
+    .anim-in { animation: fadeInUp 0.35s ease both; }
+
+    /* 页头统计条 */
+    .stats-strip {
+        display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 6px 0;
+        animation: fadeInUp 0.4s ease both;
+    }
+    .stat-chip {
+        display: inline-flex; align-items: center; gap: 7px;
+        background: #1E293B; border: 1px solid #334155;
+        border-radius: 10px; padding: 7px 14px;
+        transition: border-color 0.2s, transform 0.2s;
+    }
+    .stat-chip:hover { border-color: #F59E0B; transform: translateY(-1px); }
+    .stat-chip .s-icon { font-size: 1rem; }
+    .stat-chip .s-val { font-size: 0.95rem; font-weight: 700; color: #E2E8F0; }
+    .stat-chip .s-label { font-size: 0.68rem; color: #64748B; }
+
+    /* 管道阶段指示器（对话流式中） */
+    .stage-track {
+        display: flex; align-items: center; gap: 0;
+        background: #172033; border: 1px solid #334155;
+        border-radius: 12px; padding: 10px 16px; margin: 6px 0 12px 0;
+        overflow-x: auto; animation: fadeInUp 0.3s ease both;
+    }
+    .stage-item {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 0.72rem; color: #475569; white-space: nowrap;
+        transition: color 0.3s;
+    }
+    .stage-item .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #334155; transition: background 0.3s;
+    }
+    .stage-item.active { color: #FBBF24; }
+    .stage-item.active .dot {
+        background: #F59E0B;
+        animation: pulseGlow 1s ease infinite;
+        box-shadow: 0 0 8px rgba(245,158,11,0.5);
+    }
+    .stage-item.done { color: #34D399; }
+    .stage-item.done .dot { background: #34D399; }
+    .stage-sep { color: #334155; padding: 0 8px; font-size: 0.8rem; }
+
+    /* 检索仪表盘卡片 */
+    .retrieval-dash {
+        background: #172033; border: 1px solid #334155;
+        border-radius: 12px; padding: 14px 16px; margin: 8px 0;
+        animation: fadeInUp 0.35s ease both;
+    }
+    .rd-flow {
+        display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+    .rd-node {
+        text-align: center; padding: 6px 12px;
+        background: #1E293B; border: 1px solid #334155;
+        border-radius: 8px; min-width: 72px;
+        transition: border-color 0.2s, transform 0.2s;
+    }
+    .rd-node:hover { border-color: #38BDF8; transform: translateY(-2px); }
+    .rd-node .n { font-size: 1.05rem; font-weight: 700; color: #E2E8F0; }
+    .rd-node .l { font-size: 0.65rem; color: #64748B; margin-top: 1px; }
+    .rd-arrow { color: #475569; padding: 0 6px; font-size: 0.9rem; }
+    .rd-meta {
+        display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+        font-size: 0.72rem; color: #94A3B8;
+    }
+    .rd-meta .q-tag {
+        background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25);
+        color: #7DD3FC; border-radius: 5px; padding: 2px 8px; font-size: 0.7rem;
+    }
+    .rd-time-bar {
+        height: 6px; background: #1E293B; border-radius: 3px;
+        margin-top: 10px; overflow: hidden;
+    }
+    .rd-time-fill {
+        height: 100%; border-radius: 3px;
+        background: linear-gradient(90deg, #F59E0B, #FBBF24);
+        transition: width 0.5s ease;
+    }
+
+    /* 反馈按钮 */
+    .feedback-row { display: flex; gap: 6px; margin-top: 6px; }
+    .fb-btn {
+        background: transparent; border: 1px solid #334155;
+        border-radius: 6px; padding: 2px 10px; font-size: 0.78rem;
+        color: #64748B; cursor: pointer; transition: all 0.2s;
+    }
+    .fb-btn:hover { border-color: #F59E0B; color: #FBBF24; }
+    .fb-btn.selected { background: rgba(245,158,11,0.12); border-color: #F59E0B; color: #FBBF24; }
+
+    /* 打字指示 */
+    .typing-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
+    .typing-dots span {
+        width: 7px; height: 7px; border-radius: 50%; background: #F59E0B;
+        animation: dotBounce 1.2s ease infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    /* 欢迎卡片动效增强 */
+    .welcome-card { animation: fadeInUp 0.5s ease both; position: relative; overflow: hidden; }
+    .welcome-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+        background: linear-gradient(90deg, transparent, #F59E0B, #38BDF8, transparent);
+        background-size: 200% 100%;
+        animation: shimmer 3s linear infinite;
+    }
+    .welcome-card .feature { transition: all 0.2s; cursor: default; }
+    .welcome-card .feature:hover {
+        background: rgba(245,158,11,0.16); border-color: rgba(245,158,11,0.45);
+        transform: translateY(-2px); color: #FBBF24;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -240,6 +372,113 @@ def check_health():
         return response.json()
     except Exception:
         return None
+
+
+def render_stage_track(current_stage: int, placeholder):
+    """渲染管道阶段进度指示器（0=查询改写 1=多路召回 2=融合重排 3=流式生成 4=完成）"""
+    stages = ["查询改写", "多路召回", "融合重排", "流式生成"]
+    html = '<div class="stage-track">'
+    for i, name in enumerate(stages):
+        if i < current_stage:
+            cls = "done"
+        elif i == current_stage:
+            cls = "active"
+        else:
+            cls = ""
+        html += f'<span class="stage-item {cls}"><span class="dot"></span>{name}</span>'
+        if i < len(stages) - 1:
+            html += '<span class="stage-sep">›</span>'
+    html += '</div>'
+    placeholder.markdown(html, unsafe_allow_html=True)
+
+
+def render_retrieval_dashboard(detail: dict):
+    """渲染可视化检索仪表盘（替代原始 JSON）"""
+    if not detail:
+        return
+    nodes = [
+        (detail.get("dense_count", 0), "向量召回"),
+        (detail.get("sparse_count", 0), "BM25 召回"),
+        (detail.get("graph_count", 0), "图谱召回"),
+        (detail.get("fused_count", 0), "RRF 融合"),
+        (detail.get("final_count", 0), "Rerank 精排"),
+    ]
+    flow_html = '<div class="rd-flow">'
+    for i, (n, label) in enumerate(nodes):
+        if i > 0:
+            flow_html += '<span class="rd-arrow">→</span>'
+        flow_html += f'<div class="rd-node"><div class="n">{n}</div><div class="l">{label}</div></div>'
+    flow_html += '</div>'
+
+    # 改写后的查询变体
+    queries = detail.get("queries_used", [])
+    meta_html = '<div class="rd-meta">'
+    meta_html += f'<span>⏱ 检索耗时 <b style="color:#FBBF24">{detail.get("retrieval_time_ms", 0):.0f}ms</b></span>'
+    for q in queries[:3]:
+        q_escaped = q[:40].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        meta_html += f'<span class="q-tag">🔍 {q_escaped}</span>'
+    meta_html += '</div>'
+
+    # 耗时条（相对 5s 满刻度）
+    t_ms = detail.get("retrieval_time_ms", 0)
+    pct = min(t_ms / 5000 * 100, 100)
+    time_html = f'<div class="rd-time-bar"><div class="rd-time-fill" style="width:{pct:.0f}%"></div></div>'
+
+    st.markdown(
+        f'<div class="retrieval-dash">{flow_html}{meta_html}{time_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_stats_strip(health_data: dict):
+    """页头实时统计条"""
+    chips = []
+    if health_data:
+        chips.append(("📚", str(health_data.get("indexed_documents", 0)), "已索引文档"))
+        # 图谱统计
+        try:
+            g = requests.get(f"{API_BASE_URL}/api/graph/stats", timeout=5)
+            if g.status_code == 200:
+                gs = g.json()
+                if not gs.get("is_empty", True):
+                    chips.append(("🕸️", str(gs.get("num_nodes", 0)), "图谱实体"))
+        except Exception:
+            pass
+        # 平均延迟
+        try:
+            t = requests.get(f"{API_BASE_URL}/api/traces/stats", timeout=5)
+            if t.status_code == 200:
+                ts = t.json()
+                if ts.get("total_traces", 0) > 0:
+                    chips.append(("⚡", f"{ts['avg_total_ms'] / 1000:.1f}s", "平均响应"))
+                    chips.append(("📈", str(ts["total_traces"]), "累计问答"))
+        except Exception:
+            pass
+
+    if not chips:
+        return
+    html = '<div class="stats-strip">'
+    for icon, val, label in chips:
+        html += (
+            f'<div class="stat-chip"><span class="s-icon">{icon}</span>'
+            f'<span class="s-val">{val}</span><span class="s-label">{label}</span></div>'
+        )
+    html += '</div>'
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def export_chat_markdown() -> str:
+    """将对话历史导出为 Markdown"""
+    lines = ["# RAG 智能问答 - 对话记录\n"]
+    for msg in st.session_state.get("messages", []):
+        role = "👤 用户" if msg["role"] == "user" else "🧠 助手"
+        lines.append(f"## {role}\n\n{msg['content']}\n")
+        if msg.get("sources"):
+            lines.append("**参考来源：**\n")
+            for i, s in enumerate(msg["sources"], 1):
+                lines.append(f"{i}. `{s['source']}`")
+            lines.append("")
+    return "\n".join(lines)
 
 
 def render_pipeline(data: dict):
@@ -418,7 +657,7 @@ def render_index_explorer():
 
 
 def run_chat_turn(prompt: str):
-    """执行一轮问答：渲染用户消息 + 流式输出助手回复"""
+    """执行一轮问答：渲染用户消息 + 流式输出助手回复（带管道阶段指示）"""
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
@@ -438,7 +677,16 @@ def run_chat_turn(prompt: str):
                 sources = []
                 event_type = ""
 
+                # 管道阶段指示器 + 打字动画
+                stage_placeholder = st.empty()
+                render_stage_track(0, stage_placeholder)
                 placeholder = st.empty()
+                placeholder.markdown(
+                    '<div class="typing-dots"><span></span><span></span><span></span></div>',
+                    unsafe_allow_html=True,
+                )
+
+                tokens_started = False
                 for line in response.iter_lines():
                     if not line:
                         continue
@@ -448,23 +696,53 @@ def run_chat_turn(prompt: str):
                     elif line.startswith("data:"):
                         sse_data = line[5:].strip()
                         if event_type == "token":
+                            if not tokens_started:
+                                tokens_started = True
+                                render_stage_track(3, stage_placeholder)
                             full_answer += sse_data
                             placeholder.markdown(full_answer + "▌")
                         elif event_type == "retrieval":
                             retrieval_detail = json.loads(sse_data)
+                            render_stage_track(2, stage_placeholder)
                         elif event_type == "done":
                             done_data = json.loads(sse_data)
                             sources = done_data.get("sources", [])
 
                 placeholder.markdown(full_answer)
+                # 阶段全部完成
+                stage_placeholder.markdown(
+                    '<div class="stage-track">'
+                    + "".join(
+                        f'<span class="stage-item done"><span class="dot"></span>{s}</span>'
+                        + ('<span class="stage-sep">›</span>' if i < 3 else "")
+                        for i, s in enumerate(["查询改写", "多路召回", "融合重排", "流式生成"])
+                    )
+                    + '<span class="stage-sep" style="color:#34D399">✓</span>'
+                    + '</div>',
+                    unsafe_allow_html=True,
+                )
+
+                # 检索仪表盘（可视化）
+                detail_display = {**retrieval_detail, "sources_count": len(sources)}
+                st.session_state.retrieval_details.append(detail_display)
+                render_retrieval_dashboard(detail_display)
 
                 if sources:
                     render_sources(sources)
 
-                detail_display = {**retrieval_detail, "sources_count": len(sources)}
-                st.session_state.retrieval_details.append(detail_display)
-                with st.expander("🔎 检索链路详情"):
-                    st.json(detail_display)
+                # 反馈按钮
+                msg_idx = len(st.session_state.messages)
+                if "feedback" not in st.session_state:
+                    st.session_state.feedback = {}
+                fb_col1, fb_col2, fb_col3 = st.columns([1, 1, 6])
+                with fb_col1:
+                    if st.button("👍", key=f"fb_up_{msg_idx}", help="回答有帮助"):
+                        st.session_state.feedback[msg_idx] = "up"
+                        st.toast("感谢反馈！", icon="👍")
+                with fb_col2:
+                    if st.button("👎", key=f"fb_down_{msg_idx}", help="回答需改进"):
+                        st.session_state.feedback[msg_idx] = "down"
+                        st.toast("已记录，我们会持续优化", icon="📝")
 
                 st.session_state.messages.append(
                     {"role": "assistant", "content": full_answer, "sources": sources}
@@ -535,10 +813,24 @@ with st.sidebar:
             st.caption(f"📎 {doc['source']} · {doc['num_chunks']} 块")
 
     st.divider()
-    if st.button("🗑️ 清除对话", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.retrieval_details = []
-        st.rerun()
+    col_clear, col_export = st.columns(2)
+    with col_clear:
+        if st.button("🗑️ 清除对话", use_container_width=True):
+            st.session_state.messages = []
+            st.session_state.retrieval_details = []
+            st.session_state.feedback = {}
+            st.rerun()
+    with col_export:
+        if st.session_state.get("messages"):
+            st.download_button(
+                "📥 导出记录",
+                data=export_chat_markdown(),
+                file_name="rag_chat_export.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        else:
+            st.button("📥 导出记录", disabled=True, use_container_width=True)
 
 
 # ============ 主界面：Tab 切换 ============
@@ -554,7 +846,8 @@ st.markdown(
     f'<h2 style="margin:0">🧠 RAG 智能问答</h2>{status_html}</div>',
     unsafe_allow_html=True,
 )
-st.caption("多路召回 · RRF 融合 · Cross-Encoder 重排 · DeepSeek 生成")
+st.caption("多路召回 · RRF 融合 · Cross-Encoder 重排 · 流式生成")
+render_stats_strip(health)
 
 tab_chat, tab_compare, tab_trace, tab_explore, tab_graph = st.tabs(
     ["💬 对话问答", "🧪 对比实验", "📊 观测台", "🔬 索引透视", "🕸️ 知识图谱"]
@@ -590,15 +883,19 @@ with tab_chat:
             "Docker 和 Kubernetes 有什么关系？",
             "Redis 的持久化机制有哪些？",
             "数据库索引为什么使用 B+ 树？",
+            "RAG 系统如何减少幻觉？",
+            "微服务架构的优劣势是什么？",
+            "Transformer 的核心组件有哪些？",
         ]
-        ec = st.columns(3)
-        for i, q in enumerate(examples):
-            with ec[i]:
-                st.markdown('<div class="example-btn">', unsafe_allow_html=True)
-                if st.button(q, key=f"example_{i}", use_container_width=True):
-                    st.session_state.pending_question = q
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+        for row_start in range(0, len(examples), 3):
+            ec = st.columns(3)
+            for i, q in enumerate(examples[row_start:row_start + 3]):
+                with ec[i]:
+                    st.markdown('<div class="example-btn">', unsafe_allow_html=True)
+                    if st.button(q, key=f"example_{row_start + i}", use_container_width=True):
+                        st.session_state.pending_question = q
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     # 历史消息（assistant 的检索详情按独立计数器对齐）
     detail_idx = 0
@@ -607,13 +904,12 @@ with tab_chat:
         with st.chat_message(message["role"], avatar=avatar):
             st.markdown(message["content"])
             if message["role"] == "assistant":
-                if message.get("sources"):
-                    render_sources(message["sources"])
                 if detail_idx < len(st.session_state.retrieval_details):
                     detail = st.session_state.retrieval_details[detail_idx]
                     if detail:
-                        with st.expander("🔎 检索链路详情"):
-                            st.json(detail)
+                        render_retrieval_dashboard(detail)
+                if message.get("sources"):
+                    render_sources(message["sources"])
                 detail_idx += 1
 
     if prompt := st.chat_input("输入你的问题…"):
