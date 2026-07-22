@@ -23,7 +23,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,7 @@ class KnowledgeGraphBuilder:
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             temperature=0,
+            extra_body=get_llm_extra_body(),
         )
         self.graph = nx.DiGraph()
         self.persist_path = Path(settings.graph_persist_path)

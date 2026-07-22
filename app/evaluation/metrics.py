@@ -11,7 +11,7 @@ from typing import List, Optional
 import numpy as np
 from openai import OpenAI
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ def _llm_judge(prompt: str) -> str:
         messages=[{"role": "user", "content": prompt}],
         temperature=0,
         max_tokens=2048,
+        extra_body=get_llm_extra_body(),
     )
     return resp.choices[0].message.content or ""
 

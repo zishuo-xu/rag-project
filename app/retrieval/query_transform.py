@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ class QueryTransformer:
             temperature=0.7,
             request_timeout=30,
             max_retries=2,
+            extra_body=get_llm_extra_body(),
         )
         # #7: 查询改写结果缓存 {question: (timestamp, queries)}
         self._transform_cache: dict[str, tuple[float, List[str]]] = {}

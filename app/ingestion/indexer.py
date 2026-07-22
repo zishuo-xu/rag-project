@@ -7,7 +7,7 @@ from langchain_core.documents import Document
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,7 @@ def get_llm() -> ChatOpenAI:
         temperature=0,
         request_timeout=60,
         max_retries=2,
+        extra_body=get_llm_extra_body(),
     )
 
 

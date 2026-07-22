@@ -10,7 +10,7 @@ from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 
-from config import get_settings
+from config import get_settings, get_llm_extra_body
 from app.ingestion.indexer import HierarchicalIndexer
 from app.retrieval.dense import DenseRetriever
 from app.retrieval.sparse import SparseRetriever
@@ -97,6 +97,7 @@ class RAGChain:
             streaming=True,
             request_timeout=60,
             max_retries=2,
+            extra_body=get_llm_extra_body(),
         )
 
         # 检索管道（七阶段，可独立测试）
