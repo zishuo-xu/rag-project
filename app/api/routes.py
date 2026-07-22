@@ -169,8 +169,8 @@ async def upload_document(file: UploadFile = File(...)):
         chunks = smart_chunk(docs)
         chain.indexer.index_documents(chunks)
 
-        # 重建 BM25 索引
-        chain.sparse_retriever.build_index()
+        # #11: 增量更新 BM25 索引（避免全量重建）
+        chain.sparse_retriever.add_documents(chunks)
 
         return UploadResponse(
             message=f"文档 '{file.filename}' 上传并索引成功",

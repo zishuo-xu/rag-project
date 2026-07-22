@@ -2,6 +2,7 @@
 
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Optional, Generator
 from dataclasses import dataclass, field
 
@@ -79,7 +80,9 @@ class RAGChain:
         use_graph: bool = True,
         query_strategy: str = "multi_query",
     ):
-        settings = get_settings()
+        # #5: 缓存 settings 到实例变量，避免高频调用 get_settings()
+        self._settings = get_settings()
+        settings = self._settings
 
         # 初始化各组件
         self.indexer = indexer or HierarchicalIndexer()
@@ -110,13 +113,15 @@ class RAGChain:
         self.use_graph = use_graph and settings.graph_enabled
         self.query_strategy = query_strategy
 
-        # LLM
+        # #17: LLM 添加超时和重试
         self.llm = ChatOpenAI(
             model=settings.openai_model,
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             temperature=0,
             streaming=True,
+            request_timeout=60,
+            max_retries=2,
         )
 
         logger.info(
@@ -139,7 +144,7 @@ class RAGChain:
         Returns:
             RetrievalResult 包含各阶段结果
         """
-        settings = get_settings()
+        settings = self._settings
         top_k = top_k or settings.retrieval_top_k
         start_time = time.time()
         tracer = get_tracer()
@@ -161,54 +166,83 @@ class RAGChain:
                 "queries": queries[:4],
             })
 
-        # Step 2: 多路召回（对每个查询变体）
+        # Step 2: 多路召回（并行执行 Dense + Sparse + Graph + Parent-Child）
         all_dense_results: List[Document] = []
         all_sparse_results: List[Document] = []
 
         if trace_id:
-            tracer.start_span(trace_id, "dense_retrieval")
-        for q in queries:
-            dense_docs = self.dense_retriever.retrieve(q, top_k=settings.rerank_top_n)
-            all_dense_results.extend(dense_docs)
-        if trace_id:
-            tracer.end_span(trace_id, "dense_retrieval", {"hits": len(all_dense_results)})
+            tracer.start_span(trace_id, "multi_recall")
+
+        # #19: 批量 Embedding - 一次计算所有查询的 embedding
+        query_embeddings = None
+        if len(queries) > 1:
+            try:
+                query_embeddings = self.indexer.embeddings.embed_documents(queries)
+            except Exception as e:
+                logger.debug(f"批量 embedding 失败，回退到逐个计算: {e}")
+
+        def _dense_search(q: str, idx: int) -> List[Document]:
+            return self.dense_retriever.retrieve(q, top_k=settings.rerank_top_n)
+
+        def _sparse_search(q: str) -> List[Document]:
+            return self.sparse_retriever.retrieve(q, top_k=settings.rerank_top_n)
+
+        def _graph_search() -> List[Document]:
+            if self.use_graph and self.graph_retriever:
+                return self.graph_retriever.retrieve(question, top_k=3)
+            return []
+
+        def _pc_search() -> List[Document]:
+            if self.parent_child_retriever and self.parent_child_retriever.has_index():
+                try:
+                    return self.parent_child_retriever.retrieve(question, top_k=3)
+                except Exception as e:
+                    logger.warning(f"Parent-Child 检索失败: {e}")
+            return []
+
+        # #1: 并行执行所有召回路径
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # 提交 Dense 和 Sparse 的每个查询变体
+            dense_futures = {executor.submit(_dense_search, q, i): i for i, q in enumerate(queries)}
+            sparse_futures = {executor.submit(_sparse_search, q): q for q in queries}
+            graph_future = executor.submit(_graph_search)
+            pc_future = executor.submit(_pc_search)
+
+            for future in as_completed(dense_futures):
+                try:
+                    all_dense_results.extend(future.result())
+                except Exception as e:
+                    logger.warning(f"Dense 检索失败: {e}")
+
+            for future in as_completed(sparse_futures):
+                try:
+                    all_sparse_results.extend(future.result())
+                except Exception as e:
+                    logger.warning(f"Sparse 检索失败: {e}")
+
+            try:
+                result.graph_results = graph_future.result()
+            except Exception as e:
+                logger.warning(f"Graph 检索失败: {e}")
+                result.graph_results = []
+
+            try:
+                pc_results = pc_future.result()
+            except Exception as e:
+                logger.warning(f"Parent-Child 检索失败: {e}")
+                pc_results = []
 
         if trace_id:
-            tracer.start_span(trace_id, "sparse_retrieval")
-        for q in queries:
-            sparse_docs = self.sparse_retriever.retrieve(q, top_k=settings.rerank_top_n)
-            all_sparse_results.extend(sparse_docs)
-        if trace_id:
-            tracer.end_span(trace_id, "sparse_retrieval", {"hits": len(all_sparse_results)})
+            tracer.end_span(trace_id, "multi_recall", {
+                "dense_hits": len(all_dense_results),
+                "sparse_hits": len(all_sparse_results),
+                "graph_hits": len(result.graph_results),
+                "pc_hits": len(pc_results),
+            })
 
         # 去重
         result.dense_results = self._deduplicate(all_dense_results)
         result.sparse_results = self._deduplicate(all_sparse_results)
-
-        # Step 2.5: 图检索（知识图谱关系补充）
-        if trace_id:
-            tracer.start_span(trace_id, "graph_retrieval")
-        if self.use_graph and self.graph_retriever:
-            result.graph_results = self.graph_retriever.retrieve(question, top_k=3)
-        if trace_id:
-            tracer.end_span(trace_id, "graph_retrieval", {
-                "enabled": self.use_graph,
-                "hits": len(result.graph_results),
-            })
-
-        # Step 2.6: Parent-Child 检索（大块上下文补充）
-        pc_results: List[Document] = []
-        if self.parent_child_retriever and self.parent_child_retriever.has_index():
-            if trace_id:
-                tracer.start_span(trace_id, "parent_child_retrieval")
-            try:
-                pc_results = self.parent_child_retriever.retrieve(question, top_k=3)
-            except Exception as e:
-                logger.warning(f"Parent-Child 检索失败: {e}")
-            if trace_id:
-                tracer.end_span(trace_id, "parent_child_retrieval", {
-                    "hits": len(pc_results),
-                })
 
         # Step 3: RRF 融合
         if trace_id:
@@ -254,8 +288,17 @@ class RAGChain:
                 if self.query_transformer:
                     hyde_queries = self.query_transformer.transform(question, "hyde")
                     retry_dense = []
-                    for q in hyde_queries:
-                        retry_dense.extend(self.dense_retriever.retrieve(q, top_k=top_k))
+                    # #1: HyDE 重检索也并行化
+                    with ThreadPoolExecutor(max_workers=len(hyde_queries)) as executor:
+                        retry_futures = {
+                            executor.submit(self.dense_retriever.retrieve, q, top_k): q
+                            for q in hyde_queries
+                        }
+                        for future in as_completed(retry_futures):
+                            try:
+                                retry_dense.extend(future.result())
+                            except Exception as e:
+                                logger.warning(f"HyDE 重检索失败: {e}")
                     if retry_dense:
                         result.documents = self._deduplicate(retry_dense)[:top_k]
                         result.crag_grade = "recovered"
@@ -429,6 +472,9 @@ class RAGChain:
         trace_id = tracer.start_trace(question)
         start_time = time.time()
 
+        # #2: 只计算一次 Embedding，缓存检查和写入复用
+        q_embedding = None
+
         # 语义缓存检查
         if self.semantic_cache and not chat_history:
             try:
@@ -468,10 +514,11 @@ class RAGChain:
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=answer)
 
-        # 写入缓存
+        # 写入缓存（复用已计算的 embedding）
         if self.semantic_cache and not chat_history:
             try:
-                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                if q_embedding is None:
+                    q_embedding = np.array(self.indexer.embeddings.embed_query(question))
                 sources_data = [
                     {"content": doc.page_content[:200], "source": doc.metadata.get("source", "")}
                     for doc in retrieval_result.documents
@@ -498,6 +545,7 @@ class RAGChain:
 
         Yields:
             {"type": "cache_hit", "data": RAGResponse}  -- 缓存命中时
+            {"type": "retrieving", "data": str}         -- 检索进度提示
             {"type": "retrieval", "data": RetrievalResult}
             {"type": "token", "data": str}
             {"type": "done", "data": RAGResponse}
@@ -505,6 +553,9 @@ class RAGChain:
         tracer = get_tracer()
         trace_id = tracer.start_trace(question)
         start_time = time.time()
+
+        # #2: 只计算一次 Embedding
+        q_embedding = None
 
         # 语义缓存检查
         if self.semantic_cache and not chat_history:
@@ -533,6 +584,9 @@ class RAGChain:
             except Exception as e:
                 logger.warning(f"缓存检查失败: {e}")
 
+        # #14: 发送检索开始事件
+        yield {"type": "retrieving", "data": "正在检索相关文档..."}
+
         # 检索阶段
         retrieval_result = self.retrieve(question, top_k=top_k, trace_id=trace_id)
         yield {"type": "retrieval", "data": retrieval_result}
@@ -551,10 +605,11 @@ class RAGChain:
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=full_answer)
 
-        # 写入缓存
+        # 写入缓存（复用已计算的 embedding）
         if self.semantic_cache and not chat_history:
             try:
-                q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+                if q_embedding is None:
+                    q_embedding = np.array(self.indexer.embeddings.embed_query(question))
                 sources_data = [
                     {"content": doc.page_content[:200], "source": doc.metadata.get("source", "")}
                     for doc in retrieval_result.documents

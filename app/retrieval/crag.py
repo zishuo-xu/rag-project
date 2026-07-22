@@ -54,12 +54,15 @@ class CRAGEvaluator:
 
     def __init__(self):
         settings = get_settings()
+        # #17: LLM 添加超时和重试
         self.llm = ChatOpenAI(
             model=settings.openai_model,
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             temperature=0,
             max_tokens=256,
+            request_timeout=30,
+            max_retries=2,
         )
         self.threshold = settings.crag_relevance_threshold
 

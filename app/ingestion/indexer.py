@@ -35,11 +35,14 @@ def get_embeddings():
 def get_llm() -> ChatOpenAI:
     """获取 OpenAI LLM 实例"""
     settings = get_settings()
+    # #17: LLM 添加超时和重试
     return ChatOpenAI(
         model=settings.openai_model,
         api_key=settings.openai_api_key,
         base_url=settings.openai_base_url,
         temperature=0,
+        request_timeout=60,
+        max_retries=2,
     )
 
 

@@ -1,7 +1,9 @@
 """稀疏检索 - BM25 关键词匹配"""
 
 import logging
+import pickle
 import re
+from pathlib import Path
 from typing import List
 
 import jieba
@@ -9,6 +11,7 @@ from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
 from app.ingestion.indexer import HierarchicalIndexer
+from config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,9 @@ class SparseRetriever:
         self.indexer = indexer
         self.bm25: BM25Okapi | None = None
         self.corpus: List[Document] = []
+        # #4: BM25 索引持久化路径
+        settings = get_settings()
+        self._persist_path = Path(settings.chroma_persist_dir).parent / "bm25_index.pkl"
 
     def build_index(self):
         """
@@ -37,6 +43,7 @@ class SparseRetriever:
 
         从 ChromaDB 中读取所有已索引的分块，
         进行分词后构建 BM25 倒排索引。
+        构建完成后自动持久化到磁盘。
         """
         self.corpus = self.indexer.get_all_chunks()
         if not self.corpus:
@@ -47,6 +54,51 @@ class SparseRetriever:
         tokenized_corpus = [self._tokenize(doc.page_content) for doc in self.corpus]
         self.bm25 = BM25Okapi(tokenized_corpus)
         logger.info(f"BM25 索引构建完成: {len(self.corpus)} 个文档")
+        # #4: 持久化到磁盘
+        self._save_index()
+
+    def add_documents(self, new_docs: List[Document]):
+        """
+        #11: 增量更新 BM25 索引（追加新文档，避免全量重建）。
+
+        Args:
+            new_docs: 新索引的文档分块
+        """
+        if not new_docs:
+            return
+        self.corpus.extend(new_docs)
+        tokenized_corpus = [self._tokenize(doc.page_content) for doc in self.corpus]
+        self.bm25 = BM25Okapi(tokenized_corpus)
+        logger.info(f"BM25 增量更新: +{len(new_docs)} -> 共 {len(self.corpus)} 个文档")
+        self._save_index()
+
+    def _save_index(self):
+        """#4: 持久化 BM25 索引到磁盘"""
+        try:
+            self._persist_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self._persist_path, "wb") as f:
+                pickle.dump({
+                    "bm25": self.bm25,
+                    "corpus": self.corpus,
+                }, f)
+            logger.debug(f"BM25 索引已持久化: {self._persist_path}")
+        except Exception as e:
+            logger.warning(f"BM25 索引持久化失败: {e}")
+
+    def _load_index(self) -> bool:
+        """#4: 从磁盘加载 BM25 索引"""
+        if not self._persist_path.exists():
+            return False
+        try:
+            with open(self._persist_path, "rb") as f:
+                data = pickle.load(f)
+            self.bm25 = data["bm25"]
+            self.corpus = data["corpus"]
+            logger.info(f"BM25 索引从磁盘加载: {len(self.corpus)} 个文档")
+            return True
+        except Exception as e:
+            logger.warning(f"BM25 索引加载失败: {e}")
+            return False
 
     def _tokenize(self, text: str) -> List[str]:
         """
@@ -93,7 +145,9 @@ class SparseRetriever:
             按 BM25 分数排序的文档列表
         """
         if self.bm25 is None:
-            self.build_index()
+            # #4: 先尝试从磁盘加载，失败再全量重建
+            if not self._load_index():
+                self.build_index()
 
         if self.bm25 is None or not self.corpus:
             logger.warning("BM25 索引为空，返回空结果")
@@ -118,7 +172,8 @@ class SparseRetriever:
     def retrieve_with_scores(self, query: str, top_k: int = 10) -> List[dict]:
         """带分数的 BM25 检索"""
         if self.bm25 is None:
-            self.build_index()
+            if not self._load_index():
+                self.build_index()
 
         if self.bm25 is None or not self.corpus:
             return []

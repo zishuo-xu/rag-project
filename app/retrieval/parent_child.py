@@ -147,20 +147,50 @@ class ParentChildRetriever:
             if len(parent_ids) >= top_k:
                 break
 
-        # 从 parent store 获取完整内容
+        # #10: 批量查询 parent（用 $in 一次查询代替逐个查询）
         results = []
-        for pid in parent_ids:
-            parent_docs = self.parent_store.get(
-                where={"parent_id": pid},
-                include=["documents", "metadatas"],
-            )
-            if parent_docs["documents"]:
-                doc = Document(
-                    page_content=parent_docs["documents"][0],
-                    metadata=parent_docs["metadatas"][0] if parent_docs["metadatas"] else {},
+        if parent_ids:
+            try:
+                batch_result = self.parent_store.get(
+                    where={"parent_id": {"$in": parent_ids}},
+                    include=["documents", "metadatas"],
                 )
-                doc.metadata["retrieval_method"] = "parent_child"
-                results.append(doc)
+                # 建立 parent_id -> (document, metadata) 的映射
+                pid_map = {}
+                if batch_result["documents"] and batch_result["metadatas"]:
+                    for doc_text, meta in zip(batch_result["documents"], batch_result["metadatas"]):
+                        pid = meta.get("parent_id", "")
+                        if pid:
+                            pid_map[pid] = (doc_text, meta)
+
+                # 按原始 parent_ids 顺序构建结果
+                for pid in parent_ids:
+                    if pid in pid_map:
+                        doc_text, meta = pid_map[pid]
+                        doc = Document(
+                            page_content=doc_text,
+                            metadata=meta.copy(),
+                        )
+                        doc.metadata["retrieval_method"] = "parent_child"
+                        results.append(doc)
+            except Exception as e:
+                logger.warning(f"Parent-Child 批量查询失败，回退到逐个查询: {e}")
+                # 回退：逐个查询
+                for pid in parent_ids:
+                    try:
+                        parent_docs = self.parent_store.get(
+                            where={"parent_id": pid},
+                            include=["documents", "metadatas"],
+                        )
+                        if parent_docs["documents"]:
+                            doc = Document(
+                                page_content=parent_docs["documents"][0],
+                                metadata=parent_docs["metadatas"][0] if parent_docs["metadatas"] else {},
+                            )
+                            doc.metadata["retrieval_method"] = "parent_child"
+                            results.append(doc)
+                    except Exception:
+                        continue
 
         logger.info(
             f"Parent-Child 检索: {len(child_hits)} child hits -> "
