@@ -977,7 +977,7 @@ class RAGChain:
 
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=answer)
-        self._write_cache(question, q_embedding, answer, retrieval_result.documents)
+        self._write_cache(question, chat_history, q_embedding, answer, retrieval_result.documents)
 
         return RAGResponse(
             answer=answer,
@@ -1039,7 +1039,7 @@ class RAGChain:
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=full_answer)
         self._write_cache(
-            question, q_embedding, full_answer, retrieval_result.documents
+            question, chat_history, q_embedding, full_answer, retrieval_result.documents
         )
 
         yield {"type": "done", "data": RAGResponse(
@@ -1099,12 +1099,13 @@ class RAGChain:
     def _write_cache(
         self,
         question: str,
+        chat_history: List | None,
         q_embedding: np.ndarray | None,
         answer: str,
         documents: List[Document],
     ) -> None:
-        """语义缓存写入（复用已计算的 embedding）"""
-        if not self.semantic_cache:
+        """语义缓存写入（复用已计算的 embedding；带对话历史时不写）"""
+        if not self.semantic_cache or chat_history:
             return
         try:
             embedding = q_embedding
