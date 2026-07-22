@@ -21,18 +21,30 @@ class DenseRetriever:
     def __init__(self, indexer: HierarchicalIndexer):
         self.indexer = indexer
 
-    def retrieve(self, query: str, top_k: int = 10) -> List[Document]:
+    def retrieve(
+        self,
+        query: str,
+        top_k: int = 10,
+        embedding: list | None = None,
+    ) -> List[Document]:
         """
         稠密向量检索。
 
         Args:
             query: 查询文本
             top_k: 返回 top-K 结果
+            embedding: 可选的预计算查询向量（多查询变体场景下批量预算后复用，
+                       避免每个变体重复调用 embedding 模型）
 
         Returns:
             按相似度排序的文档列表
         """
-        results = self.indexer.search_chunks(query, top_k=top_k)
+        if embedding is not None:
+            results = self.indexer.chunk_store.similarity_search_by_vector(
+                embedding, k=top_k
+            )
+        else:
+            results = self.indexer.search_chunks(query, top_k=top_k)
         logger.debug(f"稠密检索: query='{query[:50]}...', 返回 {len(results)} 条")
         return results
 
