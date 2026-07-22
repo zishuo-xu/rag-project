@@ -99,3 +99,29 @@ def test_run_happy_path_correct_grade():
     assert result.gate_skipped is False
     assert len(result.documents) > 0
     assert result.queries_used == ["问题", "问题变体"]
+
+
+def test_summary_channel_disabled_by_config():
+    """use_summary_recall=False 时摘要路不召回"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_summary_recall = False
+    results = pipe.recall("问题", ["问题"])
+    assert results["summary"] == []
+    mocks["indexer"].hierarchical_search.assert_not_called()
+
+
+def test_summary_results_feed_fusion():
+    """摘要召回结果进入 RRF 融合"""
+    pipe, _ = _make_pipeline()
+    recall_results = pipe.recall("问题", ["问题"])
+    fused = pipe.fuse(recall_results)
+    contents = [d.page_content for d in fused]
+    assert "summary_hit" in contents
+
+
+def test_run_populates_summary_results():
+    """run() 结果包含 summary_results 字段"""
+    pipe, _ = _make_pipeline()
+    result = pipe.run("问题")
+    assert len(result.summary_results) == 1
+    assert result.summary_results[0].page_content == "summary_hit"

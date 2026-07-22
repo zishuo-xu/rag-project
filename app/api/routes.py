@@ -113,6 +113,7 @@ async def _stream_response(
                     "final_count": len(retrieval.documents),
                     "retrieval_time_ms": retrieval.retrieval_time_ms,
                     "crag_grade": retrieval.crag_grade,
+                    "summary_count": len(retrieval.summary_results),
                     "crag_action": retrieval.crag_action,
                 }, ensure_ascii=False),
             }
