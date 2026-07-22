@@ -61,6 +61,20 @@ class Settings(BaseSettings):
     use_crag_gate: bool = True       # CRAG 门控：判断是否需要检索
     recall_max_workers: int = 6      # 多路召回线程池大小
 
+    # RAG 2.0 深度增强（每项独立开关，异常均优雅降级到原行为）
+    # F1 Autocut 自适应截断（Kneedle 膝点检测，替代固定 TopK 降噪）
+    use_autocut: bool = True
+    autocut_min_docs: int = 2        # 截断下界（上界复用 retrieval_top_k）
+    # F2 Self-RAG 迭代检索（质量驱动终止：充分性/收敛性，硬上限仅兜底）
+    use_iterative_retrieval: bool = True
+    max_retrieval_iterations: int = 2
+    # F3 生成忠实度自检（幻觉检测 + 严格重生成）
+    use_faithfulness_check: bool = True
+    faithfulness_threshold: float = 0.7
+    faithfulness_max_regen: int = 1
+    # F4 查询路由 / 类型自适应（规则驱动，零 LLM）
+    use_query_router: bool = True
+
     # 并发控制
     max_concurrent_requests: int = 4   # /api/chat 并发闸门
     request_queue_timeout: float = 30.0  # 排队超时秒数，超时返回503

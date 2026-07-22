@@ -46,6 +46,12 @@ def _make_pipeline(**overrides):
     settings.recall_max_workers = 6
     settings.use_summary_recall = True
     settings.use_crag_gate = True
+    # RAG 2.0 新特性：基线 mock 默认全关，保护既有行为；专项测试再单独打开
+    settings.use_autocut = False
+    settings.autocut_min_docs = 2
+    settings.use_iterative_retrieval = False
+    settings.max_retrieval_iterations = 2
+    settings.use_query_router = False
 
     kwargs = dict(
         indexer=indexer, dense_retriever=dense, sparse_retriever=sparse,
@@ -231,6 +237,62 @@ def test_remediate_returns_empty_when_recall_empty():
     mocks["dense_retriever"].retrieve.side_effect = lambda *a, **k: []
     mocks["sparse_retriever"].retrieve.side_effect = lambda *a, **k: []
     assert pipe.remediate("问题", 5) == []
+
+
+def test_autocut_truncates_on_clear_cliff():
+    """F1 use_autocut=True：重排分数断崖时动态截断，保留少于 top_k"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_autocut = True
+    mocks["settings"].autocut_min_docs = 2
+
+    def _scored_rerank(q, docs, top_k=None):
+        scores = [0.95, 0.90, 0.85, 0.30, 0.25, 0.20]  # 3 高 3 低断崖
+        out = []
+        for i, d in enumerate(docs[:6]):
+            d.metadata["rerank_score"] = scores[i]
+            out.append(d)
+        return out[: top_k or len(out)]
+
+    mocks["reranker"].rerank.side_effect = _scored_rerank
+    mocks["dense_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10, embedding=None: [_doc(f"d{q}{j}") for j in range(3)]
+    )
+    mocks["sparse_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10: [_doc(f"s{q}{j}") for j in range(3)]
+    )
+    result = pipe.run("问题")
+    assert len(result.documents) == 3        # 断崖在第3篇后 → 保留3篇 (< top_k=5)
+    assert result.pre_autocut_count >= 6     # 截断前候选 ≥6
+
+
+def test_autocut_flat_scores_fallback_top_k():
+    """F1 use_autocut=True：分数全等（无膝点）→ 回退 top_k"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_autocut = True
+    mocks["settings"].autocut_min_docs = 2
+
+    def _flat_rerank(q, docs, top_k=None):
+        for d in docs:
+            d.metadata["rerank_score"] = 0.5
+        return docs[: top_k or len(docs)]
+
+    mocks["reranker"].rerank.side_effect = _flat_rerank
+    mocks["dense_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10, embedding=None: [_doc(f"d{q}{j}") for j in range(4)]
+    )
+    mocks["sparse_retriever"].retrieve.side_effect = (
+        lambda q, top_k=10: [_doc(f"s{q}{j}") for j in range(4)]
+    )
+    result = pipe.run("问题")
+    assert 2 <= len(result.documents) <= 5   # 回退 top_k=5，满足下界
+
+
+def test_autocut_disabled_keeps_fixed_top_k():
+    """F1 use_autocut=False：保持固定 top_k 截断（回归保护）"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].use_autocut = False
+    result = pipe.run("问题")
+    assert len(result.documents) <= 5
 
 
 def test_remediate_failure_keeps_original():

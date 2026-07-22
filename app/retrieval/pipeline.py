@@ -9,6 +9,7 @@ from typing import List
 from langchain_core.documents import Document
 
 from config import get_settings
+from app.retrieval.autocut import autocut_truncate
 from app.retrieval.crag import CRAGEvaluator
 from app.retrieval.fusion import reciprocal_rank_fusion
 from app.observability.tracing import get_tracer
@@ -33,6 +34,11 @@ class RetrievalResult:
     crag_grade: str = ""    # correct / ambiguous / incorrect / recovered
     crag_action: str = ""   # 采取的动作描述
     gate_skipped: bool = False  # 门控判定无需检索
+    # RAG 2.0 观测字段
+    pre_autocut_count: int = 0       # F1: Autocut 截断前的候选数（降噪幅度）
+    query_type: str = ""             # F4: 路由判定的查询类型
+    iterations_used: int = 0         # F2: 迭代检索实际迭代次数
+    iterative_stop_reason: str = ""  # F2: sufficient / converged / max_iterations / disabled
 
 
 class RetrievalPipeline:
@@ -183,8 +189,19 @@ class RetrievalPipeline:
         documents: List[Document],
         top_k: int,
         use_rerank: bool = True,
+        use_autocut: bool = False,
+        autocut_min_docs: int = 2,
     ) -> List[Document]:
         if use_rerank and self.reranker:
+            if use_autocut:
+                # 打分+排序全部候选（CrossEncoder 计算量不变，仅多返回），
+                # 再用 Kneedle 膝点动态截断噪声尾巴，上界 top_k 保证不扩容。
+                scored = self.reranker.rerank(
+                    question, documents, top_k=len(documents)
+                )
+                return autocut_truncate(
+                    scored, top_k=top_k, min_docs=autocut_min_docs,
+                )
             return self.reranker.rerank(question, documents, top_k=top_k)
         return documents[:top_k]
 
@@ -294,16 +311,23 @@ class RetrievalPipeline:
         if trace_id:
             tracer.end_span(trace_id, "rrf_fusion", {"fused": len(result.fused_results)})
 
-        # ⑤ 重排
+        # ⑤ 重排（+ F1 Autocut 自适应截断降噪）
         if trace_id:
             tracer.start_span(trace_id, "rerank")
+        result.pre_autocut_count = len(result.fused_results)
         result.reranked_results = self.rerank(
-            question, result.fused_results, top_k, use_rerank=use_rerank
+            question, result.fused_results, top_k,
+            use_rerank=use_rerank,
+            use_autocut=settings.use_autocut,
+            autocut_min_docs=settings.autocut_min_docs,
         )
         result.documents = result.reranked_results
         if trace_id:
             tracer.end_span(trace_id, "rerank", {
-                "enabled": use_rerank, "final": len(result.documents),
+                "enabled": use_rerank,
+                "autocut": settings.use_autocut,
+                "pre_autocut": result.pre_autocut_count,
+                "final": len(result.documents),
             })
 
         # ⑥ CRAG 评估 + ⑦ 补救
