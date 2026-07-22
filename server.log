@@ -1,360 +1,0 @@
-INFO:     Will watch for changes in these directories: ['/Users/xuzishuo/Documents/rag']
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [53887] using WatchFiles
-INFO:     Started server process [53891]
-INFO:     Waiting for application startup.
-2026-07-22 20:32:37,694 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:32:37,709 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 27660.75it/s]
-2026-07-22 20:32:37,768 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:32:37,927 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:32:37,928 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8477.43it/s]
-2026-07-22 20:32:40,687 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:32:40,697 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:32:40,698 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:32:40,698 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:32:40,820 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:32:40,820 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.266 seconds.
-2026-07-22 20:32:41,085 - jieba - DEBUG - Loading model cost 0.266 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:32:41,085 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:32:41,135 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:32:41,135 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-INFO:     127.0.0.1:64877 - "GET /api/health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64879 - "GET /api/documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64881 - "GET /api/graph/stats HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64883 - "GET /api/traces/stats HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64885 - "GET /api/traces/stats HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64887 - "GET /api/traces?limit=10 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64889 - "GET /api/documents HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64891 - "GET /api/graph/build/progress HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64893 - "GET /api/graph/stats HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64895 - "GET /api/graph/visual HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64900 - "GET /api/graph/triples?limit=50 HTTP/1.1" 200 OK
-WARNING:  WatchFiles detected changes in 'app/generation/chain.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:43:08,809 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [53891]
-INFO:     Started server process [54395]
-INFO:     Waiting for application startup.
-2026-07-22 20:43:13,254 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:43:13,269 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 25866.03it/s]
-2026-07-22 20:43:13,336 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:43:13,553 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:43:13,554 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8335.03it/s]
-2026-07-22 20:43:16,125 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:43:16,143 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:43:16,145 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:43:16,180 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:43:16,315 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:43:16,315 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.234 seconds.
-2026-07-22 20:43:16,550 - jieba - DEBUG - Loading model cost 0.234 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:43:16,550 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:43:16,599 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:43:16,599 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/retrieval/query_transform.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:43:45,892 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54395]
-INFO:     Started server process [54451]
-INFO:     Waiting for application startup.
-2026-07-22 20:43:50,278 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:43:50,293 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 8859.54it/s]
-2026-07-22 20:43:50,370 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:43:50,549 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:43:50,550 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8602.34it/s]
-2026-07-22 20:43:52,748 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:43:52,784 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:43:52,785 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:43:52,804 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:43:52,912 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:43:52,912 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.214 seconds.
-2026-07-22 20:43:53,126 - jieba - DEBUG - Loading model cost 0.214 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:43:53,127 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:43:53,173 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:43:53,173 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/retrieval/parent_child.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:44:10,552 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54451]
-INFO:     Started server process [54506]
-INFO:     Waiting for application startup.
-2026-07-22 20:44:14,446 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:44:14,460 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 21333.59it/s]
-2026-07-22 20:44:14,521 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:44:14,661 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:44:14,662 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11448.33it/s]
-2026-07-22 20:44:16,517 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:44:16,545 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:44:16,546 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:44:16,567 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:44:16,626 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:44:16,626 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.265 seconds.
-2026-07-22 20:44:16,891 - jieba - DEBUG - Loading model cost 0.265 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:44:16,891 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:44:16,940 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:44:16,941 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/retrieval/sparse.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:01,380 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54506]
-INFO:     Started server process [54619]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:05,780 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:05,796 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 24660.12it/s]
-2026-07-22 20:45:05,857 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:06,071 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:06,072 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8946.02it/s]
-2026-07-22 20:45:08,655 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:45:08,700 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:45:08,701 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:45:08,723 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:45:08,830 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:45:08,830 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.389 seconds.
-2026-07-22 20:45:09,219 - jieba - DEBUG - Loading model cost 0.389 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:45:09,219 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:45:09,401 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:45:09,406 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/api/routes.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:16,475 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54619]
-INFO:     Started server process [54786]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:21,091 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:21,105 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 26463.66it/s]
-2026-07-22 20:45:21,173 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:21,331 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:21,332 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 7701.17it/s]
-2026-07-22 20:45:23,996 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:45:24,028 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:45:24,028 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:45:24,049 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:45:24,247 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:45:24,247 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.261 seconds.
-2026-07-22 20:45:24,508 - jieba - DEBUG - Loading model cost 0.261 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:45:24,508 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:45:24,557 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:45:24,559 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/retrieval/crag.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:32,038 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54786]
-WARNING:  WatchFiles detected changes in 'app/retrieval/crag.py'. Reloading...
-INFO:     Started server process [54834]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:36,206 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:36,222 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 36769.43it/s]
-2026-07-22 20:45:36,283 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:36,442 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:36,442 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 22824.75it/s]
-2026-07-22 20:45:38,864 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:45:38,891 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:45:38,892 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:45:38,912 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:45:38,970 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:45:38,970 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.243 seconds.
-2026-07-22 20:45:39,214 - jieba - DEBUG - Loading model cost 0.243 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:45:39,214 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:45:39,261 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:45:39,263 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:39,365 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54834]
-INFO:     Started server process [54861]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:43,317 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:43,331 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 86922.24it/s]
-2026-07-22 20:45:43,388 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:43,528 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:43,529 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 21051.12it/s]
-2026-07-22 20:45:45,330 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:45:45,422 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:45:45,423 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:45:45,451 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:45:45,510 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:45:45,511 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.216 seconds.
-2026-07-22 20:45:45,727 - jieba - DEBUG - Loading model cost 0.216 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:45:45,727 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:45:45,774 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:45:45,775 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/retrieval/graph_retriever.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:48,805 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54861]
-WARNING:  WatchFiles detected changes in 'app/retrieval/graph_retriever.py'. Reloading...
-INFO:     Started server process [54866]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:52,281 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:52,295 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 30894.86it/s]
-2026-07-22 20:45:52,351 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:52,486 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:52,486 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 22788.97it/s]
-2026-07-22 20:45:54,538 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:45:54,570 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:45:54,571 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:45:54,591 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:45:54,652 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:45:54,652 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.225 seconds.
-2026-07-22 20:45:54,877 - jieba - DEBUG - Loading model cost 0.225 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:45:54,877 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:45:54,924 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:45:54,926 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:45:55,028 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54866]
-INFO:     Started server process [54896]
-INFO:     Waiting for application startup.
-2026-07-22 20:45:58,362 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:45:58,377 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 20227.93it/s]
-2026-07-22 20:45:58,436 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:45:58,657 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:45:58,658 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 11879.37it/s]
-2026-07-22 20:46:00,689 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:46:00,725 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:46:00,726 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:46:00,747 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:46:00,822 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:46:00,823 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.243 seconds.
-2026-07-22 20:46:01,066 - jieba - DEBUG - Loading model cost 0.243 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:46:01,066 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:46:01,114 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:46:01,115 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/ingestion/indexer.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-2026-07-22 20:46:05,762 - main - INFO - RAG 系统关闭
-INFO:     Application shutdown complete.
-INFO:     Finished server process [54896]
-INFO:     Started server process [54901]
-INFO:     Waiting for application startup.
-2026-07-22 20:46:09,104 - main - INFO - 正在初始化 RAG 系统...
-/Users/xuzishuo/Documents/rag/app/ingestion/indexer.py:21: LangChainDeprecationWarning: The class `HuggingFaceEmbeddings` was deprecated in LangChain 0.2.2 and will be removed in 1.0. An updated version of the class exists in the `langchain-huggingface package and should be used instead. To use it run `pip install -U `langchain-huggingface` and import as `from `langchain_huggingface import HuggingFaceEmbeddings``.
-  return HuggingFaceEmbeddings(
-2026-07-22 20:46:09,118 - sentence_transformers.base.model - INFO - Loading SentenceTransformer model from BAAI/bge-small-zh-v1.5.
-Loading weights:   0%|          | 0/71 [00:00<?, ?it/s]Loading weights: 100%|██████████| 71/71 [00:00<00:00, 23441.09it/s]
-2026-07-22 20:46:09,178 - langchain_openai.chat_models._client_utils - INFO - langchain-openai detected system proxy configuration and no explicit `http_socket_options` / `http_client` / `http_async_client` / `openai_proxy`; skipping the custom `httpx` transport so httpx's env-proxy auto-detection applies. Pass `http_socket_options=[...]` to opt back into kernel-level TCP keepalive tuning on top of the env proxy.
-2026-07-22 20:46:09,321 - sentence_transformers.base.model - INFO - No device provided, using mps
-2026-07-22 20:46:09,322 - sentence_transformers.base.model - INFO - No modules.json found for BAAI/bge-reranker-base, initializing a new CrossEncoder model.
-Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 24971.27it/s]
-2026-07-22 20:46:11,335 - app.retrieval.reranker - INFO - Reranker 初始化完成: BAAI/bge-reranker-base
-2026-07-22 20:46:11,391 - app.ingestion.graph_extractor - INFO - 知识图谱已加载: 675 节点, 2354 边
-2026-07-22 20:46:11,392 - app.retrieval.cache - INFO - SemanticCache 初始化: threshold=0.92, max_size=200, ttl=3600s
-2026-07-22 20:46:11,392 - app.generation.chain - INFO - RAGChain 初始化: query_transform=True, rerank=True, strategy=multi_query, parent_child=True, crag=True, cache=True
-Building prefix dict from the default dictionary ...
-2026-07-22 20:46:11,455 - jieba - DEBUG - Building prefix dict from the default dictionary ...
-Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-2026-07-22 20:46:11,455 - jieba - DEBUG - Loading model from cache /var/folders/46/fbct3p9534j9b21bh_vw0r0h0000gn/T/jieba.cache
-Loading model cost 0.237 seconds.
-2026-07-22 20:46:11,691 - jieba - DEBUG - Loading model cost 0.237 seconds.
-Prefix dict has been built successfully.
-2026-07-22 20:46:11,692 - jieba - DEBUG - Prefix dict has been built successfully.
-2026-07-22 20:46:11,741 - app.retrieval.sparse - INFO - BM25 索引构建完成: 137 个文档
-2026-07-22 20:46:11,742 - main - INFO - RAG 系统初始化完成
-INFO:     Application startup complete.
