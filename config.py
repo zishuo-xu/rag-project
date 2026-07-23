@@ -75,6 +75,16 @@ class Settings(BaseSettings):
     # F4 查询路由 / 类型自适应（规则驱动，零 LLM）
     use_query_router: bool = True
 
+    # F6 答案定位增强（每项独立开关，异常均优雅降级到原行为）
+    # F6a 细粒度召回 + 上下文增强（零在线 LLM 增量）
+    use_contextual_chunks: bool = True            # 查询时使用上下文增强嵌入集合
+    contextual_max_chars: int = 80                # 上下文片段长度上限
+    chroma_contextual_collection: str = "chunks_contextual"
+    # F6b 多跳查询分解（仅多跳查询触发；并行优先，依赖时链式）
+    use_decomposition: bool = True
+    decomposition_max_subquestions: int = 4       # 子问题数上限
+    decomposition_max_hops: int = 3               # 链式分解跳数硬上限
+
     # 并发控制
     max_concurrent_requests: int = 4   # /api/chat 并发闸门
     request_queue_timeout: float = 30.0  # 排队超时秒数，超时返回503
