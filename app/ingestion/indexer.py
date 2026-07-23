@@ -89,6 +89,7 @@ class HierarchicalIndexer:
         self.llm = llm or get_llm()
         self._chunk_store: Optional[Chroma] = None
         self._summary_store: Optional[Chroma] = None
+        self._contextual_store: Optional[Chroma] = None
 
     @property
     def chunk_store(self) -> Chroma:
@@ -111,6 +112,31 @@ class HierarchicalIndexer:
                 persist_directory=self.settings.chroma_persist_dir,
             )
         return self._summary_store
+
+    @property
+    def contextual_store(self) -> Chroma:
+        """获取/创建上下文增强明细索引（F6a，与 chunk_store 并行的独立 collection）"""
+        if self._contextual_store is None:
+            self._contextual_store = Chroma(
+                collection_name=self.settings.chroma_contextual_collection,
+                embedding_function=self.embeddings,
+                persist_directory=self.settings.chroma_persist_dir,
+            )
+        return self._contextual_store
+
+    @property
+    def detail_store(self) -> Chroma:
+        """明细检索目标集合：开启上下文增强且其集合非空时用 contextual_store，否则 chunk_store。
+
+        关闭或 contextual 未构建时回退 chunk_store，保证行为与现状一致（回归安全）。
+        """
+        if self.settings.use_contextual_chunks:
+            try:
+                if self.contextual_store._collection.count() > 0:
+                    return self.contextual_store
+            except Exception:
+                pass
+        return self.chunk_store
 
     def index_documents(self, chunks: List[Document], build_summary: bool = True):
         """
@@ -149,6 +175,33 @@ class HierarchicalIndexer:
                 self.summary_store.add_documents(summaries)
                 logger.info(f"L1 摘要索引写入: {len(summaries)} 个文档摘要")
 
+    def index_documents_contextual(self, chunks: List[Document], contexts: List[str]):
+        """F6a：用「上下文+原文」做 embedding 写入 contextual_store，但存储原文 page_content。
+
+        contexts 与 chunks 等长。embedding 用 contextualized 文本（提升排序精度），
+        Chroma 中 documents 存原文（避免上下文前缀污染生成），上下文进 metadata。
+        """
+        if not chunks:
+            return
+        contextualized = [
+            (f"{ctx}\n{ch.page_content}" if ctx else ch.page_content)
+            for ctx, ch in zip(contexts, chunks)
+        ]
+        embeddings = self.embeddings.embed_documents(contextualized)
+        ids = [ch.metadata.get("chunk_id", f"ctx_{i}") for i, ch in enumerate(chunks)]
+        metadatas = []
+        for ctx, ch in zip(contexts, chunks):
+            meta = dict(ch.metadata)
+            meta["context"] = ctx
+            metadatas.append(meta)
+        self.contextual_store._collection.add(
+            ids=ids,
+            embeddings=embeddings,
+            documents=[ch.page_content for ch in chunks],
+            metadatas=metadatas,
+        )
+        logger.info(f"F6a 上下文增强索引写入: {len(chunks)} 个分块")
+
     def _group_by_document(self, chunks: List[Document]) -> dict:
         """按 doc_id 分组"""
         groups = {}
@@ -160,8 +213,8 @@ class HierarchicalIndexer:
         return groups
 
     def search_chunks(self, query: str, top_k: int = 10) -> List[Document]:
-        """L2 明细检索"""
-        return self.chunk_store.similarity_search(query, k=top_k)
+        """L2 明细检索（按 detail_store 开关选择 contextual / 裸块集合）"""
+        return self.detail_store.similarity_search(query, k=top_k)
 
     def search_summaries(self, query: str, top_k: int = 3) -> List[Document]:
         """L1 摘要检索 - 定位相关文档"""

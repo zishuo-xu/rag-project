@@ -46,3 +46,58 @@ def test_build_chunk_contexts_groups_by_doc_and_aligns():
     contexts = build_chunk_contexts(chunks, llm=llm)
     assert contexts == ["CTX", "CTX", "CTX"]
     assert len(contexts) == len(chunks)
+
+
+import tempfile
+import uuid
+
+import pytest
+from config import get_settings
+from app.ingestion.indexer import HierarchicalIndexer
+
+
+class FakeEmbeddings:
+    """确定性假 embedding：向量由文本长度决定（离线、可复现）"""
+    def embed_documents(self, texts):
+        return [[float(len(t) % 7), float(len(t) % 3), 1.0] for t in texts]
+    def embed_query(self, text):
+        return [float(len(text) % 7), float(len(text) % 3), 1.0]
+
+
+@pytest.fixture
+def ctx_indexer(monkeypatch):
+    settings = get_settings()
+    tag = uuid.uuid4().hex[:8]
+    monkeypatch.setattr(settings, "chroma_persist_dir", tempfile.mkdtemp())
+    monkeypatch.setattr(settings, "chroma_chunk_collection", f"t_chunks_{tag}")
+    monkeypatch.setattr(settings, "chroma_contextual_collection", f"t_ctx_{tag}")
+    return HierarchicalIndexer(embeddings=FakeEmbeddings(), llm=MagicMock())
+
+
+def test_index_documents_contextual_stores_original_text(ctx_indexer):
+    chunks = [Document(page_content="原文内容", metadata={"doc_id": "A", "chunk_id": "A_0"})]
+    ctx_indexer.index_documents_contextual(chunks, ["这是上下文"])
+    data = ctx_indexer.contextual_store._collection.get(include=["documents", "metadatas"])
+    # 存的是原文（不含上下文前缀），上下文进 metadata
+    assert data["documents"][0] == "原文内容"
+    assert data["metadatas"][0]["context"] == "这是上下文"
+
+
+def test_detail_store_falls_back_to_chunk_store_when_contextual_empty(ctx_indexer, monkeypatch):
+    monkeypatch.setattr(get_settings(), "use_contextual_chunks", True)
+    # contextual 为空 → 回退 chunk_store
+    assert ctx_indexer.detail_store is ctx_indexer.chunk_store
+
+
+def test_detail_store_uses_contextual_when_enabled_and_built(ctx_indexer, monkeypatch):
+    monkeypatch.setattr(get_settings(), "use_contextual_chunks", True)
+    chunks = [Document(page_content="原文", metadata={"doc_id": "A", "chunk_id": "A_0"})]
+    ctx_indexer.index_documents_contextual(chunks, ["ctx"])
+    assert ctx_indexer.detail_store is ctx_indexer.contextual_store
+
+
+def test_detail_store_uses_chunk_store_when_disabled(ctx_indexer, monkeypatch):
+    monkeypatch.setattr(get_settings(), "use_contextual_chunks", False)
+    chunks = [Document(page_content="原文", metadata={"doc_id": "A", "chunk_id": "A_0"})]
+    ctx_indexer.index_documents_contextual(chunks, ["ctx"])
+    assert ctx_indexer.detail_store is ctx_indexer.chunk_store
