@@ -1,0 +1,125 @@
+{
+  "mode": "full",
+  "feature_state": {
+    "F1": true,
+    "F2": true,
+    "F3": true,
+    "F4": true,
+    "F6": true,
+    "F7": true,
+    "F8": true,
+    "F10": true,
+    "F12": true,
+    "F9": true
+  },
+  "summary": {
+    "num_samples": 2,
+    "num_ok": 2,
+    "num_failed": 0,
+    "retrieval": {
+      "hit_rate": 1.0,
+      "avg_coverage": 1.0,
+      "avg_num_docs": 4.5,
+      "avg_pre_autocut": 59.0
+    },
+    "generation": {
+      "avg_faithfulness": 1.0,
+      "regen_rate": 0.0
+    },
+    "end_to_end": {
+      "avg_f1": 0.4369,
+      "em_rate": 0.0,
+      "hit_rate": 0.5,
+      "answer_in_top_context_rate": 1.0
+    },
+    "answer_quality": {
+      "avg_f1_short": 0.9474,
+      "em_rate_short": 0.5,
+      "hit_rate_short": 0.5
+    },
+    "rag3": {
+      "avg_num_citations": 1.0,
+      "rewrite_rate": 0.0
+    },
+    "avg_latency_ms": 6772.4,
+    "routing_dist": {
+      "numeric": 2
+    },
+    "iterative": {
+      "avg_iterations": 0.0,
+      "stop_reasons": {
+        "sufficient": 2
+      }
+    },
+    "decomposition": {
+      "decomposed_rate": 0.0,
+      "chain_rate": 0.0
+    }
+  },
+  "results": [
+    {
+      "id": 0,
+      "question": "范廷颂是什么时候被任为主教的？",
+      "gold": "1963年",
+      "answer": "根据参考文档，范廷颂枢机于 **1963年** 被任为主教。 [来源: 文档1]",
+      "ok": true,
+      "retrieval_ok": true,
+      "coverage": 1.0,
+      "source_hit": false,
+      "num_docs": 4,
+      "pre_autocut": 69,
+      "faithfulness": 1.0,
+      "faithful": true,
+      "regenerated": false,
+      "f1": 0.1538,
+      "em": false,
+      "hit": true,
+      "short_answer": "1963年",
+      "f1_short": 1.0,
+      "em_short": true,
+      "hit_short": true,
+      "num_citations": 1,
+      "rewritten": false,
+      "query_type": "numeric",
+      "iterations": 0,
+      "stop_reason": "sufficient",
+      "gate_skipped": false,
+      "latency_ms": 7083.2,
+      "answer_in_top_context": true,
+      "decomposed": [],
+      "decomposition_chain": false
+    },
+    {
+      "id": 1,
+      "question": "1990年，范廷颂担任什么职务？",
+      "gold": "1990年被擢升为天主教河内总教区宗座署理",
+      "answer": "根据参考文档，1990年，范廷颂被擢升为天主教河内总教区宗座署理。[来源: 文档1]",
+      "ok": true,
+      "retrieval_ok": true,
+      "coverage": 1.0,
+      "source_hit": false,
+      "num_docs": 5,
+      "pre_autocut": 49,
+      "faithfulness": 1.0,
+      "faithful": true,
+      "regenerated": false,
+      "f1": 0.72,
+      "em": false,
+      "hit": false,
+      "short_answer": "年，范廷颂被擢升为天主教河内总教区宗座署理",
+      "f1_short": 0.8947,
+      "em_short": false,
+      "hit_short": false,
+      "num_citations": 1,
+      "rewritten": false,
+      "query_type": "numeric",
+      "iterations": 0,
+      "stop_reason": "sufficient",
+      "gate_skipped": false,
+      "latency_ms": 6461.6,
+      "answer_in_top_context": true,
+      "decomposed": [],
+      "decomposition_chain": false
+    }
+  ]
+}

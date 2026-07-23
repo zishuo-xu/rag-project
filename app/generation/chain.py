@@ -2,7 +2,7 @@
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Generator
 
 import numpy as np
@@ -22,12 +22,18 @@ from app.retrieval.parent_child import ParentChildRetriever
 from app.retrieval.crag import CRAGEvaluator
 from app.retrieval.router import QueryRouter
 from app.retrieval.cache import get_semantic_cache
+from app.retrieval.caches import EmbeddingCache
+from app.retrieval.conversation import ConversationRewriter
 from app.generation.faithfulness import FaithfulnessChecker
+from app.generation.citation import CitationBuilder, Citation
+from app.generation.answer_boost import AnswerBooster
+from app.generation.streaming import speculative_faithful_stream
 from app.generation.prompts import (
     RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, DIRECT_ANSWER_PROMPT, FALLBACK_RESPONSE,
-    STRICT_RAG_PROMPT, STRICT_RAG_CHAT_PROMPT,
+    STRICT_RAG_PROMPT, STRICT_RAG_CHAT_PROMPT, RAG_FOCUS_PROMPT,
 )
 from app.observability.tracing import get_tracer
+from app.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +52,11 @@ class RAGResponse:
     faithful: bool | None = None      # True=忠实 / False=含幻觉 / None=未检查或未知
     faithfulness_score: float = 0.0   # 被支撑论断占比 [0,1]
     regenerated: bool = False         # 是否因不忠实触发了严格重生成
+    # RAG 3.0 增强观测字段
+    citations: List[Citation] = field(default_factory=list)  # F7 引用溯源
+    short_answer: str = ""            # F10 抽取的核心短答案
+    self_consistency_used: bool = False  # F10 是否触发自一致性
+    rewritten_query: str = ""         # F12 历史感知重写后的查询
 
 
 class RAGChain:
@@ -99,6 +110,23 @@ class RAGChain:
         )
 
         self.semantic_cache = get_semantic_cache() if settings.cache_enabled else None
+
+        # ===== RAG 3.0 增强组件（每项独立开关，异常均优雅降级） =====
+        # F9 L1 Embedding 缓存：包装查询编码，省掉重复 embedding
+        self.embedding_cache = (
+            EmbeddingCache(self.indexer.embeddings) if settings.use_embedding_cache else None
+        )
+        # F7 引用溯源（零在线 LLM）
+        self.citation_builder: CitationBuilder | None = (
+            CitationBuilder(embeddings=self.indexer.embeddings)
+            if settings.use_citations else None
+        )
+        # F10 答案质量增强（聚焦/抽取/自一致性）
+        self.answer_booster = AnswerBooster()
+        # F12 多轮对话记忆 / 历史感知查询重写
+        self.conversation_rewriter: ConversationRewriter | None = (
+            ConversationRewriter() if settings.use_history_rewrite else None
+        )
 
         self.use_query_transform = use_query_transform
         self.use_rerank = use_rerank
@@ -320,16 +348,22 @@ class RAGChain:
     ) -> RAGResponse:
         """完整 RAG 调用：[缓存检查] + 检索 + 生成 + [缓存写入]（自动记录 Trace）"""
         tracer = get_tracer()
+        metrics = get_metrics()
         trace_id = tracer.start_trace(question)
         start_time = time.time()
+        metrics.inc("requests_total", endpoint="chat", mode="invoke")
 
         cached, q_embedding = self._check_cache(
             question, chat_history, trace_id, start_time
         )
         if cached:
+            metrics.inc("cache_hits_total", level="semantic")
+            metrics.observe("request_latency_ms", cached.total_time_ms)
             return cached
 
-        retrieval_result = self.retrieve(question, top_k=top_k, trace_id=trace_id)
+        # F12 历史感知查询重写：带历史时解析指代/省略，用重写查询检索
+        retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
+        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
 
         tracer.start_span(trace_id, "generation")
         if retrieval_result.gate_skipped:
@@ -352,11 +386,24 @@ class RAGChain:
             "regenerated": regenerated,
         })
 
+        # F7 引用溯源 + F10 答案增强（零/低开销，异常降级）
+        citations = self._build_citations(question, answer, retrieval_result.documents)
+        boost = self._boost_answer(question, answer, retrieval_result.query_type)
+        short_answer = boost.short_answer if boost else ""
+        sc_used = bool(boost and boost.self_consistency_used)
+
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=answer)
         self._write_cache(
             question, chat_history, q_embedding, answer, retrieval_result.documents
         )
+
+        # F11 指标：时延 / 忠实度分布
+        metrics.observe("request_latency_ms", total_time)
+        if faithful is True:
+            metrics.inc("faithfulness_total", verdict="faithful")
+        elif faithful is False:
+            metrics.inc("faithfulness_total", verdict="unfaithful")
 
         return RAGResponse(
             answer=answer,
@@ -366,6 +413,10 @@ class RAGChain:
             faithful=faithful,
             faithfulness_score=fb_score,
             regenerated=regenerated,
+            citations=citations,
+            short_answer=short_answer,
+            self_consistency_used=sc_used,
+            rewritten_query=rewritten_query,
         )
 
     def invoke_stream(
@@ -382,34 +433,68 @@ class RAGChain:
             {"type": "retrieving", "data": str}
             {"type": "retrieval", "data": RetrievalResult}
             {"type": "token", "data": str}
+            {"type": "correction", "data": str}   # F8: 不忠实时的严格重生成答案
             {"type": "done", "data": RAGResponse}
         """
         tracer = get_tracer()
+        metrics = get_metrics()
         trace_id = tracer.start_trace(question)
         start_time = time.time()
+        metrics.inc("requests_total", endpoint="chat", mode="stream")
 
         cached, q_embedding = self._check_cache(
             question, chat_history, trace_id, start_time
         )
         if cached:
+            metrics.inc("cache_hits_total", level="semantic")
             yield {"type": "cache_hit", "data": cached}
             yield {"type": "done", "data": cached}
             return
 
         yield {"type": "retrieving", "data": "正在检索相关文档..."}
 
-        retrieval_result = self.retrieve(question, top_k=top_k, trace_id=trace_id)
+        # F12 历史感知查询重写：带历史时解析指代/省略，用重写查询检索
+        retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
+        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
         yield {"type": "retrieval", "data": retrieval_result}
 
         tracer.start_span(trace_id, "generation")
         full_answer = ""
         faithful, fb_score, regenerated = None, 0.0, False
+        use_speculative = (
+            self._settings.use_speculative_streaming
+            and self.faithfulness_checker
+            and retrieval_result.documents
+            and not retrieval_result.gate_skipped
+        )
         if retrieval_result.gate_skipped:
             for token in self.generate_direct_stream(question, chat_history):
                 full_answer += token
                 yield {"type": "token", "data": token}
+        elif use_speculative:
+            # F8 投机流式：先逐 token 吐字（快 TTFT），流末自检，不忠实追加 correction
+            docs = retrieval_result.documents
+            for event in speculative_faithful_stream(
+                stream_fn=lambda: self.generate_stream(question, docs, chat_history),
+                question=question,
+                documents=docs,
+                chat_history=chat_history,
+                checker=self.faithfulness_checker,
+                regen_fn=lambda: self.generate(question, docs, chat_history, strict=True),
+                max_regen=self._settings.faithfulness_max_regen,
+            ):
+                if event["type"] == "token":
+                    full_answer += event["data"]
+                    yield {"type": "token", "data": event["data"]}
+                elif event["type"] == "correction":
+                    full_answer = event["data"]  # 最终答案以重生成结果为准
+                    yield {"type": "correction", "data": event["data"]}
+                elif event["type"] == "final":
+                    d = event["data"]
+                    full_answer = d["answer"]
+                    faithful, fb_score, regenerated = d["faithful"], d["score"], d["regenerated"]
         elif self.faithfulness_checker and retrieval_result.documents:
-            # F3: 先非流式生成+自检，校验通过后再输出（保证用户看到已校验答案）
+            # 投机流式关闭：回退旧的阻塞式（先非流式生成+自检，再整体输出）
             full_answer, faithful, fb_score, regenerated = self._generate_faithful(
                 question, retrieval_result.documents, chat_history
             )
@@ -427,7 +512,14 @@ class RAGChain:
             "faithful": faithful,
             "faithfulness_score": fb_score,
             "regenerated": regenerated,
+            "speculative": use_speculative,
         })
+
+        # F7 引用溯源 + F10 答案增强
+        citations = self._build_citations(question, full_answer, retrieval_result.documents)
+        boost = self._boost_answer(question, full_answer, retrieval_result.query_type)
+        short_answer = boost.short_answer if boost else ""
+        sc_used = bool(boost and boost.self_consistency_used)
 
         total_time = (time.time() - start_time) * 1000
         tracer.end_trace(trace_id, answer_preview=full_answer)
@@ -435,6 +527,12 @@ class RAGChain:
             question, chat_history, q_embedding, full_answer,
             retrieval_result.documents,
         )
+
+        metrics.observe("request_latency_ms", total_time)
+        if faithful is True:
+            metrics.inc("faithfulness_total", verdict="faithful")
+        elif faithful is False:
+            metrics.inc("faithfulness_total", verdict="unfaithful")
 
         yield {"type": "done", "data": RAGResponse(
             answer=full_answer,
@@ -444,7 +542,51 @@ class RAGChain:
             faithful=faithful,
             faithfulness_score=fb_score,
             regenerated=regenerated,
+            citations=citations,
+            short_answer=short_answer,
+            self_consistency_used=sc_used,
+            rewritten_query=rewritten_query,
         )}
+
+    # ---- RAG 3.0 增强辅助方法（F7/F9/F10/F12，异常均优雅降级） ----
+
+    def _embed_query(self, question: str):
+        """F9 L1：查询编码，优先走 embedding 缓存。"""
+        if self.embedding_cache is not None:
+            return self.embedding_cache.embed_query(question)
+        return self.indexer.embeddings.embed_query(question)
+
+    def _rewrite_query(self, question: str, chat_history: List | None) -> tuple[str, str]:
+        """F12：带历史时重写查询。返回 (检索用查询, 重写后的查询字符串或"")。"""
+        if not (self.conversation_rewriter and chat_history):
+            return question, ""
+        try:
+            rewritten = self.conversation_rewriter.rewrite(question, chat_history)
+            if rewritten and rewritten != question:
+                return rewritten, rewritten
+        except Exception as e:
+            logger.warning(f"F12 查询重写失败，沿用原问题: {e}")
+        return question, ""
+
+    def _build_citations(
+        self, question: str, answer: str, documents: List[Document]
+    ) -> List[Citation]:
+        """F7：构建引用溯源。任何异常返回空列表。"""
+        if not self.citation_builder:
+            return []
+        try:
+            return self.citation_builder.build(question, answer, documents)
+        except Exception as e:
+            logger.warning(f"F7 引用溯源失败: {e}")
+            return []
+
+    def _boost_answer(self, question: str, answer: str, query_type: str):
+        """F10：答案增强（抽取短答案 + 可选自一致性）。异常返回 None。"""
+        try:
+            return self.answer_booster.boost(question, answer, query_type=query_type)
+        except Exception as e:
+            logger.warning(f"F10 答案增强失败: {e}")
+            return None
 
     # ---- 缓存公共逻辑（invoke / invoke_stream 共用） ----
 
@@ -466,7 +608,7 @@ class RAGChain:
         if not (self.semantic_cache and not chat_history):
             return None, None
         try:
-            q_embedding = np.array(self.indexer.embeddings.embed_query(question))
+            q_embedding = np.array(self._embed_query(question))
             cached = self.semantic_cache.get(q_embedding)
             if cached:
                 tracer.start_span(trace_id, "cache_hit")
@@ -507,7 +649,7 @@ class RAGChain:
         try:
             embedding = q_embedding
             if embedding is None:
-                embedding = np.array(self.indexer.embeddings.embed_query(question))
+                embedding = np.array(self._embed_query(question))
             sources_data = [
                 {
                     "content": doc.page_content[:200],

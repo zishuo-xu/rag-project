@@ -7,6 +7,7 @@ from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
 from config import get_settings
+from app.retrieval.caches import get_rerank_cache
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +29,17 @@ class Reranker:
         model_name = model_name or settings.rerank_model
         self.model = CrossEncoder(model_name)
         self.model_name = model_name
+        # F9 L2 Rerank 缓存：相同 (query, 文档集合) 跳过 cross-encoder
+        self.cache = get_rerank_cache() if settings.use_rerank_cache else None
         logger.info(f"Reranker 初始化完成: {model_name}")
+
+    @staticmethod
+    def _doc_key(doc: Document) -> str:
+        """文档唯一键：优先 chunk_id，缺失时用内容哈希兜底。"""
+        cid = doc.metadata.get("chunk_id")
+        if cid:
+            return str(cid)
+        return f"h{hash(doc.page_content)}"
 
     def rerank(
         self,
@@ -53,6 +64,21 @@ class Reranker:
         if not documents:
             return []
 
+        # F9 L2 缓存命中：跳过 cross-encoder，直接按缓存分排序
+        doc_keys = [self._doc_key(d) for d in documents]
+        if self.cache is not None:
+            cached = self.cache.get_scores(query, doc_keys)
+            if cached is not None:
+                for doc, key in zip(documents, doc_keys):
+                    doc.metadata["rerank_score"] = float(cached.get(key, 0.0))
+                ranked = sorted(
+                    documents, key=lambda d: d.metadata["rerank_score"], reverse=True
+                )
+                logger.info(
+                    f"重排序缓存命中: {len(documents)} 候选 -> top-{top_k}"
+                )
+                return ranked[:top_k]
+
         # 构建 (query, document) 对
         pairs = [(query, doc.page_content) for doc in documents]
 
@@ -62,6 +88,13 @@ class Reranker:
         # 将分数附加到文档元数据
         for doc, score in zip(documents, scores):
             doc.metadata["rerank_score"] = float(score)
+
+        # F9 L2 缓存写入
+        if self.cache is not None:
+            self.cache.put_scores(
+                query, doc_keys,
+                {k: float(s) for k, s in zip(doc_keys, scores)},
+            )
 
         # 按分数降序排序
         ranked_docs = sorted(

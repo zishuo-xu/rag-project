@@ -79,6 +79,23 @@
 
 配置开关（`config.py`，默认全开）：`use_autocut` / `use_iterative_retrieval` / `use_faithfulness_check` / `use_query_router` / `use_contextual_chunks` / `use_decomposition`。
 
+### RAG 3.0 生产级增强（本次迭代核心）
+
+在 RAG 2.0 基础上补齐**生产级 RAG** 的关键能力，重点攻克 RAG 2.0 验证暴露的三大痛点：**端到端 EM=0**、**F3 导致的时延回退与流式退化**、**生产加固缺失**。每项独立开关、异常优雅降级、**时延预算优先**（默认路径零新增在线 LLM）：
+
+| 特性 | 层级 | 说明 | 时延影响 |
+|------|------|------|---------|
+| **F7 · 引用溯源** | 生成层 | 答案切句级 claim，用 embedding 余弦关联到最相关源块，输出结构化引用（来源/块id/置信度/证据片段），零在线 LLM | +一次批量编码 |
+| **F8 · 投机流式忠实度** | 生成层 | 先逐 token 流式吐字（快 TTFT），流末做忠实度自检，不忠实追加 `correction` 事件——修复 F3 的流式退化与时延回退 | **TTFT 大幅下降** |
+| **F9 · 多级缓存** | 检索层 | L1 Embedding 缓存 + L2 Rerank 缓存（线程安全 LRU），重复查询省掉编码与 cross-encoder | **命中省 100–700ms** |
+| **F10 · 答案质量增强** | 生成层 | 答案聚焦 prompt + 零LLM 短答案抽取 + 自适应自一致性（仅短答案型查询）——**攻克 EM=0** | 默认 ~0 |
+| **F11 · 可观测性与加固** | 平台层 | 进程内指标（计数/直方图，`/api/metrics` Prometheus+JSON）+ API Key 鉴权 + 限流 + 结构化日志 | <1µs/请求 |
+| **F12 · 多轮对话记忆** | 检索层 | 历史感知查询重写，解析指代/省略（"它的原理呢？"→"缓存穿透的原理"），零LLM 启发式（LLM 可选） | 默认 ~0 |
+
+配置开关（`config.py`，默认值见括号）：`use_citations`(True) / `use_speculative_streaming`(True) / `use_embedding_cache`(True) / `use_rerank_cache`(True) / `use_answer_focus`(True) / `use_answer_extraction`(True) / `use_self_consistency`(False，保时延) / `use_history_rewrite`(True) / `enable_metrics`(True) / `api_key`(""=关) / `rate_limit_rpm`(0=关) / `log_json`(False)。
+
+> **关键验证结果**（CMRC 31 题端到端 A/B，详见 [RAG3 验证报告](./docs/superpowers/reports/2026-07-24-rag3-validation-report.md)）：F10 短答案抽取把 **short_answer 的 EM 从 0.0 提升到 0.097、F1 从完整答案的 0.35 提升到 0.52（+48%）**，闭环上一轮如实报告的 EM=0；F7 平均 **1.52 条块级引用**、F1 上下文降噪 **47%**（8.0→4.26 篇）、F3+F8 忠实度 **0.77**/重生成 22.6%；六特性默认路径**零在线 LLM 增量**；**256 项测试全绿**（本轮新增 101）。
+
 ## 技术栈
 
 - **框架**: LangChain + FastAPI + Streamlit

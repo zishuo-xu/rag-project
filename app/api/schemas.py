@@ -44,6 +44,16 @@ class RetrievalDetail(BaseModel):
     crag_action: str = Field(default="", description="CRAG 采取的动作")
 
 
+class Citation(BaseModel):
+    """F7 引用溯源：答案 claim 关联到的源文档块"""
+    claim: str = Field(description="答案中的论断句")
+    source: str = Field(default="", description="来源文档")
+    chunk_id: str = Field(default="", description="源块 id")
+    doc_index: int = Field(default=0, description="文档序号(1-based)")
+    confidence: float = Field(default=0.0, description="claim-块相似度置信度")
+    snippet: str = Field(default="", description="证据片段")
+
+
 class ChatResponse(BaseModel):
     """对话响应"""
     answer: str = Field(description="回答内容")
@@ -51,6 +61,11 @@ class ChatResponse(BaseModel):
     retrieval_detail: RetrievalDetail = Field(default_factory=RetrievalDetail)
     total_time_ms: float = 0
     cache_hit: bool = Field(default=False, description="是否命中语义缓存")
+    # RAG 3.0 增强字段
+    citations: List[Citation] = Field(default_factory=list, description="F7 引用溯源")
+    short_answer: str = Field(default="", description="F10 抽取的核心短答案")
+    self_consistency_used: bool = Field(default=False, description="F10 是否触发自一致性")
+    rewritten_query: str = Field(default="", description="F12 历史感知重写后的查询")
 
 
 # ============ Document 相关 ============

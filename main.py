@@ -14,11 +14,33 @@ from config import get_settings
 from app.api.routes import router, set_rag_chain, set_concurrency_gate
 from app.generation.chain import RAGChain
 
-# 配置日志
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
+
+def _setup_logging():
+    """配置日志：log_json=True 时输出结构化 JSON 行（F11），否则普通格式。"""
+    settings = get_settings()
+    if settings.log_json:
+        import json as _json
+
+        class _JsonFormatter(logging.Formatter):
+            def format(self, record):
+                return _json.dumps({
+                    "ts": self.formatTime(record),
+                    "level": record.levelname,
+                    "logger": record.name,
+                    "msg": record.getMessage(),
+                }, ensure_ascii=False)
+
+        handler = logging.StreamHandler()
+        handler.setFormatter(_JsonFormatter())
+        logging.basicConfig(level=logging.INFO, handlers=[handler])
+    else:
+        logging.basicConfig(
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        )
+
+
+_setup_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +96,35 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# F11 生产加固：API Key 鉴权 + 限流（仅在配置开启时注册，默认关闭不影响现有行为）
+_settings = get_settings()
+if _settings.api_key or _settings.rate_limit_rpm > 0:
+    from starlette.middleware.base import BaseHTTPMiddleware
+    from starlette.responses import JSONResponse
+    from app.api.security import is_exempt, verify_api_key, get_rate_limiter
+
+    class SecurityMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request, call_next):
+            if not is_exempt(request.url.path):
+                if not verify_api_key(request.headers.get("X-API-Key")):
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "无效或缺失的 API Key"},
+                    )
+                client = request.client.host if request.client else "unknown"
+                if not get_rate_limiter().allow(client):
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "请求过于频繁，请稍后重试"},
+                    )
+            return await call_next(request)
+
+    app.add_middleware(SecurityMiddleware)
+    logger.info(
+        f"F11 生产加固已启用: api_key={'on' if _settings.api_key else 'off'}, "
+        f"rate_limit_rpm={_settings.rate_limit_rpm}"
+    )
 
 # 注册路由
 app.include_router(router)

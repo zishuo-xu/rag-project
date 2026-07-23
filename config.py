@@ -98,6 +98,39 @@ class Settings(BaseSettings):
     cache_ttl: int = 3600
     cache_max_size: int = 200
 
+    # ===== RAG 3.0 生产级增强（F7-F12，每项独立开关，异常均优雅降级） =====
+    # F7 引用溯源与答案定位（零在线 LLM：claim-块 embedding 余弦关联）
+    use_citations: bool = True
+    citation_threshold: float = 0.5      # claim-块相似度置信度下界
+    citation_max_claims: int = 6         # 答案最多切分的 claim 数（控制编码量）
+
+    # F8 低延迟流式 + 投机忠实度（先流式吐字，流末自检，不忠实追加 correction）
+    use_speculative_streaming: bool = True
+
+    # F9 多级缓存（L1 embedding / L2 rerank，L3 为既有语义响应缓存）
+    use_embedding_cache: bool = True
+    embedding_cache_size: int = 512
+    use_rerank_cache: bool = True
+    rerank_cache_size: int = 256
+
+    # F10 答案质量增强（聚焦 prompt + 零LLM抽取 + 自适应自一致性）
+    use_answer_focus: bool = True                 # 答案前置聚焦 prompt
+    use_answer_extraction: bool = True            # 零LLM 抽取核心短答案 span
+    use_self_consistency: bool = False            # 默认关以保时延，评测可开
+    self_consistency_samples: int = 3             # 采样投票次数
+    self_consistency_types: str = "numeric,factual"  # 仅这些查询类型触发自一致性
+
+    # F11 可观测性与生产加固
+    enable_metrics: bool = True            # 进程内指标 + /api/metrics 导出
+    api_key: str = ""                      # 空=关闭鉴权；非空校验 X-API-Key
+    rate_limit_rpm: int = 0                # 每客户端每分钟请求上限，0=关闭
+    log_json: bool = False                 # 结构化 JSON 日志
+
+    # F12 多轮对话记忆 / 历史感知查询重写
+    use_history_rewrite: bool = True
+    history_rewrite_use_llm: bool = False  # 默认零LLM启发式，开启后用一次小调用
+    history_rewrite_max_turns: int = 4     # 重写时参考的最近历史轮数
+
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""

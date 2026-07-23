@@ -15,6 +15,7 @@
 5. [检索层 Retrieval（核心）](#5-检索层-retrieval核心)
 6. [生成层 Generation](#6-生成层-generation)
 7. [RAG 2.0 五大特性实现](#7-rag-20-五大特性实现)
+7b. [RAG 3.0 生产级增强（F7–F12）](#7b-rag-30-生产级增强f7f12)
 8. [并发治理](#8-并发治理)
 9. [可观测性 Observability](#9-可观测性-observability)
 10. [评估体系](#10-评估体系)
@@ -405,6 +406,61 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 
 ---
 
+## 7b. RAG 3.0 生产级增强（F7–F12）
+
+RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG 3.0 在此基础上补齐**生产级 RAG** 的六项关键能力。设计准则与 F1–F6 一脉相承：**每项独立开关、异常优雅降级、默认路径零在线 LLM 增量（时延优先）、可离线单测**。完整设计见 `docs/superpowers/rag3-design.md`。
+
+> 痛点驱动（来自 RAG 2.0 验证报告）：端到端 EM=0 / F1≈0.36（检索命中 100% 但答案与短答案 span 对不齐）；F3 使流式退化为「先整体生成再吐」TTFT 高；重复 embedding/rerank 抬高 P95；答案不可溯源；多轮指代未解；无指标/鉴权/限流/结构化日志。
+
+### F7 · 引用溯源与答案定位（`app/generation/citation.py`，零在线 LLM）
+
+- 生成后把答案切成句子级 claim（`split_claims`：先整体剥离 `[来源: …]` 标注再按 `。！？.!?\n` 切句，过滤过短句），用 **embedding 余弦相似度**把每个 claim 关联到最相关源块，输出结构化 `Citation{claim, source, chunk_id, doc_index, confidence, snippet}`。
+- `_tokens` 用「中文 bigram + 英数单词」做 snippet 重叠匹配，避免整句成单 token 导致零重叠。
+- **时延**：claim 数上限 `citation_max_claims(6)` 控制编码量；零 LLM。接入 `RAGResponse.citations` 与 `/api/chat`。
+- 开关：`use_citations[True]`、`citation_threshold[0.5]`、`citation_max_claims[6]`。
+
+### F8 · 低延迟流式 + 投机忠实度（`app/generation/streaming.py`）
+
+- **投机流式**：先逐 token 把答案流给用户（快 TTFT），流结束后再跑忠实度检查；不忠实则 strict 重生成并追加 `{"type":"correction"}` 事件，`done` 的 answer 替换为校验后结果。用户「既快又看到已校验答案」。
+- 解决 F3 在流式路径「先非流式生成再整体吐出」导致 TTFT≈完整生成时延的回退。
+- **时延**：TTFT 从 ~完整生成 降到 ~首 token；检查/重生成只在流末发生，不阻塞首屏。
+- 开关：`use_speculative_streaming[True]`（关闭回退旧阻塞行为）。
+
+### F9 · 多级缓存（`app/retrieval/caches.py`）
+
+- 在既有语义响应缓存（L3）之上新增两级：**L1 Embedding 缓存**（`EmbeddingCache` 包装 `embed_query/embed_documents`，key=文本）与 **L2 Rerank 缓存**（`RerankCache`，key=`hash(query+sorted(chunk_ids))`，命中即跳过 cross-encoder 按缓存分排序）。
+- 通用 `LRUCache`（线程安全 OrderedDict，O(1)，统计 hits/misses/hit_rate）；`reranker.rerank` 先查 L2，`RAGChain._embed_query` 走 L1。
+- **正确性**：rerank key 含 chunk_id 集合，文档变化即 key 变化，不返回过期排序。
+- **时延**：重复查询命中省掉编码（~50–200ms）与重排（~100–500ms），P95 显著下降。
+- 开关：`use_embedding_cache[True]`、`embedding_cache_size[512]`、`use_rerank_cache[True]`、`rerank_cache_size[256]`；`GET /api/cache/stats` 暴露命中率。
+
+### F10 · 答案质量增强（`app/generation/answer_boost.py`）
+
+- 三件套（均可独立开关）：**① 答案聚焦 Prompt**（`RAG_FOCUS_PROMPT`：要求「第一行先用一句话直接给出答案」把答案前置）；**② 零 LLM 答案抽取**（`extract_short_answer`：数字型问题抽年份/数值，否则抽首个实质句去填充词，写入 `short_answer`）；**③ 自适应自一致性**（`self_consistency_vote`：仅 `numeric/factual` 短答案型采样 N 次投票取多数，其余跳过保时延）。
+- 直接攻击 EM=0：把冗长回答里的答案 span 对齐到短答案。冒烟评测 `short_answer` 使 EM 0.0→0.5、F1 0.44→0.95。
+- **时延**：聚焦/抽取零额外调用；自一致性默认关。
+- 开关：`use_answer_focus[True]`、`use_answer_extraction[True]`、`use_self_consistency[False]`、`self_consistency_samples[3]`、`self_consistency_types[numeric,factual]`。
+
+### F11 · 可观测性与生产加固（`app/observability/metrics.py` + `app/api/security.py`）
+
+- **指标注册表**：进程内计数器/直方图（零依赖，不引 prometheus 客户端；直方图有界 deque 采样，线程安全），`GET /api/metrics` 导出 Prometheus 文本 + JSON。
+- **API Key 鉴权**：`api_key` 为空即关闭；非空校验 `X-API-Key`（`/api/health`、`/api/metrics`、`/docs` 等豁免）。
+- **限流**：`RateLimiter` 固定窗口按客户端 IP 每分钟计数，超限 429。
+- **结构化日志**：`log_json` 开启 JSON 行格式（`main.py:_setup_logging`）。
+- **时延**：指标为内存原子计数 <1µs；鉴权/限流 O(1)。安全中间件仅在 `api_key` 或 `rate_limit_rpm>0` 时注册（默认关，不影响测试/流式）。
+- 开关：`enable_metrics[True]`、`api_key[""]`、`rate_limit_rpm[0]`、`log_json[False]`。
+
+### F12 · 多轮对话记忆 / 历史感知查询重写（`app/retrieval/conversation.py`）
+
+- 用对话历史把含指代/省略的当前问题（「它的原理呢？」「那区别呢？」）重写为自包含查询：`needs_rewrite` 检测指代词/省略型短句，`ConversationRewriter.rewrite` 用最近一轮主题词回填（启发式零 LLM），`history_rewrite_use_llm` 开启时走一次小调用做指代消解（默认关）。
+- 接入 `RAGChain.invoke/invoke_stream` 检索前重写；观测字段 `rewritten_query`。
+- **时延**：启发式零 LLM；LLM 路径默认关。
+- 开关：`use_history_rewrite[True]`、`history_rewrite_use_llm[False]`、`history_rewrite_max_turns[4]`。
+
+> **RAG 3.0 时延预算**：默认配置下 F7/F9/F10/F11/F12 在线零 LLM 增量，F8 把忠实度检查移到流末——净效果是 **TTFT 与 P95 下降**、答案正确性与可溯源性提升、生产加固到位。每项异常均回退 RAG 2.0 行为。
+
+---
+
 ## 8. 并发治理
 
 `/api/chat` 是 CPU（embedding/rerank）+ IO（LLM）混合负载，高并发下会打满事件循环与下游 LLM。
@@ -475,6 +531,12 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 | **F4 路由** | `use_query_router[True]` |
 | **F6a 上下文增强** | `use_contextual_chunks[True]`、`contextual_max_chars[80]`、`chroma_contextual_collection[chunks_contextual]` |
 | **F6b 查询分解** | `use_decomposition[True]`、`decomposition_max_subquestions[4]`、`decomposition_max_hops[3]` |
+| **F7 引用溯源** | `use_citations[True]`、`citation_threshold[0.5]`、`citation_max_claims[6]` |
+| **F8 投机流式** | `use_speculative_streaming[True]` |
+| **F9 多级缓存** | `use_embedding_cache[True]`、`embedding_cache_size[512]`、`use_rerank_cache[True]`、`rerank_cache_size[256]` |
+| **F10 答案增强** | `use_answer_focus[True]`、`use_answer_extraction[True]`、`use_self_consistency[False]`、`self_consistency_samples[3]` |
+| **F11 可观测/加固** | `enable_metrics[True]`、`api_key[""]`、`rate_limit_rpm[0]`、`log_json[False]` |
+| **F12 对话记忆** | `use_history_rewrite[True]`、`history_rewrite_use_llm[False]`、`history_rewrite_max_turns[4]` |
 | 并发 | `max_concurrent_requests[4]`、`request_queue_timeout[30.0]` |
 | 思考模式 | `llm_thinking_enabled[False]`（关思考避免 reasoning 吃 max_tokens） |
 | 语义缓存 | `cache_enabled[True]`、`cache_threshold[0.92]`、`cache_ttl[3600]`、`cache_max_size[200]` |
@@ -497,6 +559,12 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 | BM25 索引 | 加载失败自动重建 | `sparse.py:147-150` |
 | Parent-Child | 批量查询失败回退逐个；无索引则跳过该路 | `parent_child.py:176-193` |
 | 单路召回 | 任一通道失败仅告警，其余照常融合 | `pipeline.py:162-167` |
+| **F7 引用** | 异常返回空引用列表，不影响答案 | `citation.py:CitationBuilder.build` |
+| **F8 投机流式** | 检查/重生成异常透传原答案，`correction` 不发 | `streaming.py:speculative_faithful_stream` |
+| **F9 多级缓存** | 缓存异常直落原编码/重排路径 | `caches.py` / `reranker.py` |
+| **F10 答案增强** | 抽取失败 `short_answer=""`；自一致性异常用原答案 | `answer_boost.py` |
+| **F11 加固** | 指标异常静默；鉴权/限流默认关不阻断 | `metrics.py` / `security.py` |
+| **F12 重写** | 异常/无需重写回退原问题 | `conversation.py:ConversationRewriter.rewrite` |
 
 **零 LLM 快速路径**（降低延迟与成本）：图实体匹配、数字校验、查询路由、Autocut、上下文压缩、语义缓存命中。
 
@@ -527,6 +595,9 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 6. `app/retrieval/crag.py` / `router.py` / `query_transform.py` — 评估 / F4 路由 / 改写（含 F6b `decompose`）
 6b. `app/ingestion/contextual.py` — F6a Contextual Chunking 上下文生成（索引期 LLM）
 7. `app/generation/faithfulness.py` / `prompts.py` — F3 忠实度自检与模板
+7b. `app/generation/citation.py` / `streaming.py` / `answer_boost.py` — F7 引用 / F8 投机流式 / F10 答案增强
+7c. `app/retrieval/caches.py` / `conversation.py` — F9 多级缓存 / F12 历史感知重写
+7d. `app/observability/metrics.py` / `app/api/security.py` — F11 指标注册表 / 鉴权限流
 8. `app/ingestion/graph_extractor.py` / `app/retrieval/graph_retriever.py` — 图谱
 9. `config.py` — 全部开关与默认值
 10. `app/observability/tracing.py` — 追踪

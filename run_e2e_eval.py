@@ -35,17 +35,31 @@ from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# RAG2.0 四特性开关（A/B 隔离对象）
+# RAG2.0/3.0 特性开关（A/B 隔离对象；--only 单特性归因，每个映射单个 settings 标志）
 FEATURE_FLAGS = {
     "F1": "use_autocut",
     "F2": "use_iterative_retrieval",
     "F3": "use_faithfulness_check",
     "F4": "use_query_router",
     "F6": "use_decomposition",
+    "F7": "use_citations",
+    "F8": "use_speculative_streaming",
+    "F10": "use_answer_extraction",
+    "F12": "use_history_rewrite",
 }
 
 # F6a 运行时开关：随 baseline/full 一并切换；--only 单特性归因时关闭以隔离
 F6A_FLAGS = ["use_contextual_chunks", "use_parent_child"]
+
+# F9 涉及两个标志（L1 embedding + L2 rerank），单特性归因时一并切换
+F9_FLAGS = ["use_embedding_cache", "use_rerank_cache"]
+
+# RAG 3.0 全部标志（baseline 关 / full 开）
+RAG3_FLAGS = [
+    "use_citations", "use_speculative_streaming",
+    "use_embedding_cache", "use_rerank_cache",
+    "use_answer_extraction", "use_answer_focus", "use_history_rewrite",
+]
 
 # 模拟真实用户的口语化查询（覆盖边缘场景；引用 CMRC 知识库真实实体 范廷颂）
 COLLOQUIAL_QUERIES = [
@@ -71,24 +85,30 @@ def apply_feature_mode(mode: str, only: str | None) -> dict:
     if mode == "baseline":
         for flag in FEATURE_FLAGS.values():
             setattr(settings, flag, False)
-        for flag in F6A_FLAGS:
+        for flag in F6A_FLAGS + F9_FLAGS + RAG3_FLAGS:
             setattr(settings, flag, False)
     elif mode == "full":
         for flag in FEATURE_FLAGS.values():
             setattr(settings, flag, True)
-        for flag in F6A_FLAGS:
+        for flag in F6A_FLAGS + F9_FLAGS + RAG3_FLAGS:
             setattr(settings, flag, True)
 
     if only:
         only = only.upper()
-        if only not in FEATURE_FLAGS:
-            raise ValueError(f"--only 须为 {list(FEATURE_FLAGS)} 之一")
+        if only not in FEATURE_FLAGS and only != "F9":
+            raise ValueError(f"--only 须为 {list(FEATURE_FLAGS) + ['F9']} 之一")
+        # 先全关，再单独开启目标特性
         for key, flag in FEATURE_FLAGS.items():
             setattr(settings, flag, key == only)
-        for flag in F6A_FLAGS:
-            setattr(settings, flag, False)  # 单特性归因时关闭 F6a，避免污染
+        for flag in F6A_FLAGS + F9_FLAGS:
+            setattr(settings, flag, False)
+        if only == "F9":
+            for flag in F9_FLAGS:
+                setattr(settings, flag, True)
 
-    return {key: bool(getattr(settings, flag)) for key, flag in FEATURE_FLAGS.items()}
+    state = {key: bool(getattr(settings, flag)) for key, flag in FEATURE_FLAGS.items()}
+    state["F9"] = bool(getattr(settings, "use_rerank_cache"))
+    return state
 
 
 def keyword_coverage(question: str, ground_truth: str, documents) -> float:
@@ -129,6 +149,9 @@ def eval_sample(chain, sample) -> dict:
     )
     retrieval_ok = coverage >= 0.5 or source_hit
 
+    # F10 短答案：抽取的核心 span，用于度量答案对齐（改善 EM=0）
+    short = getattr(resp, "short_answer", "") or ""
+
     return {
         "id": sample.get("id"), "question": question, "gold": gold,
         "answer": resp.answer,
@@ -140,10 +163,19 @@ def eval_sample(chain, sample) -> dict:
         # 生成层
         "faithfulness": round(resp.faithfulness_score, 4),
         "faithful": resp.faithful, "regenerated": resp.regenerated,
-        # 端到端
+        # 端到端（完整答案）
         "f1": round(answer_f1(gold, resp.answer), 4),
         "em": normalized_exact_match(gold, resp.answer),
         "hit": answer_hit(gold, resp.answer),
+        # 端到端（F10 短答案）
+        "short_answer": short,
+        "f1_short": round(answer_f1(gold, short), 4) if short else 0.0,
+        "em_short": normalized_exact_match(gold, short) if short else False,
+        "hit_short": answer_hit(gold, short) if short else False,
+        # F7 引用溯源
+        "num_citations": len(getattr(resp, "citations", []) or []),
+        # F12 重写
+        "rewritten": bool(getattr(resp, "rewritten_query", "")),
         # 观测
         "query_type": rr.query_type, "iterations": rr.iterations_used,
         "stop_reason": rr.iterative_stop_reason,
@@ -213,6 +245,17 @@ def aggregate(results: list) -> dict:
             "em_rate": _mean([int(r["em"]) for r in ok]),
             "hit_rate": _mean([int(r["hit"]) for r in ok]),
             "answer_in_top_context_rate": _mean([int(r["answer_in_top_context"]) for r in ok]),
+        },
+        # F10 短答案对齐（改善 EM=0 的关键观测）
+        "answer_quality": {
+            "avg_f1_short": _mean([r.get("f1_short", 0.0) for r in ok]),
+            "em_rate_short": _mean([int(r.get("em_short", False)) for r in ok]),
+            "hit_rate_short": _mean([int(r.get("hit_short", False)) for r in ok]),
+        },
+        # F7 引用溯源 / F12 重写观测
+        "rag3": {
+            "avg_num_citations": _mean([r.get("num_citations", 0) for r in ok]),
+            "rewrite_rate": _mean([int(r.get("rewritten", False)) for r in ok]),
         },
         "avg_latency_ms": _mean([r["latency_ms"] for r in ok]),
         "routing_dist": dict(Counter(r["query_type"] or "n/a" for r in ok)),

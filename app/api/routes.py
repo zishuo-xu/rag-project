@@ -12,7 +12,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from sse_starlette.sse import EventSourceResponse
 
 from app.api.schemas import (
-    ChatRequest, ChatResponse, SourceDocument, RetrievalDetail,
+    ChatRequest, ChatResponse, SourceDocument, RetrievalDetail, Citation,
     UploadResponse, DocumentListResponse, DocumentInfo,
     EvalRequest, EvalReport, HealthResponse,
 )
@@ -183,6 +183,9 @@ async def _stream_response(
                 }
             elif event["type"] == "token":
                 yield {"event": "token", "data": event["data"]}
+            elif event["type"] == "correction":
+                # F8 投机流式：忠实度不足时的严格重生成答案（前端应替换已显示内容）
+                yield {"event": "correction", "data": event["data"]}
             elif event["type"] == "done":
                 response: RAGResponse = event["data"]
                 sources = [
@@ -193,12 +196,26 @@ async def _stream_response(
                     }
                     for doc in response.sources
                 ]
+                citations = [
+                    {
+                        "claim": c.claim, "source": c.source, "chunk_id": c.chunk_id,
+                        "doc_index": c.doc_index, "confidence": c.confidence,
+                        "snippet": c.snippet,
+                    }
+                    for c in (response.citations or [])
+                ]
                 yield {
                     "event": "done",
                     "data": json.dumps({
                         "sources": sources,
                         "total_time_ms": response.total_time_ms,
                         "cache_hit": response.cache_hit,
+                        "citations": citations,
+                        "short_answer": response.short_answer,
+                        "self_consistency_used": response.self_consistency_used,
+                        "rewritten_query": response.rewritten_query,
+                        "faithful": response.faithful,
+                        "regenerated": response.regenerated,
                     }, ensure_ascii=False),
                 }
     finally:
@@ -744,6 +761,48 @@ async def health_check():
     )
 
 
+# ============ F11 可观测性端点 ============
+
+@router.get("/api/metrics")
+async def get_metrics_endpoint(format: str = "json"):
+    """F11 指标导出。format=json（默认）返回结构化快照；format=prometheus 返回文本格式。
+
+    含请求计数、时延直方图（count/avg/p50/p95）、缓存命中、忠实度分布等。
+    """
+    from app.observability.metrics import get_metrics
+    registry = get_metrics()
+    if format == "prometheus":
+        from fastapi.responses import PlainTextResponse
+        return PlainTextResponse(registry.prometheus(), media_type="text/plain")
+    return registry.snapshot()
+
+
+@router.get("/api/cache/stats")
+async def get_cache_stats():
+    """F9 多级缓存命中率统计（语义缓存 + L1 embedding + L2 rerank）。"""
+    chain = get_rag_chain()
+    stats: dict = {}
+    try:
+        if chain.semantic_cache is not None:
+            sc = chain.semantic_cache
+            stats["semantic_cache"] = {"size": sc.size, "threshold": sc.threshold}
+        if getattr(chain, "embedding_cache", None) is not None:
+            c = chain.embedding_cache.cache
+            stats["embedding_cache"] = {
+                "size": len(c), "hits": c.hits, "misses": c.misses,
+                "hit_rate": round(c.hit_rate, 4),
+            }
+        if chain.reranker is not None and getattr(chain.reranker, "cache", None) is not None:
+            c = chain.reranker.cache.cache
+            stats["rerank_cache"] = {
+                "size": len(c), "hits": c.hits, "misses": c.misses,
+                "hit_rate": round(c.hit_rate, 4),
+            }
+    except Exception as e:
+        logger.warning(f"缓存统计失败: {e}")
+    return stats
+
+
 # ============ 辅助函数 ============
 
 def _build_chat_history(history: list) -> list:
@@ -788,4 +847,14 @@ def _build_chat_response(response: RAGResponse) -> ChatResponse:
         retrieval_detail=retrieval_detail,
         total_time_ms=response.total_time_ms,
         cache_hit=response.cache_hit,
+        citations=[
+            Citation(
+                claim=c.claim, source=c.source, chunk_id=c.chunk_id,
+                doc_index=c.doc_index, confidence=c.confidence, snippet=c.snippet,
+            )
+            for c in (response.citations or [])
+        ],
+        short_answer=response.short_answer,
+        self_consistency_used=response.self_consistency_used,
+        rewritten_query=response.rewritten_query,
     )
