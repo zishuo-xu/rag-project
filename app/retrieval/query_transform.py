@@ -8,7 +8,10 @@ from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
+from dataclasses import dataclass, field
+
 from config import get_settings, get_llm_extra_body
+from app.retrieval.crag import CRAGEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +56,28 @@ REFINE_PROMPT = ChatPromptTemplate.from_template(
 
 新查询："""
 )
+
+# F6b 多跳查询分解 Prompt
+DECOMPOSE_PROMPT = ChatPromptTemplate.from_template(
+    """你是一个多跳问题分解器。把一个需要多步检索才能回答的复杂问题，拆成若干更简单的子问题。
+
+要求：
+1. 每个子问题应可独立检索，或构成清晰的依赖链。
+2. 若后一个子问题必须依赖前一个子问题的答案（如"X 的 Y 的 Z"），把 chain 设为 true。
+3. 子问题数量控制在 {max_sub} 个以内。
+4. 只输出 JSON：{{"sub_questions": ["子问题1", "子问题2"], "chain": false}}
+
+问题: {question}
+
+JSON："""
+)
+
+
+@dataclass
+class Decomposition:
+    """多跳分解结果：sub_questions 为子问题列表；chain 表示是否存在依赖链。"""
+    sub_questions: List[str] = field(default_factory=list)
+    chain: bool = False
 
 
 class QueryTransformer:
@@ -170,6 +195,33 @@ class QueryTransformer:
             logger.warning(f"查询精化失败: {e}, 降级到 HyDE")
             return self.hyde(question)
         return question
+
+    def decompose(self, question: str) -> "Decomposition":
+        """F6b 多跳查询分解：把多跳问题拆成子问题。
+
+        失败 / 解析不出 / 仅 1 个子问题时回退 Decomposition([question], False)（退化为单跳，绝不阻断）。
+        注：直连 self.llm.invoke 取 .content（与 multi_query 等的 LCEL 链等价，但便于离线 mock 测试）。
+        """
+        settings = get_settings()
+        fallback = Decomposition(sub_questions=[question], chain=False)
+        try:
+            prompt_value = DECOMPOSE_PROMPT.format_prompt(
+                question=question,
+                max_sub=settings.decomposition_max_subquestions,
+            )
+            result = self.llm.invoke(prompt_value.to_messages())
+            raw = result.content if hasattr(result, "content") else str(result)
+            data = CRAGEvaluator._extract_json(raw)
+            if not isinstance(data, dict):
+                return fallback
+            subs = [str(s).strip() for s in data.get("sub_questions", []) if str(s).strip()]
+            subs = subs[: settings.decomposition_max_subquestions]
+            if len(subs) <= 1:
+                return fallback
+            return Decomposition(sub_questions=subs, chain=bool(data.get("chain", False)))
+        except Exception as e:
+            logger.warning(f"多跳分解失败，退化为单跳: {e}")
+            return fallback
 
     def transform(
         self,
