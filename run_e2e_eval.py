@@ -1,0 +1,292 @@
+"""端到端三层评估 harness（F5）+ 模拟真实用户测试
+
+对 CMRC 测试集跑 chain.invoke() 全链路，度量三层（对应文章「三层评估」）：
+1. 检索层：命中率(keyword_coverage≥0.5 或 source_hit) + 平均检索篇数 + Autocut 降噪幅度
+2. 生成层：忠实度(response.faithfulness_score, F3) + 重生成率
+3. 端到端：答案正确性 vs gold —— 中文 F1 / 严格EM / 宽松命中(answer_hit)
+附：平均延迟 / 路由类型分布(F4) / 迭代次数与终止原因(F2)
+
+A/B 与特性归因（隔离 RAG2.0 四特性 F1-F4 的边际贡献）：
+  --mode baseline : F1-F4 全关（RAG1.0 基线行为）
+  --mode full     : F1-F4 全开
+  --only F1|F2|F3|F4 : 仅开单一特性，其余关闭（单特性归因）
+
+健壮性：每题 try/except 优雅降级并如实计入失败；增量写盘（断点不丢）；
+评估强制关闭语义缓存避免跨模式污染。
+
+用法:
+  uv run python run_e2e_eval.py --mode full
+  uv run python run_e2e_eval.py --mode baseline
+  uv run python run_e2e_eval.py --mode full --colloquial   # 追加口语化查询定性检视
+  uv run python run_e2e_eval.py --mode full --limit 5      # 冒烟：仅前5题
+"""
+
+import argparse
+import json
+import logging
+import re
+import time
+from collections import Counter
+from pathlib import Path
+
+from config import get_settings
+from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit
+
+logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
+
+# RAG2.0 四特性开关（A/B 隔离对象）
+FEATURE_FLAGS = {
+    "F1": "use_autocut",
+    "F2": "use_iterative_retrieval",
+    "F3": "use_faithfulness_check",
+    "F4": "use_query_router",
+}
+
+# 模拟真实用户的口语化查询（覆盖边缘场景；引用 CMRC 知识库真实实体 范廷颂）
+COLLOQUIAL_QUERIES = [
+    "范廷颂这人到底当过啥官啊？",            # 口语化措辞
+    "范廷颂是哪一年当上主教的？",            # 数字型
+    "什么是天主教的主教制度？",              # 概念型
+    "主教和总主教有什么区别？",              # 对比型
+    "范廷颂担任总主教的那个教区在哪里？",    # 多跳
+    "范廷颂的手机号码是多少？",              # 不可答（应诚实拒答而非幻觉）
+    "2099年范廷颂做了什么？",                # 不可答（未来时间）
+    "那他后来怎么样了？",                    # 追问式（无上下文）
+    "帮我讲讲范廷颂的故事呗",                # 口语化 + 模糊
+    "你好呀，今天天气怎么样？",              # 闲聊（门控应跳过检索）
+]
+
+
+def apply_feature_mode(mode: str, only: str | None) -> dict:
+    """在构造 RAGChain 前改写 settings 单例的特性标志。返回实际开关状态。"""
+    settings = get_settings()
+    # 评估强制关闭语义缓存，避免 baseline 答案被 full 模式缓存命中而污染 A/B
+    settings.cache_enabled = False
+
+    if mode == "baseline":
+        for flag in FEATURE_FLAGS.values():
+            setattr(settings, flag, False)
+    elif mode == "full":
+        for flag in FEATURE_FLAGS.values():
+            setattr(settings, flag, True)
+
+    if only:
+        only = only.upper()
+        if only not in FEATURE_FLAGS:
+            raise ValueError(f"--only 须为 {list(FEATURE_FLAGS)} 之一")
+        for key, flag in FEATURE_FLAGS.items():
+            setattr(settings, flag, key == only)
+
+    return {key: bool(getattr(settings, flag)) for key, flag in FEATURE_FLAGS.items()}
+
+
+def keyword_coverage(question: str, ground_truth: str, documents) -> float:
+    """ground_truth 中的关键词在检索结果中的覆盖率（沿用 run_retrieval_eval 口径）"""
+    keywords = set(re.findall(r"[一-鿿]{2,}|\d+", ground_truth))
+    if not keywords:
+        return 1.0
+    context = " ".join(d.page_content for d in documents)
+    hits = sum(1 for kw in keywords if kw in context)
+    return hits / len(keywords)
+
+
+def eval_sample(chain, sample) -> dict:
+    """对单个带 gold 的样本跑全链路并度量三层指标。异常优雅降级。"""
+    question = sample["question"]
+    gold = sample["ground_truth"]
+    expected_source = sample.get("metadata", {}).get("source", "")
+
+    t0 = time.time()
+    try:
+        resp = chain.invoke(question)
+    except Exception as e:
+        logger.warning(f"样本失败 [{question[:20]}]: {e}")
+        return {
+            "id": sample.get("id"), "question": question, "gold": gold,
+            "ok": False, "error": str(e),
+        }
+    ms = (time.time() - t0) * 1000
+
+    docs = resp.sources
+    rr = resp.retrieval_result
+
+    # 检索层
+    coverage = keyword_coverage(question, gold, docs)
+    source_hit = any(
+        expected_source and expected_source in d.metadata.get("source", "")
+        for d in docs
+    )
+    retrieval_ok = coverage >= 0.5 or source_hit
+
+    return {
+        "id": sample.get("id"), "question": question, "gold": gold,
+        "answer": resp.answer,
+        "ok": True,
+        # 检索层
+        "retrieval_ok": retrieval_ok, "coverage": round(coverage, 4),
+        "source_hit": source_hit, "num_docs": len(docs),
+        "pre_autocut": rr.pre_autocut_count,
+        # 生成层
+        "faithfulness": round(resp.faithfulness_score, 4),
+        "faithful": resp.faithful, "regenerated": resp.regenerated,
+        # 端到端
+        "f1": round(answer_f1(gold, resp.answer), 4),
+        "em": normalized_exact_match(gold, resp.answer),
+        "hit": answer_hit(gold, resp.answer),
+        # 观测
+        "query_type": rr.query_type, "iterations": rr.iterations_used,
+        "stop_reason": rr.iterative_stop_reason,
+        "gate_skipped": rr.gate_skipped,
+        "latency_ms": round(ms, 1),
+    }
+
+
+def eval_colloquial(chain, query: str) -> dict:
+    """口语化查询定性检视：捕获完整响应特征（无 gold）。"""
+    t0 = time.time()
+    try:
+        resp = chain.invoke(query)
+    except Exception as e:
+        return {"question": query, "ok": False, "error": str(e)}
+    ms = (time.time() - t0) * 1000
+    rr = resp.retrieval_result
+    return {
+        "question": query, "ok": True,
+        "answer": resp.answer,
+        "num_docs": len(resp.sources),
+        "gate_skipped": rr.gate_skipped,
+        "query_type": rr.query_type,
+        "iterations": rr.iterations_used,
+        "stop_reason": rr.iterative_stop_reason,
+        "pre_autocut": rr.pre_autocut_count,
+        "faithful": resp.faithful,
+        "faithfulness": round(resp.faithfulness_score, 4),
+        "regenerated": resp.regenerated,
+        "latency_ms": round(ms, 1),
+    }
+
+
+def _mean(values):
+    values = [v for v in values if v is not None]
+    return round(sum(values) / len(values), 4) if values else None
+
+
+def aggregate(results: list) -> dict:
+    """汇总三层指标 + 观测统计"""
+    ok = [r for r in results if r.get("ok")]
+    n = len(ok)
+    if n == 0:
+        return {"num_samples": len(results), "num_ok": 0, "num_failed": len(results)}
+
+    faith_vals = [r["faithfulness"] for r in ok if r["faithful"] is not None]
+    return {
+        "num_samples": len(results),
+        "num_ok": n,
+        "num_failed": len(results) - n,
+        "retrieval": {
+            "hit_rate": _mean([int(r["retrieval_ok"]) for r in ok]),
+            "avg_coverage": _mean([r["coverage"] for r in ok]),
+            "avg_num_docs": _mean([r["num_docs"] for r in ok]),
+            "avg_pre_autocut": _mean([r["pre_autocut"] for r in ok]),
+        },
+        "generation": {
+            "avg_faithfulness": _mean(faith_vals),
+            "regen_rate": _mean([int(r["regenerated"]) for r in ok]),
+        },
+        "end_to_end": {
+            "avg_f1": _mean([r["f1"] for r in ok]),
+            "em_rate": _mean([int(r["em"]) for r in ok]),
+            "hit_rate": _mean([int(r["hit"]) for r in ok]),
+        },
+        "avg_latency_ms": _mean([r["latency_ms"] for r in ok]),
+        "routing_dist": dict(Counter(r["query_type"] or "n/a" for r in ok)),
+        "iterative": {
+            "avg_iterations": _mean([r["iterations"] for r in ok]),
+            "stop_reasons": dict(Counter(r["stop_reason"] or "n/a" for r in ok)),
+        },
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset", default="data/eval_dataset_cmrc.json")
+    parser.add_argument("--mode", default="full", choices=["baseline", "full"])
+    parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4")
+    parser.add_argument("--colloquial", action="store_true", help="追加口语化查询检视")
+    parser.add_argument("--limit", type=int, default=0, help="仅跑前N题（0=全部）")
+    parser.add_argument("--output", default="")
+    args = parser.parse_args()
+
+    feature_state = apply_feature_mode(args.mode, args.only)
+    tag = args.only.upper() if args.only else args.mode
+    output = args.output or f"data/eval_e2e_{tag.lower()}.json"
+
+    print(f"=== 端到端评估 [{tag}] 特性状态: {feature_state} ===")
+
+    # 构造 chain（在 apply_feature_mode 之后，确保读到改写后的 settings）
+    from app.generation.chain import RAGChain
+    chain = RAGChain()
+    try:
+        chain.sparse_retriever.build_index()
+    except Exception as e:
+        logger.warning(f"BM25 索引构建跳过: {e}")
+
+    dataset = json.loads(Path(args.dataset).read_text(encoding="utf-8"))
+    samples = dataset["samples"]
+    if args.limit > 0:
+        samples = samples[: args.limit]
+
+    # 增量评估 + 写盘（断点不丢）
+    results = []
+    for i, sample in enumerate(samples, 1):
+        r = eval_sample(chain, sample)
+        results.append(r)
+        status = "✓" if r.get("ok") else "✗"
+        extra = (
+            f"f1={r.get('f1', 0):.2f} hit={int(r.get('hit', False))} "
+            f"faith={r.get('faithfulness')}" if r.get("ok") else r.get("error", "")
+        )
+        print(f"[{i}/{len(samples)}] {status} {sample['question'][:30]} {extra}")
+        _save(output, tag, feature_state, results, None)
+
+    summary = aggregate(results)
+
+    # 口语化查询定性检视
+    colloquial = None
+    if args.colloquial:
+        print(f"\n=== 口语化查询检视（{len(COLLOQUIAL_QUERIES)} 条）===")
+        colloquial = []
+        for q in COLLOQUIAL_QUERIES:
+            c = eval_colloquial(chain, q)
+            colloquial.append(c)
+            ans_preview = (c.get("answer", "") or "")[:50].replace("\n", " ")
+            print(f"  Q: {q}\n    -> [{c.get('query_type', '?')}] "
+                  f"docs={c.get('num_docs')} gate_skip={c.get('gate_skipped')} "
+                  f"faith={c.get('faithfulness')} | {ans_preview}")
+        _save(output, tag, feature_state, results, colloquial)
+
+    _save(output, tag, feature_state, results, colloquial, summary)
+
+    print(f"\n=== 汇总 [{tag}] ===")
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    print(f"\n报告已写入: {output}")
+
+
+def _save(output, tag, feature_state, results, colloquial, summary=None):
+    """增量写盘"""
+    payload = {
+        "mode": tag,
+        "feature_state": feature_state,
+        "summary": summary or aggregate(results),
+        "results": results,
+    }
+    if colloquial is not None:
+        payload["colloquial"] = colloquial
+    Path(output).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+
+if __name__ == "__main__":
+    main()

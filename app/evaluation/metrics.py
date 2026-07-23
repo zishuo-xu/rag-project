@@ -466,3 +466,52 @@ def quick_evaluate(questions: List[str], ground_truths: List[str]) -> dict:
         "num_samples": len(questions),
         "details": results,
     }
+
+
+# ==================== 端到端答案正确性指标（F5，纯函数零依赖零LLM） ====================
+# 与上方 jieba 版 _token_f1 不同：本组函数不依赖外部分词器，按字符切分中文，
+# 保证单测可复现、跨环境一致，供 run_e2e_eval.py 端到端 harness 使用。
+
+def normalize_answer(text: str) -> str:
+    """端到端评测归一化：转小写，仅保留汉字与英数（去除所有标点与空白）。"""
+    return "".join(re.findall(r"[\u4e00-\u9fffa-z0-9]", (text or "").lower()))
+
+
+def tokenize_zh(text: str) -> List[str]:
+    """评测用轻量中文分词：每个汉字一个 token + 连续英数一个 token（零依赖、确定）。"""
+    return re.findall(r"[a-z0-9]+|[\u4e00-\u9fff]", (text or "").lower())
+
+
+def answer_f1(gold: str, pred: str) -> float:
+    """端到端答案 Token 级 F1（多重集计数）。
+
+    gold 为短答案 span，pred 为完整回答；以 token 重叠衡量 pred 对 gold 的覆盖。
+    """
+    from collections import Counter
+    gold_toks = tokenize_zh(gold)
+    pred_toks = tokenize_zh(pred)
+    if not gold_toks and not pred_toks:
+        return 1.0
+    if not gold_toks or not pred_toks:
+        return 0.0
+    common = sum((Counter(gold_toks) & Counter(pred_toks)).values())
+    if common == 0:
+        return 0.0
+    precision = common / len(pred_toks)
+    recall = common / len(gold_toks)
+    return 2 * precision * recall / (precision + recall)
+
+
+def normalized_exact_match(gold: str, pred: str) -> bool:
+    """严格 EM：归一化后完全相等。"""
+    g = normalize_answer(gold)
+    return bool(g) and g == normalize_answer(pred)
+
+
+def answer_hit(gold: str, pred: str) -> bool:
+    """宽松命中：归一化后的 gold 作为子串出现在 pred 中。
+
+    RAG 完整回答通常长于短答案 span，子串命中是更贴近实际的端到端正确性信号。
+    """
+    g = normalize_answer(gold)
+    return bool(g) and g in normalize_answer(pred)
