@@ -1,169 +1,511 @@
-# 架构设计文档
+# 架构与核心实现文档
 
-## 1. 系统概览
+> 本文档描述系统当前的真实架构与重要功能实现，所有结论均对照代码（含 `file:line` 引用）。
+> 配套阅读：`README.md`（快速上手）、`docs/interview_guide.md`（设计决策与面试叙事）、
+> `docs/superpowers/reports/2026-07-23-rag2-e2e-validation-report.md`（A/B 实测报告）。
 
-本系统是一个生产级 RAG（Retrieval-Augmented Generation）系统，采用分层架构设计，将 RAG 全链路拆分为独立可测试的模块。
+---
+
+## 目录
+
+1. [系统概览与设计原则](#1-系统概览与设计原则)
+2. [分层架构总览](#2-分层架构总览)
+3. [请求生命周期](#3-请求生命周期)
+4. [摄入层 Ingestion](#4-摄入层-ingestion)
+5. [检索层 Retrieval（核心）](#5-检索层-retrieval核心)
+6. [生成层 Generation](#6-生成层-generation)
+7. [RAG 2.0 五大特性实现](#7-rag-20-五大特性实现)
+8. [并发治理](#8-并发治理)
+9. [可观测性 Observability](#9-可观测性-observability)
+10. [评估体系](#10-评估体系)
+11. [配置开关速查](#11-配置开关速查)
+12. [降级与容错设计](#12-降级与容错设计)
+13. [技术选型](#13-技术选型)
+
+---
+
+## 1. 系统概览与设计原则
+
+本系统是一个**生产级 RAG（Retrieval-Augmented Generation）系统**，覆盖
+**摄入 → 检索 → 生成 → 评估** 全链路，并在标准 RAG 之上落地了 RAG 2.0 的五项深度增强
+（Autocut 自适应截断、Self-RAG 迭代检索、忠实度自检、查询路由、端到端三层评估）。
 
 ### 设计原则
 
-- **分层解耦**：摄入、检索、生成、评估各层独立，可单独替换和测试
-- **策略可插拔**：分块策略、检索策略、查询改写策略均可配置切换
-- **可观测性**：每个阶段记录耗时和中间结果，支持链路追踪
-- **渐进增强**：基础 RAG 可运行，高级特性（Rerank、Query Transform）可开关
+| 原则 | 体现 |
+|------|------|
+| **分层解耦** | 摄入 / 检索 / 生成 / 评估各层独立，可单独替换与测试 |
+| **管道化** | 检索被重构为 7 阶段 `RetrievalPipeline`，每阶段职责单一、可开关、可替换 |
+| **策略可插拔** | 分块、召回通道、查询改写、重排、截断策略均由配置开关驱动 |
+| **优雅降级** | 几乎所有增强模块异常时回退到安全默认值，绝不阻断主链路 |
+| **可观测** | 每个阶段记录耗时与中间结果，内置 Trace 瀑布图 |
+| **eval 驱动** | 三层评估（检索 / 生成 / 端到端）+ A/B 特性归因，所有结论可复现 |
 
-## 2. 数据流
+---
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          完整请求生命周期                                  │
-└─────────────────────────────────────────────────────────────────────────┘
+## 2. 分层架构总览
 
-用户问题
-    │
-    ▼
-┌─────────────────┐
-│  Query Transform │  ← Multi-Query: 生成 3 个查询变体
-│  (可选)          │  ← HyDE: 生成假设性文档
-└────────┬────────┘
-         │ queries: [q1, q2, q3, q_original]
-         ▼
-┌─────────────────────────────────────────┐
-│           Multi-Recall (多路召回)         │
-│                                          │
-│  ┌─────────────┐    ┌─────────────┐     │
-│  │ Dense       │    │ Sparse      │     │
-│  │ (Embedding  │    │ (BM25       │     │
-│  │  + Chroma)  │    │  关键词)     │     │
-│  └──────┬──────┘    └──────┬──────┘     │
-│         │                   │            │
-│         ▼                   ▼            │
-│    top-20 docs         top-20 docs       │
-└─────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│   RRF Fusion    │  ← score(d) = Σ 1/(k + rank_i(d)), k=60
-│   排名融合       │  ← 去重 + 按融合分数排序
-└────────┬────────┘
-         │ ~30 个候选
-         ▼
-┌─────────────────┐
-│  Cross-Encoder  │  ← (query, doc) 对输入模型
-│  Reranker       │  ← 精排后取 top-5
-└────────┬────────┘
-         │ top-5 docs
-         ▼
-┌─────────────────┐
-│  LLM Generation │  ← 构建 context + prompt
-│  (GPT-4o-mini)  │  ← 流式输出回答
-└────────┬────────┘
-         │
-         ▼
-    最终回答 + 引用来源
-```
-
-## 3. 模块设计
-
-### 3.1 文档摄入管道 (Ingestion Pipeline)
+后端依赖方向自上而下：
 
 ```
-原始文件 → Loader → Chunker → Indexer → ChromaDB
+main.py (FastAPI 入口 / lifespan)
+  └─ app/api/routes.py (HTTP 端点) + app/api/schemas.py (Pydantic 模型)
+       └─ app/generation/chain.py (RAGChain 编排中枢)
+            ├─ app/retrieval/pipeline.py (RetrievalPipeline 七阶段)
+            │    ├─ dense.py / sparse.py / graph_retriever.py / parent_child.py  (五路召回)
+            │    ├─ fusion.py (RRF) / reranker.py (CrossEncoder) / autocut.py (Kneedle)
+            │    ├─ query_transform.py / crag.py / router.py  (改写 / 评估 / 路由)
+            │    └─ app/ingestion/indexer.py (层级索引)
+            ├─ app/generation/faithfulness.py + prompts.py  (生成 / 忠实度自检)
+            ├─ app/retrieval/cache.py (语义缓存)
+            └─ app/observability/tracing.py (追踪)
+  app/ingestion/ (loader / chunker / indexer / graph_extractor  摄入层)
+  app/evaluation/metrics.py (评估指标)
+config.py (全局配置单例)
+frontend/app.py (Streamlit 前端，5 个 Tab)
 ```
 
-| 组件 | 职责 | 设计决策 |
-|------|------|----------|
-| Loader | 多格式文档加载 | 策略模式，按扩展名分发到对应加载器 |
-| Chunker | 文本分块 | 提供递归分块和语义分块两种策略 |
-| Indexer | 层级索引构建 | L1摘要索引 + L2明细索引，两级 ChromaDB collection |
+**关键设计**：`chain.py` 是**薄编排层**，只负责「调 pipeline 拿文档 → 压缩上下文 → 拼 prompt →
+生成 → 自检」；所有检索复杂度都收敛在 `RetrievalPipeline` 内。
 
-**分块策略对比：**
+---
 
-| 策略 | 原理 | 适用场景 |
-|------|------|----------|
-| 递归字符分块 | 按 `\n\n` > `\n` > `。` > ` ` 层级切分 | 通用文档，结构规整 |
-| 语义分块 | 计算相邻句子 embedding 余弦相似度，低于阈值处切分 | 主题频繁变化的长文档 |
+## 3. 请求生命周期
 
-**层级索引设计：**
-- **L1 摘要索引**：用 LLM 为每个文档生成 200 字摘要，向量化后存入 `summaries` collection
-- **L2 明细索引**：原始分块向量化后存入 `chunks` collection
-- **检索流程**：先 L1 定位相关文档 → 再 L2 在目标文档内精细检索
+### 3.1 入口与启动（`main.py`）
 
-### 3.2 检索模块 (Retrieval)
+- `lifespan(app)`（`main.py:25-58`）启动时：
+  1. 校验 `OPENAI_API_KEY`，缺失则抛 `RuntimeError`（`:31-35`）；
+  2. 构造全局 `RAGChain(use_query_transform=True, use_rerank=True, query_strategy="multi_query")`
+     并通过 `set_rag_chain` 注入路由（`:38-42`）；
+  3. 用 `asyncio.Semaphore(settings.max_concurrent_requests)` 建立**并发闸门**（`:46-48`）；
+  4. 尝试 `sparse_retriever.build_index()` 预热 BM25 索引（`:51-54`，失败仅告警）。
+- 顶部设置 `HF_HUB_OFFLINE=1` / `TRANSFORMERS_OFFLINE=1`（`:4-5`），跳过 HuggingFace 联网检查，实现离线加速。
 
-**多路召回设计理由：**
-
-| 检索方式 | 优势 | 劣势 |
-|----------|------|------|
-| Dense (向量) | 理解语义、同义词 | 对精确术语/编号匹配弱 |
-| Sparse (BM25) | 精确关键词匹配 | 无法理解语义关系 |
-| 混合 | 互补，提高召回率 | 需要融合策略 |
-
-**RRF 融合公式：**
+### 3.2 非流式提问完整调用链
 
 ```
-RRF_score(d) = Σ 1 / (k + rank_i(d))
+POST /api/chat → chat()                          [routes.py:75]
+  → _acquire_gate (Semaphore，排队超时返回 503)    [routes.py:61]
+  → asyncio.to_thread(chain.invoke)               [routes.py:102]   ← 卸载到线程池，不阻塞事件循环
+    → RAGChain.invoke                             [chain.py:287]
+        1. tracer.start_trace                     [chain.py:295]
+        2. _check_cache (语义缓存命中则直接返回)    [chain.py:298, 423]
+        3. self.retrieve → pipeline.run (七阶段)   [chain.py:304]
+        4. 生成分支：
+           - gate_skipped      → generate_direct  (门控判定无需检索)
+           - 有 checker + 有文档 → _generate_faithful (生成 + 忠实度自检 + 有界重生成)
+           - 否则              → generate
+        5. tracer.end_trace + _write_cache        [chain.py:328-331]
+        6. return RAGResponse                     [chain.py:333]
+  → _build_chat_response                          [routes.py:718]
 ```
 
-- `k = 60`（平滑常数，减少高排名的过度优势）
-- 仅利用排名信息，不依赖原始分数（避免 Dense 和 BM25 分数不可比）
-- 多路都命中的文档自然获得更高分数
+### 3.3 主要 API 端点（`app/api/routes.py`）
 
-**Reranker 设计：**
-- 模型：`cross-encoder/ms-marco-MiniLM-L-6-v2`
-- 输入：(query, document) 拼接对
-- 输出：相关性分数 [0, 1]
-- 为什么用 Cross-Encoder 而非 Bi-Encoder：精度更高（query-doc 交互注意力），但速度慢，所以只对少量候选（~30）精排
+| 端点 | 方法 | 行号 | 说明 |
+|------|------|------|------|
+| `POST /api/chat` | `chat` | :75 | 对话；`stream=True` 走 SSE，否则闸门内同步执行 |
+| `POST /api/documents/upload` | `upload_document` | :211 | 校验后缀 → load → smart_chunk → index → 追加 BM25 |
+| `GET /api/documents` | `list_documents` | :269 | 按 `doc_id` 分组统计 |
+| `GET /api/documents/{id}/chunks` | `get_document_chunks` | :298 | 全链路索引详情（分块 + BM25 词项 + 向量 + L1 摘要） |
+| `POST /api/retrieval/compare` | `retrieval_compare` | :366 | Dense/Sparse/Hybrid-RRF/Hybrid+Rerank 四策略对比 |
+| `GET /api/traces` / `/api/traces/stats` | `get_traces` / `get_trace_stats` | :460/:468 | 瀑布图数据 / 各阶段平均耗时 |
+| `POST /api/evaluate` | `evaluate` | :478 | 调 `evaluate_rag`（RAGAS 四维） |
+| `POST /api/graph/build` | `build_knowledge_graph` | :510 | 后台异步构建知识图谱（增量） |
+| `GET /api/graph/{stats,triples,visual}` | … | :567+ | 图谱统计 / 三元组 / 可视化数据 |
+| `POST /api/graph/query` / `GET /api/graph/path` | … | :586/:603 | 图检索 / 实体路径 |
+| `GET /api/health` | `health_check` | :688 | 健康检查 |
 
-### 3.3 查询改写 (Query Transform)
+**SSE 流式**（`_stream_response`，`routes.py:121-206`）：用 `asyncio.to_thread(next, event_iter, None)`
+逐事件把同步生成器移出事件循环（`:147`）；事件类型 `cache_hit` / `retrieval` / `token` / `done`；
+闸门在 `finally` 中释放（`:204-206`）。
 
-| 策略 | 原理 | 适用场景 |
-|------|------|----------|
-| Multi-Query | LLM 生成 3 个不同角度的查询变体 | 用户问题模糊、单一角度 |
-| HyDE | LLM 生成假设性回答，用其 embedding 检索 | 问题与文档措辞差异大 |
+---
 
-### 3.4 生成模块 (Generation)
+## 4. 摄入层 Ingestion
 
-- Prompt 设计：系统角色 + 回答约束 + 上下文 + 问题
-- 约束：只基于文档回答、标注来源、信息不足时诚实告知
-- 支持多轮对话（chat_history）
-- 支持 SSE 流式输出
+```
+原始文件 → Loader → Chunker → Indexer → ChromaDB (L1 摘要 + L2 明细)
+                         └─→ GraphExtractor → NetworkX 知识图谱
+```
 
-### 3.5 评估模块 (Evaluation)
+### 4.1 Loader（`app/ingestion/loader.py`）
 
-基于 RAGAS 框架的四维评估：
+- `LOADER_MAPPING`（`:14-19`）：`.pdf → PyPDFLoader`，`.txt/.md/.markdown → TextLoader`。
+- `load_document(file_path)`（`:22-59`）：加载并补元数据 `source / file_path / doc_id / chunk_index`。
+- `load_directory(dir_path)`（`:62-89`）：glob 批量加载，单文件失败仅告警不中断。
 
-| 指标 | 评估对象 | 含义 |
+### 4.2 Chunker（`app/ingestion/chunker.py`）
+
+| 策略 | 实现 | 适用 |
+|------|------|------|
+| **递归字符分块** | `recursive_chunk`（`:15-53`），`chunk_size=512 / overlap=64`，分隔符优先级 `\n\n > \n > 。 > . > 空格` | 结构规整的通用文档 |
+| **语义分块** | `semantic_chunk`（`:56-135`），先切句再算相邻句 embedding 余弦相似度，`sim < 0.75` 处切分 | 主题频繁变化的长文档 |
+
+- `smart_chunk`（`:138-181`）：**短文档（≤1000 字符）整段保留不切**，长文档按开关选语义或递归分块。
+- 每块写入 `chunk_id = f"{doc_id}_{i}"` 与 `position`，作为后续去重与 Parent-Child 关联的主键。
+
+### 4.3 层级索引 Indexer（`app/ingestion/indexer.py`）
+
+- **双 Chroma collection**：`chunk_store`（L2 明细，collection `chunks`）+ `summary_store`（L1 摘要，collection `summaries`）。
+- `index_documents(chunks, build_summary=True)`（`:115-150`）：L2 写入分块；L1 按 `doc_id` 分组，
+  用 LLM 为每篇文档生成 ≤200 字摘要后写入（摘要失败仅告警）。
+- `hierarchical_search(query, top_k=5)`（`:170-205`）：先 L1 取 top-3 摘要定位 `doc_id`，
+  再 L2 用 `filter={"doc_id": {"$in": ...}}` 精检；过滤失败回退全局检索。
+- Embedding：`get_embeddings()`（`:15-32`）默认本地 `HuggingFaceEmbeddings`（`normalize_embeddings=True`），
+  模型由 `embedding_model` 配置（默认 `all-MiniLM-L6-v2`，`.env` 可覆盖为中文优化的 bge 系列）。
+
+### 4.4 知识图谱抽取（`app/ingestion/graph_extractor.py`）
+
+> **诚实说明**：被 `/api/graph/build` 调用的主构建路径 `build_from_documents_async`（`:285-415`）
+> 是 **LLM 抽取**三元组；另有一条**零 LLM** 备用路径 `build_fast`（`:97-168`，jieba TF-IDF 关键词作实体 +
+> 共现边），目前未接线到任何 API 端点。
+
+- `KnowledgeGraphBuilder` 基于 `nx.DiGraph`（面向十篇级文档量，故用 NetworkX 而非 Neo4j）。
+- LLM 路径：`extract_triples`（`:170-189`，每块最多 15 个三元组）→ `_parse_triples`（`:191-227`）解析。
+- 异步构建：`asyncio.Semaphore(5)` 并发（`:340`）、两两合并 chunk 减少 LLM 调用（`_merge_chunks`）、
+  增量跳过已处理 `chunk_id`（`:311-322`）、每 5 单元检查点持久化（`:368-377`）。
+- 检索支持：`get_subgraph(entities, max_hops=2)`（`:481-514`，双向 BFS 扩展）、
+  `get_entity_relations`（`:516-544`）、`_fuzzy_match_nodes`（`:582-605`，完全匹配插队首）。
+
+---
+
+## 5. 检索层 Retrieval（核心）
+
+### 5.1 七阶段统一管道 `RetrievalPipeline`（`app/retrieval/pipeline.py`）
+
+```
+gate(要不要检索) → transform(查询改写) → recall(五路并行召回) → fuse(RRF 融合)
+→ rerank(精排 + Autocut) → evaluate(CRAG 分级) → remediate / iterate(不合格则补救或迭代)
+```
+
+`RetrievalResult`（`:22-41`）承载全链路中间产物：`documents / dense_results / sparse_results /
+graph_results / summary_results / fused_results / reranked_results / queries_used /
+retrieval_time_ms / crag_grade / crag_action / gate_skipped / pre_autocut_count /
+query_type / iterations_used / iterative_stop_reason`。
+
+| 阶段 | 方法（行号） | 职责 |
+|------|--------------|------|
+| **① gate** | `gate`（`:79-87`） | 判断是否需要检索；未启用或异常默认 `True`（保守，不漏检索） |
+| **② transform** | `transform`（`:91-96`） | 委托 `QueryTransformer` 生成查询变体，否则 `[question]` |
+| **③ recall** | `recall`（`:100-172`） | `ThreadPoolExecutor(max_workers=6)` 并行五路召回，单路失败仅告警 |
+| **④ fuse** | `fuse`（`:176-184`） | 固定 dense+sparse，其余通道非空才加入，调 RRF |
+| **⑤ rerank** | `rerank`（`:188-208`） | CrossEncoder 精排；开启 Autocut 时先全量打分再膝点截断 |
+| **⑥ evaluate** | `evaluate`（`:212-219`） | 先零 LLM 数字校验，再 CRAG LLM 分级 |
+| **⑦ remediate** | `remediate`（`:223-234`） | HyDE 改写 → 双路召回 → 融合 → 重排（管道中再嵌一条小管道） |
+
+**主编排 `run()`（`:330-505`）的关键优化**：
+
+- **投机并行**：当门控与改写都启用时，用 `ThreadPoolExecutor(2)` 让 gate 与 transform **并行执行**
+  （`:351-364`）——即使门控最终判定跳过检索，改写也已并发完成，不增加串行延迟。
+- **F4 路由**：`query_router.route` 动态调整 `effective_top_k` 与 `effective_autocut_min`（`:385-401`）。
+- **CRAG 分支**：开启 F2 时统一走 `_iterative_retrieve`（`:453-470`）；否则
+  `incorrect → remediate`、`ambiguous → filter_relevant_docs`、`correct → 直接使用`。
+
+### 5.2 五路召回（`ALL_CHANNELS`，`pipeline.py:19`）
+
+| 通道 | 实现文件 | 原理 | 关键点 |
+|------|----------|------|--------|
+| **Dense** | `dense.py` | embedding + Chroma 向量相似度 | 多查询变体批量预算 embedding（`pipeline.py:119-124`），复用 `similarity_search_by_vector` |
+| **Sparse** | `sparse.py` | BM25Okapi + jieba 中文分词 | `_tokenize`（`:103-134`）词级分词 + 数字单位正则（`1963年/100ms`）；索引持久化到 `bm25_index.pkl` |
+| **Graph** | `graph_retriever.py` | 实体抽取 → 关系/子图多跳召回 | `_fast_entity_match`（`:88-120`）零 LLM 优先，失败回退 LLM；`max_hops=2` |
+| **Parent-Child** | `parent_child.py` | 小块检索、大块返回 | child(200) 检索 `top_k*3` → 按 `parent_id` 去重 → 批量取 parent(1024)；需 `has_index()` |
+| **Summary** | `indexer.py` | L1 摘要召回 | 由 `use_summary_recall` 开关，提供文档级语义 |
+
+> **注意**：`RAGChain` 初始化会构造 Parent-Child 检索器，但上传端点未调用其 `index_documents`，
+> 故默认无 child 索引，recall 中 `has_index()` 为 False 即自动跳过该路（优雅降级）。
+
+### 5.3 RRF 融合（`app/retrieval/fusion.py`）
+
+```
+RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
+```
+
+- `reciprocal_rank_fusion`（`:13-64`）：仅利用**排名**而非原始分数，规避 Dense 与 BM25 分数不可比问题；
+  多路都命中的文档自然获得更高分；`doc_key = chunk_id or hash(content)` 去重，结果写入 `metadata["rrf_score"]`。
+
+### 5.4 CrossEncoder 重排（`app/retrieval/reranker.py`）
+
+- 模型 `cross-encoder/ms-marco-MiniLM-L-6-v2`（`.env` 可覆盖为 bge-reranker）。
+- `rerank(query, documents, top_k)`（`:33-79`）：构造 `(query, doc.page_content)` 对，
+  `model.predict(pairs)` 打分后降序取 top_k，写入 `metadata["rerank_score"]`。
+- **为什么用 Cross-Encoder 而非 Bi-Encoder**：query-doc 交互注意力精度更高，但速度慢，
+  故只对融合后的少量候选（`rerank_top_n=20`）精排。
+
+### 5.5 查询改写（`app/retrieval/query_transform.py`）
+
+| 策略 | 方法 | 原理 |
+|------|------|------|
+| **Multi-Query** | `multi_query`（`:83-114`） | LLM 生成 3 个不同角度变体，**始终含原始查询**并去重 |
+| **HyDE** | `hyde`（`:116-138`） | LLM 生成假设性回答，用其 embedding 检索；失败回退原问题 |
+| **Refine**（F2 用） | `refine`（`:140-172`） | 基于已有证据与缺口精化查询；失败降级 HyDE，再失败回退原问题 |
+
+- 内置 `_transform_cache`（TTL 3600s）避免重复 LLM 调用；缓存超 500 条删最旧一半（`:211-216`）。
+
+### 5.6 CRAG 门控 / 评估 / 补救（`app/retrieval/crag.py`）
+
+- `should_retrieve(question)`（`:70-89`）：LLM 判断是否需要检索，异常默认 `(True, "默认需要检索")`。
+- `evaluate_relevance(question, documents)`（`:91-132`）：取前 5 篇各截断 300 字，LLM 输出
+  `{grade, relevant_indices, reason}`；异常默认 `("correct", all_indices, "评估失败，默认通过")`。
+- `validate_numeric_answer`（静态，`:148-174`）：**零 LLM** 数字校验——问题匹配数字型模式
+  （`什么时候/哪一年/多少/when/how many`）但上下文无 `\d{2,}` 时直接判 `incorrect`，避免 LLM 编造数字。
+- `_extract_json`（静态，`:176-191`）：正则取最外层 `{...}` 并修复尾逗号，被多个模块复用。
+
+### 5.7 语义缓存（`app/retrieval/cache.py`）
+
+- `SemanticCache`（`:26`）：`threshold=0.92 / max_size=200 / ttl=3600`。
+- `get(query_embedding)`（`:52-88`）：O(n) 遍历，跳过 TTL 过期项，算余弦相似度取最高，
+  `>= threshold` 命中并 `hit_count += 1`、刷新 timestamp（LRU）。
+- **效果**：重复/语义相近查询绕过整条管道，毫秒级返回（实测 ~20-50ms，约 225 QPS）。
+- 仅在**无对话历史**时启用（`chain.py:_check_cache`），避免多轮上下文污染。
+
+---
+
+## 6. 生成层 Generation
+
+### 6.1 编排中枢 `RAGChain`（`app/generation/chain.py`）
+
+- `RAGResponse`（`:37-48`）：`answer / sources / retrieval_result / total_time_ms / cache_hit /
+  faithful / faithfulness_score / regenerated`。
+- `__init__`（`:59-138`）：按配置开关注入各组件（graph / parent_child / crag / router /
+  faithfulness_checker / semantic_cache）。LLM 为 `ChatOpenAI(temperature=0, streaming=True,
+  request_timeout=60, max_retries=2, extra_body=get_llm_extra_body())`——`extra_body` 在关闭思考模式时
+  下发 `{"thinking": {"type": "disabled"}}`。
+- `invoke`（`:287-341`）与 `invoke_stream`（`:343-419`）：均为
+  `start_trace → _check_cache → retrieve → 生成分支 → end_trace → _write_cache`。
+  **F3 开启时流式会先非流式生成 + 自检，再一次性输出已校验答案**（`:383-388`），保证用户看到的是通过忠实度校验的内容。
+
+### 6.2 上下文压缩（零 LLM）
+
+- `compress_context`（`:153-190`）：正则 `[一-鿿]{2,}|[a-zA-Z0-9]+` 提取 query 关键词，
+  按 `(?<=[。！？.!?\n])` 分句，按关键词重叠度为每篇文档保留 top `max_sentences_per_doc=3` 句。
+  在生成前进一步降低上下文噪声，**完全不消耗 LLM**。
+
+### 6.3 Prompt 模板（`app/generation/prompts.py`）
+
+| 模板 | 行号 | 用途 |
+|------|------|------|
+| `RAG_SYSTEM_PROMPT` / `RAG_SIMPLE_PROMPT` | :6 / :42 | 标准 RAG（6 条核心原则：仅基于文档 / 不补充 / 精确引用 / 诚实拒答 / 聚焦 / 结构清晰） |
+| `RAG_CHAT_PROMPT` | :26 | 多轮对话（`MessagesPlaceholder("chat_history")`） |
+| `STRICT_RAG_PROMPT` / `STRICT_RAG_CHAT_PROMPT` | :86 / :45 | F3 严格重生成（信息不足必须明说） |
+| `DIRECT_ANSWER_PROMPT` | :80 | 门控跳过检索时的通用回答 |
+| `FAITHFULNESS_CHECK_PROMPT` | :106 | F3 LLM-judge，输出 `{score, unsupported[], reason}` |
+| `FALLBACK_RESPONSE` | :71 | 无文档兜底文案 |
+
+---
+
+## 7. RAG 2.0 五大特性实现
+
+这是本轮迭代的核心，针对「RAG 1.0 三件套（切分 + 向量 + 拼接）已过时」的痛点，
+落地了多路检索 + Rerank + Autocut + Agent 迭代检索 + 三层评估的 RAG 2.0 能力。
+
+### F1 · Autocut 自适应截断（`app/retrieval/autocut.py`）
+
+**问题**：固定 `top_k` 要么截断掉有用文档，要么引入噪声文档。
+
+**实现**：用 **Kneedle 膝点算法**在重排分数曲线上找「拐点」，自适应决定保留篇数。
+
+- `find_knee(scores)`（`:40-79`）：
+  1. min-max 归一化分数 `ys`，横轴 `xs = i/(n-1)`；
+  2. 连首尾两点成直线，取一般式 `A·x + B·y + C = 0`；
+  3. 遍历内点算到直线的距离 `|A·xs[i] + B·ys[i] + C|`，距离最大者即膝点；
+  4. 平局稳定取靠前者（`_TIE_TOL`）；分数全等或近似线性（`best_dist < _EPS`）返回 `None`（无膝点）。
+- `autocut_truncate(documents, top_k, min_docs=2)`（`:82-120`）：
+  `knee is None → keep = min(top_k, n)`，否则 `keep = knee + 1`；
+  最终 `keep = max(min_docs, min(keep, top_k, n))`——**纯降噪、绝不扩容**。
+
+**效果**：上下文平均篇数 8 → 4.19（噪声 −48%），同时命中率不变。
+
+### F2 · Self-RAG 迭代检索（`pipeline.py:_iterative_retrieve`，`:238-305`）
+
+**问题**：单次检索可能证据不足，但盲目多轮又浪费延迟。
+
+**实现**：**质量驱动**的迭代检索，三种终止条件（**非 token 预算**）：
+
+| 终止条件 | 判定 | stop_reason |
+|----------|------|-------------|
+| ① **充分性** | CRAG 评级 `grade == "correct"` | `sufficient` |
+| ② **收敛性** | 精化召回未带来任何新增 `chunk_id` | `converged` |
+| ③ **安全兜底** | 达到 `max_retrieval_iterations`（硬上限，非主信号） | `max_iterations` |
+
+每轮循环：`_refine_query`（基于证据摘要 + 缺口精化查询）→ 双路 recall → rerank →
+合并去重重排 → 重新 CRAG 评估。`crag_grade` 仅在「由非 correct 转为 correct」时标记 `recovered`
+（`:466`，避免首检即正确被误标）。
+
+### F3 · 忠实度自检 + 有界严格重生成（`app/generation/faithfulness.py` + `chain.py:_generate_faithful`）
+
+**问题**：LLM 可能脱离检索上下文产生幻觉，且难以量化。
+
+**实现**：
+
+- `FaithfulnessChecker.check(question, context_docs, answer)`（`:57-88`）：
+  用 `FAITHFULNESS_CHECK_PROMPT` 让 LLM 作 judge，输出 `{score, unsupported[], reason}`，
+  `score = 被支撑论断数 / 总论断数`，clamp 到 [0,1]，`faithful = score >= threshold(0.7)`；
+  **任何异常 / 不可解析 → `faithful = None` 放行，绝不阻断主链路**。
+- `_generate_faithful`（`chain.py:256-285`）：生成 → 自检 → 若 `faithful is False` 且仍有配额，
+  用 `strict=True` 重新生成，最多 `faithfulness_max_regen(1)` 次；返回
+  `(answer, faithful, score, regenerated)`。
+
+**效果**：可量化忠实度 0.80，22.6% 的回答触发重生成；不可答问题 5/5 诚实拒答、零幻觉。
+
+### F4 · 查询路由（`app/retrieval/router.py`，零 LLM）
+
+**问题**：不同查询类型对召回广度 / 降噪的需求不同。
+
+**实现**：规则引擎按优先级 `numeric > comparative > multi_hop > conceptual > factual` 分类，
+**只调 `top_k` 与 `autocut_min_docs`，不削减召回路**：
+
+| 类型 | 触发信号 | 策略 |
 |------|----------|------|
-| Faithfulness | 生成质量 | 回答是否忠于检索到的上下文（不幻觉） |
-| Answer Relevancy | 生成质量 | 回答与问题的相关程度 |
-| Context Precision | 检索质量 | 相关文档是否排在前面 |
-| Context Recall | 检索质量 | 是否检索到了所有相关信息 |
+| numeric | `什么时候/哪一年/多少/几个/\d+年` | `autocut_min_docs=1`（收紧降噪，突出唯一答案） |
+| comparative | `区别/差异/对比/优劣/vs` | `top_k+3, autocut_min_docs=3`（放宽，覆盖多方） |
+| multi_hop | `的.{1,10}的` 关系链 + 疑问词 | `top_k+3, autocut_min_docs=3` |
+| conceptual | `什么是/原理/为什么/如何` | 默认 |
+| factual | 兜底 | 默认 |
 
-## 4. 技术选型理由
+### F5 · 端到端三层评估 + A/B 归因（`app/evaluation/metrics.py` + `run_e2e_eval.py`）
+
+**问题**：单层指标无法定位问题出在检索还是生成；特性效果难以归因。
+
+**实现**：
+
+- **三层指标**（`metrics.py` 末尾纯函数，零依赖零 LLM）：
+  - 检索层：命中率 / 关键词覆盖率 / 来源命中；
+  - 生成层：忠实度 / 重生成率；
+  - 端到端：`answer_f1`（多重集 token F1，`:485-502`）、`normalized_exact_match`（`:505-508`）、
+    `answer_hit`（gold 归一化后作子串命中，`:511-517`）。
+- **A/B 特性归因**（`run_e2e_eval.py`）：`FEATURE_FLAGS = {F1: use_autocut, F2: use_iterative_retrieval,
+  F3: use_faithfulness_check, F4: use_query_router}`；`apply_feature_mode(mode, only)` 支持
+  `baseline`（全关）/ `full`（全开）/ `--only Fx`（单特性），并**强制 `cache_enabled=False`** 防止跨模式污染。
+- 另有 `COLLOQUIAL_QUERIES`（10 条口语化 / 数字 / 不可答 / 闲聊查询）做定性检视。
+
+> **诚实结论**（详见验证报告）：检索命中率已饱和至 100%，F1-F4 对端到端 F1 提升有限（0.347→0.357）；
+> 真正收益是**上下文噪声 −48%、可量化忠实度 0.80、不可答问题诚实拒答**，代价是延迟 +26%（6.95s→8.80s）。
+
+---
+
+## 8. 并发治理
+
+`/api/chat` 是 CPU（embedding/rerank）+ IO（LLM）混合负载，高并发下会打满事件循环与下游 LLM。
+系统采用四重治理：
+
+1. **`asyncio.Semaphore` 准入闸门**：`max_concurrent_requests(4)` 限制同时在途请求数（`main.py:46-48`）。
+2. **`asyncio.to_thread` 卸载**：把同步的检索 / 生成放到线程池，**解除对事件循环的阻塞**（`routes.py:102,147`）。
+3. **排队超时 503 快速失败**：`request_queue_timeout(30s)` 内拿不到信号量即返回 503，而非无限堆积（`routes.py:61-70`）。
+4. **语义缓存吸收热点**：重复查询绕过整条管道毫秒级返回。
+
+**召回层并行**：`recall` 用 `ThreadPoolExecutor(max_workers=6)` 并行五路（`pipeline.py:147`）；
+门控 + 改写投机并行（`pipeline.py:357-364`）；图谱构建 `asyncio.gather + Semaphore(5)`（`graph_extractor.py:340`）。
+
+**实测**：并发 1→20 下错误率 0%；缓存命中 ~225 QPS。
+
+---
+
+## 9. 可观测性 Observability
+
+`app/observability/tracing.py` 实现轻量级、线程安全的链路追踪：
+
+- `Span`（`:11-25`）：`name / start_ms(相对 trace 起点偏移) / duration_ms / metadata`。
+- `Trace`（`:28-46`）：`trace_id / question / timestamp / spans[] / total_ms / answer_preview`。
+- `Tracer`（`:49`）：`_traces = deque(maxlen=50)` 环形归档，`threading.Lock()` 保证线程安全。
+- 管道中实际记录的 span：`cache_hit / gate_transform / query_routing / multi_recall /
+  rrf_fusion / rerank / crag_evaluation / generation`。
+- 通过 `GET /api/traces`（瀑布图）与 `GET /api/traces/stats`（各阶段平均耗时）暴露给前端「观测台」Tab。
+
+---
+
+## 10. 评估体系
+
+| 脚本 | 职责 | 是否依赖 LLM judge |
+|------|------|--------------------|
+| `run_eval.py` | RAGAS 四维（faithfulness / answer_relevancy / context_precision / context_recall） | 是 |
+| `run_retrieval_eval.py` | CMRC 检索命中率 / 覆盖率 / 平均检索耗时 | **否**（与 LLM 解耦，作为检索质量决定性指标） |
+| `run_e2e_eval.py` | 端到端三层 + A/B 特性归因 + 口语化定性检视 | 部分（忠实度用 LLM） |
+| `run_concurrency_bench.py` | QPS / P50 / P95 / P99 / 错误率 / 瓶颈分析（并发 1/3/5/10/20） | — |
+
+**RAGAS 四维自实现**（`app/evaluation/metrics.py`，不依赖 ragas 包）：
+
+- `_eval_faithfulness`（`:94-132`）：LLM 抽 claim 逐条判 supported，`score = supported / 总`。
+- `_eval_answer_relevancy`（`:137-175`）：按 1.0/0.8/0.6/0.4/0.0 档评分。
+- `_eval_context_precision`（`:180-240`）：Weighted Precision@K = `Σ(precision@k · rel(k)) / num_relevant`。
+- `_eval_context_recall`（`:245-277`）：拆标准答案为 claim 判 attributable，`recall = attributable / 总`。
+
+> **测量严谨性**：换 LLM 会导致 RAGAS「生成模型 + 评判模型」同时变化、与历史基线不可比。
+> 故以**与 LLM 解耦的 CMRC 检索评估**（命中率 100%）作为检索质量的决定性指标。
+
+---
+
+## 11. 配置开关速查（`config.py`）
+
+`Settings(BaseSettings)` + `@lru_cache` 单例 `get_settings()`；优先级：环境变量 > `.env` > 默认值。
+
+| 分类 | 关键配置（默认值） |
+|------|--------------------|
+| LLM / Embedding | `openai_model`、`embedding_provider[local]`、`embedding_model[all-MiniLM-L6-v2]` |
+| 检索 | `retrieval_top_k[5]`、`retrieval_rrf_k[60]`、`rerank_top_n[20]`、`rerank_model` |
+| 分块 | `chunk_size[512]`、`chunk_overlap[64]`、`semantic_chunk_threshold[0.75]` |
+| Graph RAG | `graph_enabled[True]`、`graph_max_hops[2]`、`graph_max_entities[5]` |
+| Parent-Child | `use_parent_child[True]`、`parent_chunk_size[1024]`、`child_chunk_size[200]` |
+| CRAG | `use_crag[True]`、`use_crag_gate[True]`、`crag_relevance_threshold[0.5]` |
+| 管道接线 | `use_summary_recall[True]`、`recall_max_workers[6]` |
+| **F1 Autocut** | `use_autocut[True]`、`autocut_min_docs[2]` |
+| **F2 迭代检索** | `use_iterative_retrieval[True]`、`max_retrieval_iterations[2]` |
+| **F3 忠实度** | `use_faithfulness_check[True]`、`faithfulness_threshold[0.7]`、`faithfulness_max_regen[1]` |
+| **F4 路由** | `use_query_router[True]` |
+| 并发 | `max_concurrent_requests[4]`、`request_queue_timeout[30.0]` |
+| 思考模式 | `llm_thinking_enabled[False]`（关思考避免 reasoning 吃 max_tokens） |
+| 语义缓存 | `cache_enabled[True]`、`cache_threshold[0.92]`、`cache_ttl[3600]`、`cache_max_size[200]` |
+
+> 注：`.env` 中 `RETRIEVAL_TOP_K=8` 为生产取值（高于默认 5），这也是 A/B 中 baseline `num_docs=8` 的来源。
+
+---
+
+## 12. 降级与容错设计
+
+系统的一条核心准则是：**任何增强模块失败，都回退到安全默认值，绝不阻断主链路。**
+
+| 模块 | 降级行为 | 位置 |
+|------|----------|------|
+| CRAG 门控 | 异常默认「需要检索」 | `pipeline.py:85-87` |
+| CRAG 评估 | 异常默认 `correct` 放行 | `crag.py:132` |
+| 忠实度自检 | 异常 / 不可解析返回 `faithful=None` 放行 | `faithfulness.py:86-88` |
+| 查询精化 | 异常回退原问题 | `pipeline.py:316-319` |
+| HyDE | 失败回退原查询 | `query_transform.py:136-138` |
+| BM25 索引 | 加载失败自动重建 | `sparse.py:147-150` |
+| Parent-Child | 批量查询失败回退逐个；无索引则跳过该路 | `parent_child.py:176-193` |
+| 单路召回 | 任一通道失败仅告警，其余照常融合 | `pipeline.py:162-167` |
+
+**零 LLM 快速路径**（降低延迟与成本）：图实体匹配、数字校验、查询路由、Autocut、上下文压缩、语义缓存命中。
+
+---
+
+## 13. 技术选型
 
 | 选择 | 理由 | 替代方案 |
 |------|------|----------|
 | ChromaDB | 轻量、本地持久化、零运维、Python 原生 | Milvus（重）、FAISS（无持久化） |
-| LangChain | 生态完善、面试认可度高、组件丰富 | LlamaIndex（更专注RAG） |
-| FastAPI | 异步高性能、自动 OpenAPI 文档、类型安全 | Flask（无异步） |
-| Streamlit | 快速搭建 demo、Python 原生 | React（开发成本高） |
-| cross-encoder/ms-marco | 免费本地运行、效果好 | Cohere Rerank（需API费用） |
-| RAGAS | RAG 专用评估、指标全面 | 自定义评估（工作量大） |
+| LangChain | 生态完善、组件丰富 | LlamaIndex |
+| FastAPI | 异步高性能、自动 OpenAPI、类型安全 | Flask（无异步） |
+| Streamlit | 快速搭建可视化 demo、Python 原生 | React（开发成本高） |
+| CrossEncoder (ms-marco / bge-reranker) | 本地免费、精度高 | Cohere Rerank（需 API 费用） |
+| NetworkX | 十篇级文档量下零运维，无需图数据库 | Neo4j（重） |
+| DeepSeek（关思考模式） | 成本低、中文强；`extra_body` 关思考避免吃 max_tokens | GPT-4o-mini |
+| 自实现 RAGAS 四维 + 纯函数端到端指标 | 可控、可离线、避免跨模型口径混淆 | ragas 包 |
 
-## 5. 配置管理
+---
 
-采用 `pydantic-settings` 实现配置管理：
-- 优先级：环境变量 > `.env` 文件 > 代码默认值
-- 所有配置集中在 `config.py`，通过 `get_settings()` 单例获取
-- 支持运行时通过 API 参数覆盖部分配置（如 top_k、策略选择）
+## 附：理解本系统的核心文件清单
 
-## 6. 可扩展方向
-
-- [ ] 支持更多文档格式（Word、HTML、Notion）
-- [ ] 接入 LangSmith 实现全链路追踪
-- [ ] 支持多租户隔离
-- [ ] 增量索引更新（文档变更检测）
-- [ ] 缓存层（Redis 缓存热门查询）
-- [ ] 异步文档处理队列（Celery）
-- [ ] 支持更多 Reranker（Cohere、BGE-Reranker）
-- [ ] 前端升级为 React + WebSocket
+1. `app/generation/chain.py` — 编排中枢
+2. `app/retrieval/pipeline.py` — 七阶段检索管道（含 F2 迭代）
+3. `app/api/routes.py` — HTTP 端点与并发闸门
+4. `app/ingestion/indexer.py` — 层级索引
+5. `app/retrieval/fusion.py` / `reranker.py` / `autocut.py` — 融合 / 重排 / F1 截断
+6. `app/retrieval/crag.py` / `router.py` / `query_transform.py` — 评估 / F4 路由 / 改写
+7. `app/generation/faithfulness.py` / `prompts.py` — F3 忠实度自检与模板
+8. `app/ingestion/graph_extractor.py` / `app/retrieval/graph_retriever.py` — 图谱
+9. `config.py` — 全部开关与默认值
+10. `app/observability/tracing.py` — 追踪
+11. `app/evaluation/metrics.py` + `run_e2e_eval.py` — F5 评估
+12. `frontend/app.py` — 前端五 Tab（对话 / 对比实验 / 观测台 / 索引透视 / 知识图谱）
