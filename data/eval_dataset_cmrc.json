@@ -27,6 +27,7 @@
       "id": 2,
       "question": "岸本早未的服装风格受到谁的影响？",
       "ground_truth": "安室奈美惠",
+      "slice": "finegrained",
       "metadata": {
         "source": "cmrc_people_geo.md",
         "dataset": "cmrc2018",
@@ -47,6 +48,7 @@
       "id": 4,
       "question": "除米象的正确做法是什么？",
       "ground_truth": "正确的做法是将生虫大米置于阴凉通风处，让米象慢慢爬出，再筛；亦可采用磷他锌加有机酸熏杀。",
+      "slice": "finegrained",
       "metadata": {
         "source": "cmrc_people_geo.md",
         "dataset": "cmrc2018",
