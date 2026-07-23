@@ -515,3 +515,16 @@ def answer_hit(gold: str, pred: str) -> bool:
     """
     g = normalize_answer(gold)
     return bool(g) and g in normalize_answer(pred)
+
+
+def answer_in_top_context(gold: str, documents) -> bool:
+    """F6 细粒度指标：gold 答案（归一化后）是否出现在送入 LLM 的 top 上下文里。
+
+    用于度量"源命中但答案段不在 top 块"是否被修复——直接看答案材料有没有进上下文。
+    gold 为空或无文档返回 False。
+    """
+    norm_gold = normalize_answer(gold)
+    if not norm_gold or not documents:
+        return False
+    context = normalize_answer(" ".join(getattr(d, "page_content", "") for d in documents))
+    return norm_gold in context
