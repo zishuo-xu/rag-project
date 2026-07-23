@@ -251,6 +251,23 @@ async def upload_document(
         )
         chain.indexer.index_documents(chunks)
 
+        # F6a: 接线 Parent-Child（小块检索大块返回，修复"答案不在 top 块"）
+        # 注意：parent_child.index_documents 接收原始文档 docs（其内部自行切分 parent/child）
+        if chain.parent_child_retriever:
+            try:
+                chain.parent_child_retriever.index_documents(docs)
+            except Exception as e:
+                logger.warning(f"F6a Parent-Child 索引构建失败: {e}")
+
+        # F6a: 上下文增强索引（索引时一次性 LLM，零在线增量）
+        if get_settings().use_contextual_chunks:
+            try:
+                from app.ingestion.contextual import build_chunk_contexts
+                contexts = build_chunk_contexts(chunks)
+                chain.indexer.index_documents_contextual(chunks, contexts)
+            except Exception as e:
+                logger.warning(f"F6a 上下文增强索引失败: {e}")
+
         # #11: 增量更新 BM25 索引（避免全量重建）
         chain.sparse_retriever.add_documents(chunks)
 
@@ -264,6 +281,31 @@ async def upload_document(
     except Exception as e:
         logger.error(f"文档上传失败: {e}")
         raise HTTPException(status_code=500, detail=f"文档处理失败: {str(e)}")
+
+
+@router.post("/api/documents/reindex")
+async def reindex_f6a():
+    """F6a：从已索引分块重建 Parent-Child + 上下文增强索引（补齐历史文档，一次性）。
+
+    上下文增强需对每块调用一次 LLM，文档多时较慢，属一次性管理操作。
+    """
+    chain = get_rag_chain()
+    num_docs = chain.rebuild_parent_child_index()
+    num_ctx = 0
+    if get_settings().use_contextual_chunks:
+        try:
+            from app.ingestion.contextual import build_chunk_contexts
+            chunks = chain.indexer.get_all_chunks()
+            contexts = build_chunk_contexts(chunks)
+            chain.indexer.index_documents_contextual(chunks, contexts)
+            num_ctx = len(chunks)
+        except Exception as e:
+            logger.warning(f"F6a 上下文增强重建失败: {e}")
+    return {
+        "message": "F6a 索引重建完成",
+        "num_documents": num_docs,
+        "num_contextual_chunks": num_ctx,
+    }
 
 
 @router.get("/api/documents", response_model=DocumentListResponse)

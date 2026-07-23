@@ -106,3 +106,32 @@ def test_hit_ignores_punct_case():
 
 def test_hit_empty_gold_false():
     assert answer_hit("", "任意答案") is False
+
+
+# ---- answer_in_top_context (F6) ----
+from langchain_core.documents import Document
+from app.evaluation.metrics import answer_in_top_context
+
+
+def test_answer_in_top_context_hit():
+    docs = [Document(page_content="范廷颂于1963年受封主教。")]
+    assert answer_in_top_context("1963年", docs) is True
+
+
+def test_answer_in_top_context_miss():
+    docs = [Document(page_content="无关内容。")]
+    assert answer_in_top_context("1963年", docs) is False
+
+
+def test_answer_in_top_context_empty_gold():
+    docs = [Document(page_content="任意内容")]
+    assert answer_in_top_context("", docs) is False
+
+
+def test_answer_in_top_context_empty_docs():
+    assert answer_in_top_context("1963年", []) is False
+
+
+def test_answer_in_top_context_normalizes_punctuation():
+    docs = [Document(page_content="答案是 1963 年。")]
+    assert answer_in_top_context("1963年", docs) is True  # 归一化后空格/标点被忽略

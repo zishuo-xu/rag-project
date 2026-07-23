@@ -40,7 +40,7 @@ class DenseRetriever:
             按相似度排序的文档列表
         """
         if embedding is not None:
-            results = self.indexer.chunk_store.similarity_search_by_vector(
+            results = self.indexer.detail_store.similarity_search_by_vector(
                 embedding, k=top_k
             )
         else:
@@ -55,7 +55,7 @@ class DenseRetriever:
         Returns:
             [{"document": Document, "score": float}, ...]
         """
-        results_with_scores = self.indexer.chunk_store.similarity_search_with_relevance_scores(
+        results_with_scores = self.indexer.detail_store.similarity_search_with_relevance_scores(
             query, k=top_k
         )
         return [

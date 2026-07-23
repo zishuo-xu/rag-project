@@ -364,6 +364,18 @@ gate(要不要检索) → transform(查询改写) → recall(多路并行召回)
 
 **面试话术**：「我做了端到端三层评估，把检索命中、生成忠实度、答案正确性分开度量，再用 A/B 把 RAG2.0 四特性整体和单个特性的边际贡献都量化出来——评估本身要能回答『这些优化到底有没有用、各贡献多少』。」
 
+#### F6 · 答案定位增强（检索层，回应「命中率饱和但 F1 不动」）
+
+**问题**：F5 的 A/B 诚实结论指出——检索命中率已 100% 饱和，但端到端 F1 抬不动，瓶颈是『**源文档命中了、精确答案 span 却不在 top 块**』的召回粒度问题（文章深度问题一）；同时 multi_hop 问题（答案需跨多事实拼接）单轮召回覆盖不全。F6 正面补这块短板，分两条腿：
+
+**做法**：
+- **F6a 细粒度召回 + 上下文增强**：① 把此前写了没接进主链路的 **Parent-Child** 真正接线（子块 200 字精确匹配、父块 1024 字回传上下文）；② 引入 **Contextual Chunking**（Anthropic Contextual Retrieval）——索引期用 LLM 给每个 chunk 生成文档级上下文，**embed「上下文+原文」提升可检索性，但 `page_content` 仍存原文**，所以**在线检索零 LLM 成本**；③ 用独立 Chroma 集合 `chunks_contextual` + `detail_store` 属性切换，仅在开关开且集合非空时启用，否则回退原集合（**未重建索引时行为与旧版完全一致，回归安全**）。
+- **F6b 多跳查询分解**：`decompose` 把 multi_hop 问题拆成子问题，**并行优先**（各子问题轻量召回后 RRF 合并），`chain=True` 时**链式**（用上一跳证据 `refine` 出下一跳）；**仅 `query_type=="multi_hop"` 触发**，不给简单查询加分解开销。
+
+**面试话术**：「我上一轮如实报告了『命中率 100% 但 F1 不动』，并定位到瓶颈是召回粒度——源命中不等于答案 span 进了 top 块。所以这一轮我做 F6 答案定位增强：一是把 Parent-Child 真正接进主链路并叠加 Contextual Chunking，用『索引期花一次 LLM、在线零成本』的方式让精确答案段更容易被召回；二是对多跳问题做查询分解，并行召回再融合。两个开关都默认开、异常都降级回原路径，contextual 集合为空时自动回退，保证不破坏已饱和的命中率。」
+
+> **对应深度问题**（「embedding 高相似但答案不在召回」）：这正是 F6 要解决的——bi-encoder 的语义相似 ≠ 答案 span 命中。F6a 用更细的子块匹配 + 文档级上下文消歧提升 span 级可检索性，F6b 用分解覆盖跨段事实；评估侧新增 `answer_in_top_context`（gold 是否落在 top 上下文）直接度量这件事，而非只看源命中。
+
 #### 本轮 A/B 实测（CMRC 31 题，DeepSeek）
 
 > 详见 [docs/superpowers/reports/2026-07-23-rag2-e2e-validation-report.md](./superpowers/reports/2026-07-23-rag2-e2e-validation-report.md)。

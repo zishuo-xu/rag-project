@@ -75,8 +75,9 @@
 | **F3 · 生成忠实度自检** | 生成层 | LLM-judge 逐论断校验答案是否被上下文支撑，不忠实则严格 prompt 有界重生成（幻觉检测） |
 | **F4 · 查询路由** | 检索层 | 规则驱动（零 LLM）识别 numeric/comparative/multi_hop/conceptual/factual，自适应检索深度与降噪强度 |
 | **F5 · 端到端三层评估** | 评估层 | 检索命中率 + 生成忠实度 + 端到端中文 F1/EM/命中；支持特性 A/B 与单特性归因 |
+| **F6 · 答案定位增强** | 检索层 | **F6a** 细粒度召回 + 上下文增强分块（Parent-Child 接线 + Contextual Chunking 双集合，索引期 LLM、在线零 LLM）；**F6b** 多跳查询分解（并行优先 / 依赖链式，仅 multi_hop 触发） |
 
-配置开关（`config.py`，默认全开）：`use_autocut` / `use_iterative_retrieval` / `use_faithfulness_check` / `use_query_router`。
+配置开关（`config.py`，默认全开）：`use_autocut` / `use_iterative_retrieval` / `use_faithfulness_check` / `use_query_router` / `use_contextual_chunks` / `use_decomposition`。
 
 ## 技术栈
 

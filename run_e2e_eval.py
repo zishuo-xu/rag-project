@@ -30,7 +30,7 @@ from collections import Counter
 from pathlib import Path
 
 from config import get_settings
-from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit
+from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -41,7 +41,11 @@ FEATURE_FLAGS = {
     "F2": "use_iterative_retrieval",
     "F3": "use_faithfulness_check",
     "F4": "use_query_router",
+    "F6": "use_decomposition",
 }
+
+# F6a 运行时开关：随 baseline/full 一并切换；--only 单特性归因时关闭以隔离
+F6A_FLAGS = ["use_contextual_chunks", "use_parent_child"]
 
 # 模拟真实用户的口语化查询（覆盖边缘场景；引用 CMRC 知识库真实实体 范廷颂）
 COLLOQUIAL_QUERIES = [
@@ -67,8 +71,12 @@ def apply_feature_mode(mode: str, only: str | None) -> dict:
     if mode == "baseline":
         for flag in FEATURE_FLAGS.values():
             setattr(settings, flag, False)
+        for flag in F6A_FLAGS:
+            setattr(settings, flag, False)
     elif mode == "full":
         for flag in FEATURE_FLAGS.values():
+            setattr(settings, flag, True)
+        for flag in F6A_FLAGS:
             setattr(settings, flag, True)
 
     if only:
@@ -77,6 +85,8 @@ def apply_feature_mode(mode: str, only: str | None) -> dict:
             raise ValueError(f"--only 须为 {list(FEATURE_FLAGS)} 之一")
         for key, flag in FEATURE_FLAGS.items():
             setattr(settings, flag, key == only)
+        for flag in F6A_FLAGS:
+            setattr(settings, flag, False)  # 单特性归因时关闭 F6a，避免污染
 
     return {key: bool(getattr(settings, flag)) for key, flag in FEATURE_FLAGS.items()}
 
@@ -139,6 +149,10 @@ def eval_sample(chain, sample) -> dict:
         "stop_reason": rr.iterative_stop_reason,
         "gate_skipped": rr.gate_skipped,
         "latency_ms": round(ms, 1),
+        # F6 答案定位
+        "answer_in_top_context": answer_in_top_context(gold, docs),
+        "decomposed": rr.decomposed_subqueries,
+        "decomposition_chain": rr.decomposition_chain,
     }
 
 
@@ -198,12 +212,17 @@ def aggregate(results: list) -> dict:
             "avg_f1": _mean([r["f1"] for r in ok]),
             "em_rate": _mean([int(r["em"]) for r in ok]),
             "hit_rate": _mean([int(r["hit"]) for r in ok]),
+            "answer_in_top_context_rate": _mean([int(r["answer_in_top_context"]) for r in ok]),
         },
         "avg_latency_ms": _mean([r["latency_ms"] for r in ok]),
         "routing_dist": dict(Counter(r["query_type"] or "n/a" for r in ok)),
         "iterative": {
             "avg_iterations": _mean([r["iterations"] for r in ok]),
             "stop_reasons": dict(Counter(r["stop_reason"] or "n/a" for r in ok)),
+        },
+        "decomposition": {
+            "decomposed_rate": _mean([int(bool(r["decomposed"])) for r in ok]),
+            "chain_rate": _mean([int(r["decomposition_chain"]) for r in ok]),
         },
     }
 
@@ -212,9 +231,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default="data/eval_dataset_cmrc.json")
     parser.add_argument("--mode", default="full", choices=["baseline", "full"])
-    parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4")
+    parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4|F6")
     parser.add_argument("--colloquial", action="store_true", help="追加口语化查询检视")
     parser.add_argument("--limit", type=int, default=0, help="仅跑前N题（0=全部）")
+    parser.add_argument("--slice", default="", choices=["", "multihop", "finegrained"],
+                        help="按样本 slice 字段过滤（多跳/细粒度子集）")
     parser.add_argument("--output", default="")
     args = parser.parse_args()
 
@@ -234,6 +255,8 @@ def main():
 
     dataset = json.loads(Path(args.dataset).read_text(encoding="utf-8"))
     samples = dataset["samples"]
+    if args.slice:
+        samples = [s for s in samples if s.get("slice") == args.slice]
     if args.limit > 0:
         samples = samples[: args.limit]
 

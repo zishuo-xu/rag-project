@@ -137,6 +137,34 @@ class RAGChain:
             f"cache={self.semantic_cache is not None}"
         )
 
+    def rebuild_parent_child_index(self) -> int:
+        """F6a：从已索引分块重建 Parent-Child 索引（一次性，用于补齐历史文档）。
+
+        按 doc_id 把分块拼回文档级文本，再交给 ParentChildRetriever 重新切分 parent/child。
+        无 parent_child_retriever 或任何异常都返回 0（优雅降级）。
+        """
+        if not self.parent_child_retriever:
+            return 0
+        try:
+            all_chunks = self.indexer.get_all_chunks()
+            grouped: dict[str, Document] = {}
+            for ch in all_chunks:
+                doc_id = ch.metadata.get("doc_id", "unknown")
+                if doc_id not in grouped:
+                    grouped[doc_id] = Document(
+                        page_content="",
+                        metadata={"doc_id": doc_id, "source": ch.metadata.get("source", "")},
+                    )
+                grouped[doc_id].page_content += "\n" + ch.page_content
+            docs = list(grouped.values())
+            if docs:
+                self.parent_child_retriever.index_documents(docs)
+            logger.info(f"F6a Parent-Child 重建: {len(docs)} 个文档")
+            return len(docs)
+        except Exception as e:
+            logger.warning(f"F6a Parent-Child 重建失败: {e}")
+            return 0
+
     def retrieve(
         self, question: str, top_k: int | None = None, trace_id: str | None = None
     ) -> RetrievalResult:

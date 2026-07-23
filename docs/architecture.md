@@ -385,6 +385,26 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 
 ---
 
+## F6 · 答案定位增强
+
+**问题**：F5 的诚实结论指出瓶颈是『答案 span 不在 top 块』的**召回粒度**问题——源文档命中了，但精确答案所在的那一小段没被排进 top 上下文；同时 multi_hop 类问题（答案需跨多个事实拼接）单轮召回难以覆盖。F6 从**召回粒度**与**查询结构**两个方向补这块短板。
+
+### F6a · 细粒度召回 + 上下文增强（`app/ingestion/contextual.py` + `indexer.py`）
+
+- **Parent-Child 接线**：此前 `parent_child_retriever` 是 dead feature（写了没接进主链路）。F6 在 `routes.py` 摄入与 `POST /api/documents/reindex` 中真正调用 `index_documents`，并在 `chain.py:rebuild_parent_child_index` 提供历史索引重建入口；子块（200 字）精确匹配、父块（1024 字）回传上下文。
+- **Contextual Chunking**（Anthropic Contextual Retrieval）：索引期用 LLM 为每个 chunk 生成「文档级上下文」，**embed 时用「上下文+原文」提升语义可检索性，但 `page_content` 仍存原文**（上下文只进 metadata），从而在线检索阶段**零 LLM 成本**。见 `contextual.py:generate_chunk_context / build_chunk_contexts`。
+- **双 Chroma 集合 + `detail_store` 切换**：contextual 结果写入独立集合 `chunks_contextual`；`indexer.detail_store` 仅在 `use_contextual_chunks=True` **且** contextual 集合非空时返回它，否则回退原 `chunk_store`——保证未重建索引时行为与旧版完全一致（回归安全）。`dense.py` 的向量/文本两路均改走 `detail_store`。
+
+### F6b · 多跳查询分解（`query_transform.py:decompose` + `pipeline.py` 多跳分支）
+
+- `decompose(question) -> Decomposition(sub_questions, chain)`：LLM 输出 JSON，复用 `CRAGEvaluator._extract_json` 解析；子问题数截断到 `decomposition_max_subquestions`，≤1 个子问题则回退 `Decomposition([question], False)`。
+- pipeline 仅在 `query_type=="multi_hop"` 且 `use_decomposition` 时进入多跳分支：**并行优先**（各子问题走轻量 `recall`（仅 dense+sparse，跳过门控/改写）后 RRF 合并）；`chain=True` 时**链式**（用上一跳证据经 `refine()` 生成下一跳）。
+- 观测字段：`RetrievalResult.decomposed_subqueries / decomposition_chain / answer_localization_method`（`parent_child` / `contextual`）。
+
+> **设计准则**：F6a 在线零 LLM（成本前置到索引期）、F6b 仅 multi_hop 触发（避免给简单查询加分解开销）；两者异常均优雅降级到原召回路径。
+
+---
+
 ## 8. 并发治理
 
 `/api/chat` 是 CPU（embedding/rerank）+ IO（LLM）混合负载，高并发下会打满事件循环与下游 LLM。
@@ -453,6 +473,8 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 | **F2 迭代检索** | `use_iterative_retrieval[True]`、`max_retrieval_iterations[2]` |
 | **F3 忠实度** | `use_faithfulness_check[True]`、`faithfulness_threshold[0.7]`、`faithfulness_max_regen[1]` |
 | **F4 路由** | `use_query_router[True]` |
+| **F6a 上下文增强** | `use_contextual_chunks[True]`、`contextual_max_chars[80]`、`chroma_contextual_collection[chunks_contextual]` |
+| **F6b 查询分解** | `use_decomposition[True]`、`decomposition_max_subquestions[4]`、`decomposition_max_hops[3]` |
 | 并发 | `max_concurrent_requests[4]`、`request_queue_timeout[30.0]` |
 | 思考模式 | `llm_thinking_enabled[False]`（关思考避免 reasoning 吃 max_tokens） |
 | 语义缓存 | `cache_enabled[True]`、`cache_threshold[0.92]`、`cache_ttl[3600]`、`cache_max_size[200]` |
@@ -500,9 +522,10 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
 1. `app/generation/chain.py` — 编排中枢
 2. `app/retrieval/pipeline.py` — 七阶段检索管道（含 F2 迭代）
 3. `app/api/routes.py` — HTTP 端点与并发闸门
-4. `app/ingestion/indexer.py` — 层级索引
+4. `app/ingestion/indexer.py` — 层级索引（含 F6a 双集合 + `detail_store` 切换）
 5. `app/retrieval/fusion.py` / `reranker.py` / `autocut.py` — 融合 / 重排 / F1 截断
-6. `app/retrieval/crag.py` / `router.py` / `query_transform.py` — 评估 / F4 路由 / 改写
+6. `app/retrieval/crag.py` / `router.py` / `query_transform.py` — 评估 / F4 路由 / 改写（含 F6b `decompose`）
+6b. `app/ingestion/contextual.py` — F6a Contextual Chunking 上下文生成（索引期 LLM）
 7. `app/generation/faithfulness.py` / `prompts.py` — F3 忠实度自检与模板
 8. `app/ingestion/graph_extractor.py` / `app/retrieval/graph_retriever.py` — 图谱
 9. `config.py` — 全部开关与默认值
