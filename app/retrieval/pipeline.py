@@ -39,6 +39,10 @@ class RetrievalResult:
     query_type: str = ""             # F4: 路由判定的查询类型
     iterations_used: int = 0         # F2: 迭代检索实际迭代次数
     iterative_stop_reason: str = ""  # F2: sufficient / converged / max_iterations / disabled
+    # F6 答案定位增强观测字段
+    decomposed_subqueries: List[str] = field(default_factory=list)  # F6b: 分解出的子问题
+    decomposition_chain: bool = False                              # F6b: 是否依赖链
+    answer_localization_method: str = ""                           # F6a: parent_child / contextual / ""
 
 
 class RetrievalPipeline:
@@ -325,6 +329,55 @@ class RetrievalPipeline:
         """拼接前若干篇文档的截断内容，作为精化查询的证据上下文。"""
         return "\n".join(d.page_content[:max_chars] for d in docs[:max_docs])
 
+    # ---- 阶段 3b: F6b 多跳查询分解（并行优先，依赖时链式） ----
+
+    def _retrieve_subquery(
+        self, question: str, subq: str, top_n: int
+    ) -> List[Document]:
+        """子问题轻量检索：跳过门控/改写，直接 dense+sparse 召回 + fuse。"""
+        recall_results = self.recall(
+            question, [subq], top_n=top_n, channels=("dense", "sparse")
+        )
+        return self.fuse(recall_results)
+
+    def _decompose_retrieve(
+        self, question: str, decomposition, top_k: int, trace_id: str | None = None
+    ) -> List[Document]:
+        """按分解结果检索并合并：无依赖→并行各子问题；有依赖→链式（hop 答案构造下一跳）。"""
+        settings = self._settings
+        subs = decomposition.sub_questions
+
+        if not decomposition.chain:
+            # 并行：各子问题独立轻量检索，统一 RRF 合并
+            per_sub: List[List[Document]] = []
+            with ThreadPoolExecutor(max_workers=settings.recall_max_workers) as executor:
+                futures = [
+                    executor.submit(self._retrieve_subquery, question, sq, top_k)
+                    for sq in subs
+                ]
+                for fut in as_completed(futures):
+                    try:
+                        per_sub.append(fut.result())
+                    except Exception as e:
+                        logger.warning(f"子问题检索失败: {e}")
+            return reciprocal_rank_fusion(per_sub) if per_sub else []
+
+        # 链式：逐跳检索，用上一跳的压缩证据辅助构造下一跳查询
+        accumulated: List[Document] = []
+        current_subs = list(subs)[: settings.decomposition_max_hops]
+        for i, sq in enumerate(current_subs):
+            docs = self._retrieve_subquery(question, sq, top_k)
+            accumulated = self._deduplicate(accumulated + docs)
+            # 若不是最后一跳，用已检索证据精化下一跳（复用 F2 精化，异常回退原子问题）
+            if i < len(current_subs) - 1 and self.query_transformer:
+                try:
+                    current_subs[i + 1] = self.query_transformer.refine(
+                        current_subs[i + 1], self._evidence_summary(accumulated), "需结合上一跳结果"
+                    )
+                except Exception as e:
+                    logger.warning(f"链式精化失败，沿用原子问题: {e}")
+        return accumulated
+
     # ---- 主编排 ----
 
     def run(
@@ -400,29 +453,55 @@ class RetrievalPipeline:
                     "reason": decision.reason,
                 })
 
-        # ③ 多路召回
-        if trace_id:
-            tracer.start_span(trace_id, "multi_recall")
-        recall_results = self.recall(question, queries, trace_id=trace_id)
-        result.dense_results = recall_results["dense"]
-        result.sparse_results = recall_results["sparse"]
-        result.graph_results = recall_results.get("graph", [])
-        result.summary_results = recall_results.get("summary", [])
-        if trace_id:
-            tracer.end_span(trace_id, "multi_recall", {
-                "dense_hits": len(result.dense_results),
-                "sparse_hits": len(result.sparse_results),
-                "graph_hits": len(result.graph_results),
-                "pc_hits": len(recall_results.get("parent_child", [])),
-                "summary_hits": len(result.summary_results),
-            })
+        # F6b 多跳查询分解：仅 multi_hop 且开启分解时触发；分解出 >1 子问题才走分解合并
+        use_decomp = (
+            result.query_type == "multi_hop"
+            and settings.use_decomposition
+            and self.query_transformer is not None
+        )
+        decomposed = False
+        if use_decomp:
+            decomposition = self.query_transformer.decompose(question)
+            if len(decomposition.sub_questions) > 1:
+                if trace_id:
+                    tracer.start_span(trace_id, "decomposition")
+                result.decomposed_subqueries = decomposition.sub_questions
+                result.decomposition_chain = decomposition.chain
+                result.fused_results = self._decompose_retrieve(
+                    question, decomposition, effective_top_k, trace_id=trace_id
+                )
+                decomposed = True
+                if trace_id:
+                    tracer.end_span(trace_id, "decomposition", {
+                        "subquestions": decomposition.sub_questions,
+                        "chain": decomposition.chain,
+                        "merged": len(result.fused_results),
+                    })
 
-        # ④ RRF 融合
-        if trace_id:
-            tracer.start_span(trace_id, "rrf_fusion")
-        result.fused_results = self.fuse(recall_results)
-        if trace_id:
-            tracer.end_span(trace_id, "rrf_fusion", {"fused": len(result.fused_results)})
+        if not decomposed:
+            # ③ 多路召回
+            if trace_id:
+                tracer.start_span(trace_id, "multi_recall")
+            recall_results = self.recall(question, queries, trace_id=trace_id)
+            result.dense_results = recall_results["dense"]
+            result.sparse_results = recall_results["sparse"]
+            result.graph_results = recall_results.get("graph", [])
+            result.summary_results = recall_results.get("summary", [])
+            if trace_id:
+                tracer.end_span(trace_id, "multi_recall", {
+                    "dense_hits": len(result.dense_results),
+                    "sparse_hits": len(result.sparse_results),
+                    "graph_hits": len(result.graph_results),
+                    "pc_hits": len(recall_results.get("parent_child", [])),
+                    "summary_hits": len(result.summary_results),
+                })
+
+            # ④ RRF 融合
+            if trace_id:
+                tracer.start_span(trace_id, "rrf_fusion")
+            result.fused_results = self.fuse(recall_results)
+            if trace_id:
+                tracer.end_span(trace_id, "rrf_fusion", {"fused": len(result.fused_results)})
 
         # ⑤ 重排（+ F1 Autocut 自适应截断降噪）
         if trace_id:
@@ -494,6 +573,12 @@ class RetrievalPipeline:
                 "iterations_used": result.iterations_used,
                 "stop_reason": result.iterative_stop_reason,
             })
+
+        # F6a 观测：标注答案定位主要来源（parent_child 优先，其次 contextual）
+        if any(d.metadata.get("retrieval_method") == "parent_child" for d in result.documents):
+            result.answer_localization_method = "parent_child"
+        elif settings.use_contextual_chunks:
+            result.answer_localization_method = "contextual"
 
         result.retrieval_time_ms = (time.time() - start_time) * 1000
         logger.info(
