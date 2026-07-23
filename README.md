@@ -64,6 +64,20 @@
 | 流式响应 | SSE 实时输出，提升用户体验 |
 | 评估体系 | RAGAS 四维（LLM-judge）+ CMRC 检索命中（零 LLM）+ 并发 bench |
 
+### RAG 2.0 深度增强（本次迭代核心）
+
+对标「RAG 1.0 三件套（调包+存库+拼 prompt）已过时」，在**检索 / 生成 / 评估**三层各做深度增强，每项独立开关、异常均优雅降级到原行为：
+
+| 特性 | 层级 | 说明 |
+|------|------|------|
+| **F1 · Autocut 自适应截断** | 检索层 | Kneedle 膝点检测动态截断重排噪声尾巴，替代固定 TopK（下界保护 + 上界不扩容） |
+| **F2 · Self-RAG 迭代检索** | 检索层 | 证据不足时精化查询补充召回；**质量驱动终止**（充分性/收敛性，硬上限仅兜底） |
+| **F3 · 生成忠实度自检** | 生成层 | LLM-judge 逐论断校验答案是否被上下文支撑，不忠实则严格 prompt 有界重生成（幻觉检测） |
+| **F4 · 查询路由** | 检索层 | 规则驱动（零 LLM）识别 numeric/comparative/multi_hop/conceptual/factual，自适应检索深度与降噪强度 |
+| **F5 · 端到端三层评估** | 评估层 | 检索命中率 + 生成忠实度 + 端到端中文 F1/EM/命中；支持特性 A/B 与单特性归因 |
+
+配置开关（`config.py`，默认全开）：`use_autocut` / `use_iterative_retrieval` / `use_faithfulness_check` / `use_query_router`。
+
 ## 技术栈
 
 - **框架**: LangChain + FastAPI + Streamlit
@@ -143,6 +157,11 @@ uv run python run_retrieval_eval.py
 uv run python main.py &            # 先起服务
 uv run python run_concurrency_bench.py
 #    → data/concurrency_report.json (QPS/P50/P95/错误率)
+
+# 4. 端到端三层评估 + 特性 A/B（F5，需 LLM API）
+uv run python run_e2e_eval.py --mode full --colloquial   # 全特性开 + 口语化查询检视
+uv run python run_e2e_eval.py --mode baseline            # RAG1.0 基线（F1-F4 全关）
+#    → data/eval_e2e_{full,baseline}.json (检索命中/生成忠实度/端到端F1/EM/命中 + A/B)
 ```
 
 > 评估口径说明：检索质量以**与 LLM 解耦的 CMRC 评估**为准（命中率 100%）；
