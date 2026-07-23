@@ -25,7 +25,7 @@ from app.retrieval.cache import get_semantic_cache
 from app.generation.faithfulness import FaithfulnessChecker
 from app.generation.prompts import (
     RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, DIRECT_ANSWER_PROMPT, FALLBACK_RESPONSE,
-    STRICT_RAG_PROMPT,
+    STRICT_RAG_PROMPT, STRICT_RAG_CHAT_PROMPT,
 )
 from app.observability.tracing import get_tracer
 
@@ -204,7 +204,8 @@ class RAGChain:
         context = self._format_context(documents)
 
         if chat_history:
-            chain = RAG_CHAT_PROMPT | self.llm | StrOutputParser()
+            template = STRICT_RAG_CHAT_PROMPT if strict else RAG_CHAT_PROMPT
+            chain = template | self.llm | StrOutputParser()
             return chain.invoke({
                 "context": context, "question": question,
                 "chat_history": chat_history,
@@ -306,10 +307,14 @@ class RAGChain:
         if retrieval_result.gate_skipped:
             answer = self.generate_direct(question, chat_history)
             faithful, fb_score, regenerated = None, 0.0, False
-        else:
+        elif self.faithfulness_checker and retrieval_result.documents:
             answer, faithful, fb_score, regenerated = self._generate_faithful(
                 question, retrieval_result.documents, chat_history
             )
+        else:
+            # 无文档（召回为空）或自检关闭：直接生成，不做忠实度校验
+            answer = self.generate(question, retrieval_result.documents, chat_history)
+            faithful, fb_score, regenerated = None, 0.0, False
         tracer.end_span(trace_id, "generation", {
             "answer_chars": len(answer),
             "num_sources": len(retrieval_result.documents),

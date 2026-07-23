@@ -459,7 +459,11 @@ class RetrievalPipeline:
                 result.documents = final_docs
                 result.iterations_used = iters
                 result.iterative_stop_reason = stop_reason
-                result.crag_grade = "recovered" if final_grade == "correct" else final_grade
+                # 仅当确实由非 correct 转为 correct 才标 recovered；首检即 correct 保持 correct
+                result.crag_grade = (
+                    "recovered" if (final_grade == "correct" and grade != "correct")
+                    else final_grade
+                )
                 result.crag_action = (
                     f"Self-RAG 迭代检索({stop_reason}, {iters}轮)"
                     if iters > 0 else f"Self-RAG 评估({stop_reason})"

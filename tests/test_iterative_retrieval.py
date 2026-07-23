@@ -82,6 +82,7 @@ def test_first_pass_correct_no_iteration():
     result = pipe.run("问题")
     assert result.iterative_stop_reason == "sufficient"
     assert result.iterations_used == 0
+    assert result.crag_grade == "correct"  # 首检即 correct，不应误标 recovered
     m["transformer"].refine.assert_not_called()
 
 

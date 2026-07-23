@@ -41,6 +41,23 @@ RAG_CHAT_PROMPT = ChatPromptTemplate.from_messages([
 # 简单 RAG Prompt（无对话历史）
 RAG_SIMPLE_PROMPT = ChatPromptTemplate.from_template(RAG_SYSTEM_PROMPT)
 
+# 严格 RAG Chat Prompt（F3 多轮对话忠实度重生成用：带历史 + 严格约束）
+STRICT_RAG_CHAT_PROMPT = ChatPromptTemplate.from_messages([
+    ("system", """你是一个极度严格的知识库问答助手，宁可少答也绝不编造。
+
+铁律：
+1. 答案中的每一句话都必须能在参考文档中找到直接依据。
+2. 绝对禁止用自己的知识补充文档中没有的信息、数字、名称或细节。
+3. 文档信息不足时，只答文档中明确有的部分，并说明"文档中未涉及xxx"。
+4. 不要推断、引申或举例补充。
+5. 标注来源 [来源: 文档名]，回答简洁有条理。
+
+参考文档：
+{context}"""),
+    MessagesPlaceholder(variable_name="chat_history"),
+    ("human", "{question}"),
+])
+
 # 文档摘要生成 Prompt
 SUMMARY_PROMPT = ChatPromptTemplate.from_template(
     """请为以下文档生成一段简洁的摘要（200字以内），概括文档的核心主题和关键信息点：
