@@ -22,8 +22,10 @@ from app.retrieval.parent_child import ParentChildRetriever
 from app.retrieval.crag import CRAGEvaluator
 from app.retrieval.router import QueryRouter
 from app.retrieval.cache import get_semantic_cache
+from app.generation.faithfulness import FaithfulnessChecker
 from app.generation.prompts import (
     RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, DIRECT_ANSWER_PROMPT, FALLBACK_RESPONSE,
+    STRICT_RAG_PROMPT,
 )
 from app.observability.tracing import get_tracer
 
@@ -40,6 +42,10 @@ class RAGResponse:
     retrieval_result: RetrievalResult
     total_time_ms: float = 0
     cache_hit: bool = False
+    # F3 生成忠实度自检观测字段
+    faithful: bool | None = None      # True=忠实 / False=含幻觉 / None=未检查或未知
+    faithfulness_score: float = 0.0   # 被支撑论断占比 [0,1]
+    regenerated: bool = False         # 是否因不忠实触发了严格重生成
 
 
 class RAGChain:
@@ -85,6 +91,11 @@ class RAGChain:
 
         self.query_router: QueryRouter | None = (
             QueryRouter() if settings.use_query_router else None
+        )
+
+        # F3 生成忠实度自检（幻觉检测）
+        self.faithfulness_checker: FaithfulnessChecker | None = (
+            FaithfulnessChecker() if settings.use_faithfulness_check else None
         )
 
         self.semantic_cache = get_semantic_cache() if settings.cache_enabled else None
@@ -183,8 +194,9 @@ class RAGChain:
         question: str,
         documents: List[Document],
         chat_history: List | None = None,
+        strict: bool = False,
     ) -> str:
-        """基于检索结果生成回答"""
+        """基于检索结果生成回答。strict=True 时用更严格的 prompt（F3 重生成）。"""
         if not documents:
             return FALLBACK_RESPONSE
 
@@ -197,7 +209,8 @@ class RAGChain:
                 "context": context, "question": question,
                 "chat_history": chat_history,
             })
-        chain = RAG_SIMPLE_PROMPT | self.llm | StrOutputParser()
+        template = STRICT_RAG_PROMPT if strict else RAG_SIMPLE_PROMPT
+        chain = template | self.llm | StrOutputParser()
         return chain.invoke({"context": context, "question": question})
 
     def generate_stream(
@@ -239,6 +252,37 @@ class RAGChain:
         for chunk in chain.stream(payload):
             yield chunk
 
+    def _generate_faithful(
+        self,
+        question: str,
+        documents: List[Document],
+        chat_history: List | None = None,
+    ) -> tuple[str, bool | None, float, bool]:
+        """
+        F3 生成 + 忠实度自检 + 有界严格重生成（invoke / invoke_stream 共用）。
+
+        流程：生成答案 → 忠实度检查 → 若不忠实则用 strict prompt 重生成，
+        最多 faithfulness_max_regen 次（成本兜底）。检查器关闭或异常时放行。
+
+        Returns:
+            (answer, faithful, faithfulness_score, regenerated)
+        """
+        answer = self.generate(question, documents, chat_history)
+        if not self.faithfulness_checker:
+            return answer, None, 0.0, False
+
+        fb = self.faithfulness_checker.check(question, documents, answer)
+        regenerated = False
+        regen_left = self._settings.faithfulness_max_regen
+        while fb.faithful is False and regen_left > 0:
+            logger.info(f"忠实度不足(score={fb.score:.2f})，触发严格重生成")
+            answer = self.generate(question, documents, chat_history, strict=True)
+            regenerated = True
+            regen_left -= 1
+            fb = self.faithfulness_checker.check(question, documents, answer)
+
+        return answer, fb.faithful, fb.score, regenerated
+
     def invoke(
         self,
         question: str,
@@ -261,12 +305,18 @@ class RAGChain:
         tracer.start_span(trace_id, "generation")
         if retrieval_result.gate_skipped:
             answer = self.generate_direct(question, chat_history)
+            faithful, fb_score, regenerated = None, 0.0, False
         else:
-            answer = self.generate(question, retrieval_result.documents, chat_history)
+            answer, faithful, fb_score, regenerated = self._generate_faithful(
+                question, retrieval_result.documents, chat_history
+            )
         tracer.end_span(trace_id, "generation", {
             "answer_chars": len(answer),
             "num_sources": len(retrieval_result.documents),
             "gate_skipped": retrieval_result.gate_skipped,
+            "faithful": faithful,
+            "faithfulness_score": fb_score,
+            "regenerated": regenerated,
         })
 
         total_time = (time.time() - start_time) * 1000
@@ -280,6 +330,9 @@ class RAGChain:
             sources=retrieval_result.documents,
             retrieval_result=retrieval_result,
             total_time_ms=total_time,
+            faithful=faithful,
+            faithfulness_score=fb_score,
+            regenerated=regenerated,
         )
 
     def invoke_stream(
@@ -317,19 +370,30 @@ class RAGChain:
 
         tracer.start_span(trace_id, "generation")
         full_answer = ""
+        faithful, fb_score, regenerated = None, 0.0, False
         if retrieval_result.gate_skipped:
-            token_stream = self.generate_direct_stream(question, chat_history)
-        else:
-            token_stream = self.generate_stream(
+            for token in self.generate_direct_stream(question, chat_history):
+                full_answer += token
+                yield {"type": "token", "data": token}
+        elif self.faithfulness_checker and retrieval_result.documents:
+            # F3: 先非流式生成+自检，校验通过后再输出（保证用户看到已校验答案）
+            full_answer, faithful, fb_score, regenerated = self._generate_faithful(
                 question, retrieval_result.documents, chat_history
             )
-        for token in token_stream:
-            full_answer += token
-            yield {"type": "token", "data": token}
+            yield {"type": "token", "data": full_answer}
+        else:
+            for token in self.generate_stream(
+                question, retrieval_result.documents, chat_history
+            ):
+                full_answer += token
+                yield {"type": "token", "data": token}
         tracer.end_span(trace_id, "generation", {
             "answer_chars": len(full_answer),
             "num_sources": len(retrieval_result.documents),
             "gate_skipped": retrieval_result.gate_skipped,
+            "faithful": faithful,
+            "faithfulness_score": fb_score,
+            "regenerated": regenerated,
         })
 
         total_time = (time.time() - start_time) * 1000
@@ -344,6 +408,9 @@ class RAGChain:
             sources=retrieval_result.documents,
             retrieval_result=retrieval_result,
             total_time_ms=total_time,
+            faithful=faithful,
+            faithfulness_score=fb_score,
+            regenerated=regenerated,
         )}
 
     # ---- 缓存公共逻辑（invoke / invoke_stream 共用） ----
