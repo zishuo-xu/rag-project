@@ -54,7 +54,7 @@
 | RRF 融合 | Reciprocal Rank Fusion 合并多路结果，避免分数不可比 |
 | Cross-Encoder 重排序 | 对融合候选精排，显著提升 top-K 精度 |
 | 查询改写 | Multi-Query 多变体 / HyDE 假设文档，扩大召回面 |
-| Graph RAG | 零 LLM 快速构建知识图谱，实体多跳召回 |
+| Graph RAG | LLM 类型化三元组知识图谱（7 类实体 + chunk 溯源，jieba 零 LLM 兜底），实体多跳召回 |
 | Parent-Child | 小块检索 + 大块返回，兼顾命中精度与上下文完整 |
 | CRAG 自纠正 | 门控判断是否检索 + 相关性分级 + 不合格时 HyDE 补救 |
 | 智能分块 | 递归字符分块 + 语义分块（基于 embedding 边界检测） |
@@ -107,6 +107,16 @@
 ```bash
 uv run python run_e2e_eval.py --dataset data/eval_multihop.json --only F13   # 多跳集 agentic 评估
 ```
+
+### 收敛优化 + 延迟治理 + Graph RAG 升级（2026-07-26）
+
+承接上轮三个诚实开放项，①→②→④ 串行推进（详见 [整合报告](./docs/superpowers/reports/2026-07-26-convergence-latency-graph-report.md)）：
+
+- **① F13 收敛优化 v3**（零新增 LLM）：步数预算/新增量/证据状态三类信号进 prompt + 零证据 finish 驳回门控。延迟 12.5→9.7s（↓23%）；**finish 率 40%/33% 仍未达 ≥50% 目标**——信号可见无法强制 LLM 早停，如实记为开放项。
+- **② 延迟治理**：Deadline 查询级时延预算（25s，熔断 F2/F3 离群尾）+ 超时重试收紧（60s×2→30s×1）+ max_tokens 封顶 + router 前置短路（分解路径跳过无用改写）+ hops 3→2。full 均值 **42.6s→9.6s（↓77%）**（原单点 486s 离群消灭），max 16.9s，F1 0.291（基线 0.289），num_failed=0。
+- **④ Graph RAG 升级（Option A）**：EXTRACTION_PROMPT 升级 JSON 类型化三元组（person/work/place/org/position/event/other + 传记体 few-shot）+ 边带 chunk_id 溯源 + 图检索文档 `graph:` 前缀溯源（不与真实分块 RRF 互覆盖）+ 分解路径子问题接入 graph 通道。重建生产图：675 节点/2354 共现边 → **1214 节点/985 类型化边，chunk 溯源 100%**。评估诚实记录：F1 0.291→0.287（−0.004 ∈ 波动带，**无显著变化**）、hit/coverage 持平、延迟 +12%——结构能力升级（关系质量 + 溯源 + 通道接线），检索收益未在 15 样本集兑现。
+
+测试：312→324→**336 全绿**（每阶段 +12 / +12）。
 
 ## 技术栈
 
@@ -238,7 +248,7 @@ pytest tests/ -v
 │   │   ├── loader.py           # 多格式加载
 │   │   ├── chunker.py          # 智能分块
 │   │   ├── indexer.py          # 层级索引
-│   │   └── graph_extractor.py  # 知识图谱抽取（零 LLM）
+│   │   └── graph_extractor.py  # 知识图谱抽取（LLM 类型化三元组，jieba 零 LLM 兜底）
 │   ├── retrieval/              # 检索模块
 │   │   ├── pipeline.py         # ★ RetrievalPipeline 7 阶段统一编排
 │   │   ├── dense.py            # 稠密检索
