@@ -1,0 +1,275 @@
+"""F13 Agentic RAG - ReAct 状态机自主检索
+
+把固定七阶段管道升级为 agent 自主决策：LLM 逐步决定调哪个工具、用什么查询、
+何时停止（thought → action → observation 循环，概念对齐 LangGraph 的
+State/Node/条件边，但零新依赖手写实现，全离线可 mock 测试）。
+
+工具集（混合粗粒度，复用管道已有阶段）：
+- search(query)    ：召回 + RRF 融合 + 重排子管道
+- decompose()      ：F6b 多跳分解（agent 自主决定，不再依赖 F4 路由判定 multi_hop）
+- grade()          ：CRAG 相关性分级，评估当前证据是否充分
+- finish()         ：证据足够，结束检索
+
+护栏：max_steps 硬上限 / 决策解析失败即停 / 工具异常写入 observation /
+整体异常或空证据由调用方（pipeline）降级回七阶段管道。
+时延：每步 1 次小 token 决策调用；use_agentic 默认关。
+"""
+
+import json
+import logging
+import re
+import time
+from dataclasses import dataclass, field
+from typing import List, Optional
+
+from langchain_core.documents import Document
+
+from config import get_settings, get_llm_extra_body
+
+logger = logging.getLogger(__name__)
+
+ACTIONS = ("search", "decompose", "grade", "finish")
+
+DECISION_PROMPT = """你是一个检索智能体，通过调用工具为用户问题收集证据。
+
+可用工具：
+- search(query)：用给定查询检索知识库（多路召回+精排）。query 可与原问题不同（改写/精化）。
+- decompose()：把需要跨多个事实拼接答案的多跳问题拆成子问题分别检索并合并。
+- grade()：评估当前已收集的证据是否足以回答问题。
+- finish()：证据已足够，结束检索。
+
+当前问题：{question}
+已执行步骤：
+{history}
+当前证据摘要：
+{evidence}
+
+根据当前状态决定下一步，只输出 JSON（不要输出其他内容）：
+{{"thought": "你的推理", "action": "search|decompose|grade|finish", "args": {{"query": "search 时的查询"}}}}"""
+
+
+@dataclass
+class AgentStep:
+    """单步决策记录（观测与归因用）"""
+    thought: str = ""
+    action: str = ""
+    args: dict = field(default_factory=dict)
+    observation: str = ""
+
+
+@dataclass
+class AgentResult:
+    """agent 检索结果：证据文档 + 决策轨迹"""
+    documents: List[Document] = field(default_factory=list)
+    steps: List[AgentStep] = field(default_factory=list)
+    stop_reason: str = ""            # agent_done / max_steps / decision_error / no_evidence
+    decomposed_subqueries: List[str] = field(default_factory=list)
+    decomposition_chain: bool = False
+    queries_used: List[str] = field(default_factory=list)
+    crag_grade: str = ""
+
+
+class AgenticRetriever:
+    """ReAct 状态机检索器。pipeline 提供工具实现（召回/融合/重排/分解/评估）。"""
+
+    def __init__(self, pipeline, llm=None, settings=None):
+        self._pipeline = pipeline
+        self._settings = settings or get_settings()
+        self.llm = llm  # 可注入（测试/复用 chain.llm）；None 时按配置自建小预算客户端
+
+    # ---- 主循环 ----
+
+    def run(
+        self,
+        question: str,
+        top_k: int | None = None,
+        trace_id: str | None = None,
+    ) -> AgentResult:
+        """ReAct 循环：决策 → 执行 → 观察，直到 finish / 硬上限 / 决策失败。"""
+        settings = self._settings
+        top_k = top_k or settings.retrieval_top_k
+        result = AgentResult()
+        evidence: List[Document] = []
+        evidence_ids: set = set()
+
+        for step_num in range(1, settings.agentic_max_steps + 1):
+            decision = self._decide(question, result.steps, evidence)
+            if decision is None:
+                result.stop_reason = "decision_error"
+                break
+
+            step = AgentStep(
+                thought=decision.get("thought", ""),
+                action=decision.get("action", ""),
+                args=decision.get("args") or {},
+            )
+            result.steps.append(step)
+
+            if step.action == "finish":
+                step.observation = "agent 判定证据充分"
+                result.stop_reason = "agent_done"
+                break
+
+            docs, observation = self._execute(step, question, top_k, evidence, result)
+            step.observation = observation
+            logger.info(f"F13 step {step_num}: {step.action} {step.args} -> {observation[:60]}")
+            for d in docs:
+                key = d.metadata.get("chunk_id", id(d))
+                if key not in evidence_ids:
+                    evidence_ids.add(key)
+                    evidence.append(d)
+
+        else:
+            result.stop_reason = "max_steps"
+
+        if not result.stop_reason:
+            result.stop_reason = "max_steps"
+
+        # 证据重排压缩到 top_k（复用管道重排，异常时直接截断）
+        result.documents = self._final_rerank(question, evidence, top_k)
+        # 空证据标 no_evidence，但不覆盖更具诊断价值的 decision_error
+        if not result.documents and result.stop_reason != "decision_error":
+            result.stop_reason = "no_evidence"
+        logger.info(
+            f"F13 agentic 检索完成: steps={len(result.steps)} "
+            f"stop={result.stop_reason} docs={len(result.documents)}"
+        )
+        return result
+
+    # ---- 决策节点（LLM，JSON 输出，失败即停） ----
+
+    def _decide(
+        self, question: str, steps: List[AgentStep], evidence: List[Document]
+    ) -> Optional[dict]:
+        """调 LLM 产出下一步决策。任何异常/解析失败返回 None（触发 decision_error 终止）。"""
+        try:
+            llm = self._get_llm()
+            prompt = DECISION_PROMPT.format(
+                question=question,
+                history=self._format_history(steps),
+                evidence=self._format_evidence(evidence),
+            )
+            out = llm.invoke(prompt)
+            content = getattr(out, "content", str(out)).strip()
+            decision = self._parse_decision(content)
+            if decision is None:
+                logger.warning(f"F13 决策 JSON 解析失败: {content[:100]}")
+                return None
+            if decision.get("action") not in ACTIONS:
+                logger.warning(f"F13 非法 action: {decision.get('action')}")
+                return None
+            return decision
+        except Exception as e:
+            logger.warning(f"F13 决策调用异常: {e}")
+            return None
+
+    @staticmethod
+    def _parse_decision(content: str) -> Optional[dict]:
+        """从 LLM 输出提取 JSON 决策（容忍 ```json 包裹与前后噪声）。"""
+        match = re.search(r"\{.*\}", content, re.DOTALL)
+        if not match:
+            return None
+        try:
+            decision = json.loads(match.group(0))
+        except json.JSONDecodeError:
+            return None
+        return decision if isinstance(decision, dict) else None
+
+    # ---- 工具执行节点 ----
+
+    def _execute(
+        self,
+        step: AgentStep,
+        question: str,
+        top_k: int,
+        evidence: List[Document],
+        result: AgentResult,
+    ) -> tuple[List[Document], str]:
+        """分发到具体工具；工具异常转为 observation 文本（循环不中断）。"""
+        try:
+            if step.action == "search":
+                return self._tool_search(step, question, top_k, result)
+            if step.action == "decompose":
+                return self._tool_decompose(question, top_k, result)
+            if step.action == "grade":
+                return self._tool_grade(question, evidence, result)
+        except Exception as e:
+            logger.warning(f"F13 工具 {step.action} 异常: {e}")
+            return [], f"工具 {step.action} 执行失败: {e}"
+        return [], f"未知工具: {step.action}"
+
+    def _tool_search(self, step, question, top_k, result) -> tuple[List[Document], str]:
+        query = (step.args.get("query") or "").strip() or question
+        result.queries_used.append(query)
+        pipeline = self._pipeline
+        recall_results = pipeline.recall(question, [query], top_n=top_k)
+        fused = pipeline.fuse(recall_results)
+        docs = pipeline.rerank(question, fused, top_k)
+        snippet = docs[0].page_content[:80] if docs else ""
+        return docs, f"search('{query}') 返回 {len(docs)} 篇证据。首篇摘要: {snippet}"
+
+    def _tool_decompose(self, question, top_k, result) -> tuple[List[Document], str]:
+        pipeline = self._pipeline
+        if not pipeline.query_transformer:
+            return [], "decompose 不可用（无 query_transformer）"
+        decomposition = pipeline.query_transformer.decompose(question)
+        subs = decomposition.sub_questions
+        if len(subs) <= 1:
+            return [], "分解结果为单一问题，无需分解检索"
+        result.decomposed_subqueries = subs
+        result.decomposition_chain = decomposition.chain
+        docs = pipeline._decompose_retrieve(question, decomposition, top_k)
+        return docs, f"decompose 拆出 {len(subs)} 个子问题（chain={decomposition.chain}），合并 {len(docs)} 篇证据"
+
+    def _tool_grade(self, question, evidence, result) -> tuple[List[Document], str]:
+        if not self._pipeline.crag_evaluator:
+            return [], "grade 不可用（无 crag_evaluator）"
+        grade, _, reason = self._pipeline.evaluate(question, evidence)
+        result.crag_grade = grade
+        return [], f"grade 评估: {grade}（{reason}）"
+
+    # ---- 收尾 ----
+
+    def _final_rerank(self, question, evidence, top_k) -> List[Document]:
+        """把累积证据重排压缩到 top_k；异常时直接截断（优雅降级）。"""
+        if not evidence:
+            return []
+        try:
+            return self._pipeline.rerank(question, evidence, top_k)
+        except Exception as e:
+            logger.warning(f"F13 证据收尾重排失败，直接截断: {e}")
+            return evidence[:top_k]
+
+    # ---- 辅助 ----
+
+    @staticmethod
+    def _format_history(steps: List[AgentStep]) -> str:
+        if not steps:
+            return "（尚无步骤）"
+        return "\n".join(
+            f"{i}. action={s.action} args={s.args} -> {s.observation[:100]}"
+            for i, s in enumerate(steps, 1)
+        )
+
+    @staticmethod
+    def _format_evidence(evidence: List[Document], max_docs: int = 3) -> str:
+        if not evidence:
+            return "（尚无证据）"
+        return "\n".join(
+            f"- {d.page_content[:100]}" for d in evidence[:max_docs]
+        ) + (f"\n（共 {len(evidence)} 篇）" if len(evidence) > max_docs else "")
+
+    def _get_llm(self):
+        """决策 LLM：注入优先；否则按配置自建（小 token 预算 + 短超时）。"""
+        if self.llm is not None and self.llm is not True:
+            return self.llm
+        from langchain_openai import ChatOpenAI
+        s = self._settings
+        self.llm = ChatOpenAI(
+            model=s.openai_model, api_key=s.openai_api_key,
+            base_url=s.openai_base_url, temperature=0,
+            max_tokens=s.agentic_decision_max_tokens,
+            request_timeout=15, max_retries=1,
+            extra_body=get_llm_extra_body(),
+        )
+        return self.llm

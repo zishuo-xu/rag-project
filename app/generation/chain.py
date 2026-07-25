@@ -15,6 +15,7 @@ from app.ingestion.indexer import HierarchicalIndexer
 from app.retrieval.dense import DenseRetriever
 from app.retrieval.sparse import SparseRetriever
 from app.retrieval.pipeline import RetrievalPipeline, RetrievalResult
+from app.retrieval.agent import AgenticRetriever
 from app.retrieval.reranker import Reranker
 from app.retrieval.query_transform import QueryTransformer
 from app.retrieval.graph_retriever import GraphRetriever
@@ -156,6 +157,13 @@ class RAGChain:
             crag_evaluator=self.crag_evaluator,
             query_router=self.query_router,
         )
+
+        # F13 Agentic RAG：ReAct agent 复用管道阶段作为工具；use_agentic 开时启用
+        self.agentic_retriever: AgenticRetriever | None = (
+            AgenticRetriever(self.pipeline, llm=self.llm)
+            if settings.use_agentic else None
+        )
+        self.pipeline.agentic = self.agentic_retriever
 
         logger.info(
             f"RAGChain 初始化: query_transform={use_query_transform}, "

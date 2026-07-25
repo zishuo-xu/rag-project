@@ -46,7 +46,11 @@ FEATURE_FLAGS = {
     "F8": "use_speculative_streaming",
     "F10": "use_answer_extraction",
     "F12": "use_history_rewrite",
+    "F13": "use_agentic",
 }
+
+# F13 为重 LLM 决策路径：不随 baseline/full 批量切换，仅 --only F13 显式评估
+_STANDALONE_ONLY = {"F13"}
 
 # F6a 运行时开关：随 baseline/full 一并切换；--only 单特性归因时关闭以隔离
 F6A_FLAGS = ["use_contextual_chunks", "use_parent_child"]
@@ -88,7 +92,9 @@ def apply_feature_mode(mode: str, only: str | None) -> dict:
         for flag in F6A_FLAGS + F9_FLAGS + RAG3_FLAGS:
             setattr(settings, flag, False)
     elif mode == "full":
-        for flag in FEATURE_FLAGS.values():
+        for key, flag in FEATURE_FLAGS.items():
+            if key in _STANDALONE_ONLY:
+                continue  # F13 仅 --only 显式开启
             setattr(settings, flag, True)
         for flag in F6A_FLAGS + F9_FLAGS + RAG3_FLAGS:
             setattr(settings, flag, True)
@@ -188,6 +194,10 @@ def eval_sample(chain, sample) -> dict:
         "answer_in_top_context": answer_in_top_context(gold, docs),
         "decomposed": rr.decomposed_subqueries,
         "decomposition_chain": rr.decomposition_chain,
+        # F13 Agentic RAG 观测
+        "agent_steps": len(rr.agent_steps),
+        "agent_stop_reason": rr.agent_stop_reason,
+        "agent_actions": [s.get("action") for s in rr.agent_steps],
     }
 
 
@@ -269,6 +279,11 @@ def aggregate(results: list) -> dict:
         "decomposition": {
             "decomposed_rate": _mean([int(bool(r["decomposed"])) for r in ok]),
             "chain_rate": _mean([int(r["decomposition_chain"]) for r in ok]),
+        },
+        "agentic": {
+            "avg_steps": _mean([r.get("agent_steps", 0) for r in ok]),
+            "stop_reasons": dict(Counter(r.get("agent_stop_reason") or "n/a" for r in ok)),
+            "action_dist": dict(Counter(a for r in ok for a in r.get("agent_actions", []))),
         },
     }
 

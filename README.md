@@ -96,6 +96,18 @@
 
 > **关键验证结果**（CMRC 31 题端到端 A/B，详见 [RAG3 验证报告](./docs/superpowers/reports/2026-07-24-rag3-validation-report.md)）：F10 短答案抽取把 **short_answer 的 EM 从 0.0 提升到 0.097、F1 从完整答案的 0.35 提升到 0.52（+48%）**，闭环上一轮如实报告的 EM=0；F7 平均 **1.52 条块级引用**、F1 上下文降噪 **47%**（8.0→4.26 篇）、F3+F8 忠实度 **0.77**/重生成 22.6%；六特性默认路径**零在线 LLM 增量**；**256 项测试全绿**（本轮新增 101）。
 
+### F13 · Agentic RAG（ReAct 状态机自主检索）
+
+把固定七阶段管道的**编排决策交给 LLM**：ReAct 循环逐步决定调哪个工具、用什么查询、何时停止（thought→action→observation，概念对齐 LangGraph 但**零新依赖手写**，全离线可测）。工具集复用管道阶段：`search(query)`（召回+融合+重排）/ `decompose()`（F6b 分解，**agent 自主决定，不再依赖 F4 路由**）/ `grade()`（CRAG 分级）。
+
+护栏：max_steps=4 硬上限 / 决策解析失败即停 / 工具异常写入 observation / **整体异常或空证据降级回七阶段管道**。默认关（`use_agentic=False`），每步 1 次小 token 决策调用（256 tokens / 15s 超时）。
+
+**实测**（15 条多跳集，详见 [F13 验证报告](./docs/superpowers/reports/2026-07-25-f13-agentic-validation.md)）：F1 **0.255→0.283+（四种模式最优）**，延迟 +20%；诚实发现 agent 过度检索（10/15 打满步数）且工具选择 search 主导、跨运行不稳定——prompt 工程引导是下一步。
+
+```bash
+uv run python run_e2e_eval.py --dataset data/eval_multihop.json --only F13   # 多跳集 agentic 评估
+```
+
 ## 技术栈
 
 - **框架**: LangChain + FastAPI + Streamlit

@@ -43,6 +43,9 @@ class RetrievalResult:
     decomposed_subqueries: List[str] = field(default_factory=list)  # F6b: 分解出的子问题
     decomposition_chain: bool = False                              # F6b: 是否依赖链
     answer_localization_method: str = ""                           # F6a: parent_child / contextual / ""
+    # F13 Agentic RAG 观测字段
+    agent_steps: List[dict] = field(default_factory=list)  # F13: ReAct 决策轨迹
+    agent_stop_reason: str = ""                            # F13: agent_done / max_steps / decision_error
 
 
 class RetrievalPipeline:
@@ -66,6 +69,7 @@ class RetrievalPipeline:
         crag_evaluator=None,
         query_router=None,
         settings=None,
+        agentic=None,
     ):
         self.indexer = indexer
         self.dense_retriever = dense_retriever
@@ -77,6 +81,8 @@ class RetrievalPipeline:
         self.crag_evaluator = crag_evaluator
         self.query_router = query_router
         self._settings = settings or get_settings()
+        # F13 Agentic RAG（ReAct agent，由 chain 在构建后注入；use_agentic 开时启用）
+        self.agentic = agentic
 
     # ---- 阶段 1: 门控 ----
 
@@ -396,6 +402,46 @@ class RetrievalPipeline:
         tracer = get_tracer()
 
         result = RetrievalResult(documents=[])
+
+        # F13 Agentic RAG：开启时由 ReAct agent 自主决策检索（替代固定七阶段）。
+        # 任何异常或空证据都降级回下方固定管道，保证回归安全。
+        # 注：agentic 分支不做门控（agent 总是检索），闲聊直接回答由 chain 层语义缓存/门控外的路径兜底。
+        if settings.use_agentic and getattr(self, "agentic", None) is not None:
+            if trace_id:
+                tracer.start_span(trace_id, "agentic")
+            agent_result = None
+            try:
+                agent_result = self.agentic.run(question, top_k, trace_id=trace_id)
+            except Exception as e:
+                logger.warning(f"F13 agentic 检索异常，降级回七阶段管道: {e}")
+            if agent_result is not None and agent_result.documents:
+                result.documents = agent_result.documents
+                result.reranked_results = agent_result.documents
+                result.queries_used = agent_result.queries_used
+                result.decomposed_subqueries = agent_result.decomposed_subqueries
+                result.decomposition_chain = agent_result.decomposition_chain
+                result.crag_grade = agent_result.crag_grade
+                result.agent_steps = [
+                    {"thought": s.thought, "action": s.action,
+                     "args": s.args, "observation": s.observation}
+                    for s in agent_result.steps
+                ]
+                result.agent_stop_reason = agent_result.stop_reason
+                result.retrieval_time_ms = (time.time() - start_time) * 1000
+                if trace_id:
+                    tracer.end_span(trace_id, "agentic", {
+                        "steps": len(agent_result.steps),
+                        "stop_reason": agent_result.stop_reason,
+                        "docs": len(result.documents),
+                    })
+                logger.info(
+                    f"F13 agentic 检索: {len(agent_result.steps)} 步, "
+                    f"stop={agent_result.stop_reason}, docs={len(result.documents)}"
+                )
+                return result
+            logger.warning("F13 agentic 无有效证据，降级回七阶段管道")
+            if trace_id:
+                tracer.end_span(trace_id, "agentic", {"fallback": True})
 
         # ① 门控 + ② 改写：投机并行（门控 false 时丢弃改写结果，换 2-5s 延迟）
         if trace_id:

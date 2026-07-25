@@ -131,6 +131,11 @@ class Settings(BaseSettings):
     history_rewrite_use_llm: bool = False  # 默认零LLM启发式，开启后用一次小调用
     history_rewrite_max_turns: int = 4     # 重写时参考的最近历史轮数
 
+    # F13 Agentic RAG（ReAct 状态机自主检索；默认关，异常/空证据降级回七阶段管道）
+    use_agentic: bool = False
+    agentic_max_steps: int = 4             # 决策步数硬上限（安全兜底）
+    agentic_decision_max_tokens: int = 256  # 每步决策调用 token 预算
+
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False
     langchain_api_key: str = ""

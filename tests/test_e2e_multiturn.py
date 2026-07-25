@@ -33,6 +33,7 @@ def _stub_chain(rewritten_query=""):
             pre_autocut_count=3, query_type="factual", iterations_used=1,
             iterative_stop_reason="sufficient", gate_skipped=False,
             decomposed_subqueries=[], decomposition_chain=False,
+            agent_steps=[], agent_stop_reason="",
         ),
         faithfulness_score=0.95, faithful=True, regenerated=False,
         short_answer="布隆过滤器", citations=[], rewritten_query=rewritten_query,
