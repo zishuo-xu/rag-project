@@ -88,11 +88,11 @@
 | **F7 · 引用溯源** | 生成层 | 答案切句级 claim，用 embedding 余弦关联到最相关源块，输出结构化引用（来源/块id/置信度/证据片段），零在线 LLM | +一次批量编码 |
 | **F8 · 投机流式忠实度** | 生成层 | 先逐 token 流式吐字（快 TTFT），流末做忠实度自检，不忠实追加 `correction` 事件——修复 F3 的流式退化与时延回退 | **TTFT 大幅下降** |
 | **F9 · 多级缓存** | 检索层 | L1 Embedding 缓存 + L2 Rerank 缓存（线程安全 LRU），重复查询省掉编码与 cross-encoder | **命中省 100–700ms** |
-| **F10 · 答案质量增强** | 生成层 | 答案聚焦 prompt + 零LLM 短答案抽取 + 自适应自一致性（仅短答案型查询）——**攻克 EM=0** | 默认 ~0 |
+| **F10 · 答案质量增强** | 生成层 | 零LLM 短答案抽取 + 自适应自一致性（仅短答案型查询）——**攻克 EM=0** | 默认 ~0 |
 | **F11 · 可观测性与加固** | 平台层 | 进程内指标（计数/直方图，`/api/metrics` Prometheus+JSON）+ API Key 鉴权 + 限流 + 结构化日志 | <1µs/请求 |
 | **F12 · 多轮对话记忆** | 检索层 | 历史感知查询重写，解析指代/省略（"它的原理呢？"→"缓存穿透的原理"），零LLM 启发式（LLM 可选） | 默认 ~0 |
 
-配置开关（`config.py`，默认值见括号）：`use_citations`(True) / `use_speculative_streaming`(True) / `use_embedding_cache`(True) / `use_rerank_cache`(True) / `use_answer_focus`(True) / `use_answer_extraction`(True) / `use_self_consistency`(False，保时延) / `use_history_rewrite`(True) / `enable_metrics`(True) / `api_key`(""=关) / `rate_limit_rpm`(0=关) / `log_json`(False)。
+配置开关（`config.py`，默认值见括号）：`use_citations`(True) / `use_speculative_streaming`(True) / `use_embedding_cache`(True) / `use_rerank_cache`(True) / `use_answer_extraction`(True) / `use_self_consistency`(False，保时延) / `use_history_rewrite`(True) / `api_key`(""=关) / `rate_limit_rpm`(0=关) / `log_json`(False)（指标常开无开关）。
 
 > **关键验证结果**（CMRC 31 题端到端 A/B，详见 [RAG3 验证报告](./docs/superpowers/reports/2026-07-24-rag3-validation-report.md)）：F10 短答案抽取把 **short_answer 的 EM 从 0.0 提升到 0.097、F1 从完整答案的 0.35 提升到 0.52（+48%）**，闭环上一轮如实报告的 EM=0；F7 平均 **1.52 条块级引用**、F1 上下文降噪 **47%**（8.0→4.26 篇）、F3+F8 忠实度 **0.77**/重生成 22.6%；六特性默认路径**零在线 LLM 增量**；**256 项测试全绿**（本轮新增 101）。
 
@@ -237,39 +237,52 @@ pytest tests/ -v
 
 ```
 ├── main.py                     # FastAPI 入口（lifespan 初始化 + 并发闸门）
-├── config.py                   # 统一配置（含管道接线/并发/思考模式开关）
+├── config.py                   # 统一配置 + build_chat_llm LLM 构造工厂
 ├── run_eval.py                 # RAGAS 四维质量评估
 ├── run_retrieval_eval.py       # CMRC 检索命中评估（零 LLM）
 ├── run_concurrency_bench.py    # 并发性能评测
 ├── run_e2e_eval.py             # 端到端三层评估 + 特性 A/B（支持多跳/多轮 slice）
 ├── run_rewrite_eval.py         # F12 重写层评估（零 LLM，秒级）
 ├── app/
+│   ├── utils.py                # 零依赖共享工具（extract_json）
 │   ├── ingestion/              # 文档摄入
 │   │   ├── loader.py           # 多格式加载
 │   │   ├── chunker.py          # 智能分块
-│   │   ├── indexer.py          # 层级索引
+│   │   ├── indexer.py          # 层级索引（含 F6a 双集合 + detail_store 切换）
+│   │   ├── contextual.py       # F6a 上下文增强（索引期一次性 LLM）
+│   │   ├── service.py          # 摄入编排（ingest_file / rebuild_enhanced_indexes）
 │   │   └── graph_extractor.py  # 知识图谱抽取（LLM 类型化三元组 + chunk 溯源）
 │   ├── retrieval/              # 检索模块
-│   │   ├── pipeline.py         # ★ RetrievalPipeline 7 阶段统一编排
+│   │   ├── pipeline.py         # ★ RetrievalPipeline 7 阶段统一编排 + search() 复合原语
 │   │   ├── dense.py            # 稠密检索
 │   │   ├── sparse.py           # BM25 稀疏检索
 │   │   ├── graph_retriever.py  # Graph 多跳召回
 │   │   ├── parent_child.py     # Parent-Child 检索
-│   │   ├── fusion.py           # RRF 融合
-│   │   ├── reranker.py         # Cross-Encoder 重排
-│   │   ├── query_transform.py  # 查询改写（Multi-Query/HyDE）
+│   │   ├── fusion.py           # RRF 融合 + chunk_key/dedup_by_chunk_id 去重原语
+│   │   ├── reranker.py         # Cross-Encoder 重排（先查 L2 缓存）
+│   │   ├── autocut.py          # F1 Kneedle 膝点自适应截断
+│   │   ├── query_transform.py  # 查询改写（Multi-Query/HyDE/Refine/F6b Decompose）
 │   │   ├── crag.py             # CRAG 门控/评估/补救
-│   │   └── cache.py            # 语义缓存
+│   │   ├── router.py           # F4 查询路由（is_numeric_question 权威定义）
+│   │   ├── conversation.py     # F12 历史感知查询重写
+│   │   ├── agent.py            # F13 Agentic ReAct 自主检索
+│   │   ├── deadline.py         # 查询级时延预算（全局熔断可选阶段）
+│   │   └── caching.py          # 三级缓存（L1 embedding / L2 rerank / L3 语义响应）
 │   ├── generation/             # 生成模块
-│   │   ├── chain.py            # RAG Chain（薄编排层，委托 pipeline）
+│   │   ├── chain.py            # RAG Chain（薄编排层：_rewrite_and_retrieve/_finalize）
+│   │   ├── faithfulness.py     # F3 忠实度自检（regen_until_faithful 共用循环）
+│   │   ├── citation.py         # F7 引用溯源（embedding 余弦，零 LLM）
+│   │   ├── streaming.py        # F8 投机流式忠实度
+│   │   ├── answer_boost.py     # F10 短答案抽取 + 自一致性
 │   │   └── prompts.py          # Prompt 模板
 │   ├── api/                    # API 层
-│   │   ├── routes.py           # 路由（并发闸门 + SSE）
-│   │   └── schemas.py          # 数据模型
+│   │   ├── routes.py           # 路由（并发闸门 + SSE，HTTP 关切）
+│   │   ├── schemas.py          # 数据模型
+│   │   └── security.py         # F11 API Key 鉴权 + 限流
 │   ├── evaluation/             # 评估模块
 │   │   ├── metrics.py          # RAGAS 指标（LLM-as-Judge）
 │   │   └── dataset.py          # 测试数据集
-│   └── observability/          # 可观测性
+│   └── observability/          # 可观测性（tracing 链路追踪 / metrics 指标注册表）
 ├── frontend/app.py             # Streamlit 前端
 ├── data/sample_docs/           # 示例文档
 └── tests/                      # 单元测试（全离线，mock LLM）

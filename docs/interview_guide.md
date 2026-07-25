@@ -437,9 +437,9 @@ gate(要不要检索) → transform(查询改写) → recall(多路并行召回)
 
 **问题**：端到端 EM=0、F1≈0.35——根因是完整回答冗长、把答案埋在解释里，与短答案 span 对不齐。
 
-**做法**（三件套，均可独立开关）：① **答案聚焦 Prompt**（要求「第一行先用一句话直接给出答案」把答案前置）；② **零 LLM 答案抽取**（数字型抽年份/数值、否则抽首个实质句，写入 `short_answer`）；③ **自适应自一致性**（仅 numeric/factual 短答案型采样 N 次投票，其余跳过保时延，默认关）。
+**做法**（两件套，均可独立开关）：① **零 LLM 答案抽取**（数字型抽年份/数值、否则抽首个实质句，写入 `short_answer`）；② **自适应自一致性**（仅 numeric/factual 短答案型采样 N 次投票，其余跳过保时延，默认关）。早期还有第三件「答案聚焦 Prompt」，2026-07-25 架构收敛时作为无调用方的孤儿代码删除（效果与抽取重叠）。
 
-**面试话术**：「EM=0 不是检索错，是答案没对齐——模型把『1963 年』埋在一长段解释里。我用聚焦 prompt 把答案前置，再零 LLM 抽出 short_answer。冒烟评测里 short_answer 把 EM 从 0 拉到 0.10、F1 从 0.35 拉到 0.52——证明瓶颈确实在『答案表达』而非『检索』。」
+**面试话术**：「EM=0 不是检索错，是答案没对齐——模型把『1963 年』埋在一长段解释里。我零 LLM 抽出 short_answer 把答案 span 对齐到短答案。冒烟评测里 short_answer 把 EM 从 0 拉到 0.10、F1 从 0.35 拉到 0.52——证明瓶颈确实在『答案表达』而非『检索』。」
 
 #### F11 · 可观测性与生产加固（横切）
 
@@ -649,18 +649,18 @@ gate(要不要检索) → transform(查询改写) → recall(多路并行召回)
 | `app/ingestion/loader.py` | 多格式文档加载（PDF/TXT/MD） | 90 |
 | `app/ingestion/chunker.py` | 递归分块 + 语义分块 | 157 |
 | `app/ingestion/indexer.py` | 层级索引（L1摘要 + L2明细） | 253 |
-| `app/ingestion/graph_extractor.py` | 知识图谱抽取（零 LLM） | 649 |
+| `app/ingestion/graph_extractor.py` | 知识图谱抽取（LLM 类型化三元组 + chunk 溯源） | 598 |
 | `app/retrieval/pipeline.py` | ★ RetrievalPipeline 7 阶段统一编排 | 359 |
 | `app/retrieval/dense.py` | 向量检索 | 53 |
 | `app/retrieval/sparse.py` | BM25 + jieba 中文分词 | 123 |
 | `app/retrieval/graph_retriever.py` | Graph 多跳召回 | 363 |
 | `app/retrieval/parent_child.py` | Parent-Child 检索 | 207 |
-| `app/retrieval/fusion.py` | RRF 融合 + 加权融合 | 106 |
+| `app/retrieval/fusion.py` | RRF 融合 + chunk_key/dedup_by_chunk_id 去重原语 | 86 |
 | `app/retrieval/reranker.py` | Cross-Encoder 精排 | 112 |
 | `app/retrieval/query_transform.py` | Multi-Query + HyDE | 134 |
 | `app/retrieval/crag.py` | CRAG 门控/评估/补救 | 191 |
-| `app/retrieval/cache.py` | 语义缓存 | 159 |
-| `app/generation/chain.py` | RAG 薄编排层（委托 pipeline + 生成 + Trace） | 422 |
+| `app/retrieval/caching.py` | 三级缓存（L1 embedding / L2 rerank / L3 语义响应） | 285 |
+| `app/generation/chain.py` | RAG 薄编排层（_rewrite_and_retrieve/_finalize 归一） | 698 |
 | `app/generation/prompts.py` | Prompt 模板 | 61 |
 | `app/observability/tracing.py` | 轻量级 Trace（线程安全） | 146 |
 | `app/api/routes.py` | 全部 API 端点 | 460 |
@@ -678,11 +678,15 @@ gate(要不要检索) → transform(查询改写) → recall(多路并行召回)
 | `run_e2e_eval.py` | ★F5 端到端三层评估 + A/B harness | 290 |
 | `app/generation/citation.py` | ★F7 引用溯源（embedding 余弦，零 LLM） | 150 |
 | `app/generation/streaming.py` | ★F8 投机流式忠实度 | 66 |
-| `app/retrieval/caches.py` | ★F9 多级缓存（L1 embedding + L2 rerank） | 124 |
-| `app/generation/answer_boost.py` | ★F10 答案聚焦/抽取/自一致性 | 138 |
+| `app/generation/answer_boost.py` | ★F10 短答案抽取/自一致性 | 137 |
 | `app/observability/metrics.py` | ★F11 指标注册表（Prometheus+JSON） | 110 |
 | `app/api/security.py` | ★F11 API Key 鉴权 + 限流 | 94 |
-| `app/retrieval/conversation.py` | ★F12 历史感知查询重写 | 140 |
+| `app/retrieval/conversation.py` | ★F12 历史感知查询重写 | 133 |
+| `app/retrieval/agent.py` | ★F13 Agentic ReAct 自主检索 | 344 |
+| `app/retrieval/deadline.py` | 延迟治理：查询级时延预算 | 40 |
+| `app/ingestion/contextual.py` | ★F6a 上下文增强（索引期 LLM） | 88 |
+| `app/ingestion/service.py` | 摄入编排服务层（ingest_file） | 87 |
+| `app/utils.py` | 零依赖共享工具（extract_json） | 24 |
 
 ---
 
