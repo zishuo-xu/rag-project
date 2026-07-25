@@ -97,8 +97,10 @@ class QueryTransformer:
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             temperature=0.7,
-            request_timeout=30,
-            max_retries=2,
+            # 延迟治理（2026-07-26）：30s×2 → 20s×1 + max_tokens 封顶（原无界）
+            request_timeout=20,
+            max_retries=1,
+            max_tokens=512,
             extra_body=get_llm_extra_body(),
         )
         # #7: 查询改写结果缓存 {question: (timestamp, queries)}

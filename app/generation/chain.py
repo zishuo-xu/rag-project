@@ -140,8 +140,11 @@ class RAGChain:
             base_url=settings.openai_base_url,
             temperature=0,
             streaming=True,
-            request_timeout=60,
-            max_retries=2,
+            # 延迟治理（2026-07-26）：60s×2 → 30s×1，消灭超时/重试叠加的离群尾；
+            # max_tokens 封顶防无界长答案拖慢生成
+            request_timeout=30,
+            max_retries=1,
+            max_tokens=settings.answer_max_tokens,
             extra_body=get_llm_extra_body(),
         )
 
@@ -322,12 +325,14 @@ class RAGChain:
         question: str,
         documents: List[Document],
         chat_history: List | None = None,
+        deadline=None,
     ) -> tuple[str, bool | None, float, bool]:
         """
         F3 生成 + 忠实度自检 + 有界严格重生成（invoke / invoke_stream 共用）。
 
         流程：生成答案 → 忠实度检查 → 若不忠实则用 strict prompt 重生成，
         最多 faithfulness_max_regen 次（成本兜底）。检查器关闭或异常时放行。
+        时延预算熔断：超预算跳过重生成（每次重生成 = 2 次串行 LLM）。
 
         Returns:
             (answer, faithful, faithfulness_score, regenerated)
@@ -340,6 +345,9 @@ class RAGChain:
         regenerated = False
         regen_left = self._settings.faithfulness_max_regen
         while fb.faithful is False and regen_left > 0:
+            if deadline is not None and deadline.check_skip("F3_regen"):
+                logger.info("忠实度不足但时延预算耗尽，跳过严格重生成")
+                break
             logger.info(f"忠实度不足(score={fb.score:.2f})，触发严格重生成")
             answer = self.generate(question, documents, chat_history, strict=True)
             regenerated = True
@@ -379,7 +387,8 @@ class RAGChain:
             faithful, fb_score, regenerated = None, 0.0, False
         elif self.faithfulness_checker and retrieval_result.documents:
             answer, faithful, fb_score, regenerated = self._generate_faithful(
-                question, retrieval_result.documents, chat_history
+                question, retrieval_result.documents, chat_history,
+                deadline=retrieval_result.deadline,
             )
         else:
             # 无文档（召回为空）或自检关闭：直接生成，不做忠实度校验
@@ -504,7 +513,8 @@ class RAGChain:
         elif self.faithfulness_checker and retrieval_result.documents:
             # 投机流式关闭：回退旧的阻塞式（先非流式生成+自检，再整体输出）
             full_answer, faithful, fb_score, regenerated = self._generate_faithful(
-                question, retrieval_result.documents, chat_history
+                question, retrieval_result.documents, chat_history,
+                deadline=retrieval_result.deadline,
             )
             yield {"type": "token", "data": full_answer}
         else:

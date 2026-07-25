@@ -83,7 +83,11 @@ class Settings(BaseSettings):
     # F6b 多跳查询分解（仅多跳查询触发；并行优先，依赖时链式）
     use_decomposition: bool = True
     decomposition_max_subquestions: int = 4       # 子问题数上限
-    decomposition_max_hops: int = 3               # 链式分解跳数硬上限
+    decomposition_max_hops: int = 2               # 链式分解跳数硬上限（3→2：每跳界 1 次串行 refine LLM，2026-07-26 延迟治理）
+
+    # 延迟治理（2026-07-26）：全局时延预算，超预算熔断可选阶段（F2 迭代/F3 重生成）
+    latency_budget_ms: int = 25000   # 查询级预算；<=0 关闭（典型路径 ~11s，仅熔断离群尾）
+    answer_max_tokens: int = 1024    # 生成答案 token 封顶（原无界，长答案拖慢生成）
 
     # 并发控制
     max_concurrent_requests: int = 4   # /api/chat 并发闸门

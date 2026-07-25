@@ -11,6 +11,7 @@ from langchain_core.documents import Document
 from config import get_settings
 from app.retrieval.autocut import autocut_truncate
 from app.retrieval.crag import CRAGEvaluator
+from app.retrieval.deadline import Deadline
 from app.retrieval.fusion import reciprocal_rank_fusion
 from app.observability.tracing import get_tracer
 
@@ -46,6 +47,9 @@ class RetrievalResult:
     # F13 Agentic RAG 观测字段
     agent_steps: List[dict] = field(default_factory=list)  # F13: ReAct 决策轨迹
     agent_stop_reason: str = ""                            # F13: agent_done / max_steps / decision_error
+    # 延迟治理观测字段（2026-07-26）
+    budget_skipped: List[str] = field(default_factory=list)  # 时延预算熔断跳过的阶段
+    deadline: object = None                                  # Deadline 实例（供生成层 F3 复用）
 
 
 class RetrievalPipeline:
@@ -402,6 +406,9 @@ class RetrievalPipeline:
         tracer = get_tracer()
 
         result = RetrievalResult(documents=[])
+        # 全局时延预算：可选阶段（F2 迭代/F3 重生成）超预算即跳过，熔断离群尾
+        result.deadline = Deadline(getattr(settings, "latency_budget_ms", 0))
+        result.budget_skipped = result.deadline.skipped  # 同一列表，生成层跳过也记入
 
         # F13 Agentic RAG：开启时由 ReAct agent 自主决策检索（替代固定七阶段）。
         # 任何异常或空证据都降级回下方固定管道，保证回归安全。
@@ -443,44 +450,9 @@ class RetrievalPipeline:
             if trace_id:
                 tracer.end_span(trace_id, "agentic", {"fallback": True})
 
-        # ① 门控 + ② 改写：投机并行（门控 false 时丢弃改写结果，换 2-5s 延迟）
-        if trace_id:
-            tracer.start_span(trace_id, "gate_transform")
-        need_retrieval, gate_reason = True, "门控未启用"
-        speculative = (
-            settings.use_crag_gate
-            and self.crag_evaluator
-            and use_query_transform
-            and self.query_transformer
-        )
-        if speculative:
-            with ThreadPoolExecutor(max_workers=2) as executor:
-                gate_future = executor.submit(self.gate, question)
-                transform_future = executor.submit(
-                    self.transform, question, query_strategy
-                )
-                need_retrieval, gate_reason = gate_future.result()
-                queries = transform_future.result()
-        else:
-            need_retrieval, gate_reason = self.gate(question)
-            queries = self.transform(question, query_strategy, use_query_transform)
-        result.queries_used = queries
-        if trace_id:
-            tracer.end_span(trace_id, "gate_transform", {
-                "need_retrieval": need_retrieval,
-                "gate_reason": gate_reason,
-                "speculative": speculative,
-                "num_queries": len(queries),
-            })
-
-        if not need_retrieval:
-            result.gate_skipped = True
-            result.crag_action = f"门控跳过检索: {gate_reason}"
-            result.retrieval_time_ms = (time.time() - start_time) * 1000
-            logger.info(f"门控跳过检索: {gate_reason}")
-            return result
-
-        # F4 查询路由：按查询类型自适应调整检索深度(top_k)与降噪强度(autocut_min_docs)
+        # F4 查询路由（零 LLM，前置）：按查询类型自适应调整检索深度与降噪强度。
+        # 前置动机（2026-07-26 延迟治理）：multi_hop + 分解开启时投机改写的结果会被
+        # 分解子问题取代（纯浪费的 LLM 调用），路由先行可短路该调用。
         effective_top_k = top_k
         effective_autocut_min = settings.autocut_min_docs
         if settings.use_query_router and self.query_router:
@@ -498,6 +470,55 @@ class RetrievalPipeline:
                     "autocut_min_docs": effective_autocut_min,
                     "reason": decision.reason,
                 })
+
+        # ① 门控 + ② 改写：投机并行（门控 false 时丢弃改写结果，换 2-5s 延迟）。
+        # multi_hop + 分解开启时跳过投机改写（分解路径用子问题，改写结果本就被丢弃）；
+        # 若分解最终未触发，在召回前延迟补跑改写（见下方 not decomposed 分支）。
+        skip_transform = (
+            result.query_type == "multi_hop"
+            and settings.use_decomposition
+            and self.query_transformer is not None
+            and use_query_transform
+        )
+        if trace_id:
+            tracer.start_span(trace_id, "gate_transform")
+        need_retrieval, gate_reason = True, "门控未启用"
+        speculative = (
+            settings.use_crag_gate
+            and self.crag_evaluator
+            and use_query_transform
+            and self.query_transformer
+        )
+        if skip_transform:
+            need_retrieval, gate_reason = self.gate(question)
+            queries = []
+        elif speculative:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                gate_future = executor.submit(self.gate, question)
+                transform_future = executor.submit(
+                    self.transform, question, query_strategy
+                )
+                need_retrieval, gate_reason = gate_future.result()
+                queries = transform_future.result()
+        else:
+            need_retrieval, gate_reason = self.gate(question)
+            queries = self.transform(question, query_strategy, use_query_transform)
+        result.queries_used = queries
+        if trace_id:
+            tracer.end_span(trace_id, "gate_transform", {
+                "need_retrieval": need_retrieval,
+                "gate_reason": gate_reason,
+                "speculative": speculative and not skip_transform,
+                "skip_transform": skip_transform,
+                "num_queries": len(queries),
+            })
+
+        if not need_retrieval:
+            result.gate_skipped = True
+            result.crag_action = f"门控跳过检索: {gate_reason}"
+            result.retrieval_time_ms = (time.time() - start_time) * 1000
+            logger.info(f"门控跳过检索: {gate_reason}")
+            return result
 
         # F6b 多跳查询分解：仅 multi_hop 且开启分解时触发；分解出 >1 子问题才走分解合并
         use_decomp = (
@@ -525,6 +546,10 @@ class RetrievalPipeline:
                     })
 
         if not decomposed:
+            # multi_hop 跳过了投机改写但分解未触发 → 延迟补跑，不丢召回质量
+            if not queries:
+                queries = self.transform(question, query_strategy, use_query_transform)
+                result.queries_used = queries
             # ③ 多路召回
             if trace_id:
                 tracer.start_span(trace_id, "multi_recall")
@@ -576,23 +601,29 @@ class RetrievalPipeline:
             result.crag_grade = grade
 
             if settings.use_iterative_retrieval and self.query_transformer:
-                # F2 Self-RAG 迭代检索：correct/ambiguous/incorrect 统一走质量驱动迭代
-                final_docs, iters, stop_reason, final_grade = self._iterative_retrieve(
-                    question, result.documents, effective_top_k,
-                    grade, reason, trace_id=trace_id,
-                )
-                result.documents = final_docs
-                result.iterations_used = iters
-                result.iterative_stop_reason = stop_reason
-                # 仅当确实由非 correct 转为 correct 才标 recovered；首检即 correct 保持 correct
-                result.crag_grade = (
-                    "recovered" if (final_grade == "correct" and grade != "correct")
-                    else final_grade
-                )
-                result.crag_action = (
-                    f"Self-RAG 迭代检索({stop_reason}, {iters}轮)"
-                    if iters > 0 else f"Self-RAG 评估({stop_reason})"
-                )
+                # F2 Self-RAG 迭代检索：correct/ambiguous/incorrect 统一走质量驱动迭代。
+                # 时延预算熔断：超预算整体跳过（迭代是最多 4 次串行 LLM 的可选增强）
+                if result.deadline.check_skip("F2_iterative"):
+                    result.iterative_stop_reason = "budget_skipped"
+                    result.crag_action = "时延预算耗尽，跳过迭代检索"
+                    logger.info("F2 迭代检索被时延预算熔断跳过")
+                else:
+                    final_docs, iters, stop_reason, final_grade = self._iterative_retrieve(
+                        question, result.documents, effective_top_k,
+                        grade, reason, trace_id=trace_id,
+                    )
+                    result.documents = final_docs
+                    result.iterations_used = iters
+                    result.iterative_stop_reason = stop_reason
+                    # 仅当确实由非 correct 转为 correct 才标 recovered；首检即 correct 保持 correct
+                    result.crag_grade = (
+                        "recovered" if (final_grade == "correct" and grade != "correct")
+                        else final_grade
+                    )
+                    result.crag_action = (
+                        f"Self-RAG 迭代检索({stop_reason}, {iters}轮)"
+                        if iters > 0 else f"Self-RAG 评估({stop_reason})"
+                    )
             elif grade == "incorrect":
                 logger.info(f"CRAG: 检索不相关（{reason}），触发 HyDE 完整管道重检索")
                 retry_docs = self.remediate(question, effective_top_k, trace_id=trace_id)

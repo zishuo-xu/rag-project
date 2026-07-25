@@ -13,4 +13,4 @@ def test_f6b_defaults():
     s = Settings()
     assert s.use_decomposition is True
     assert s.decomposition_max_subquestions == 4
-    assert s.decomposition_max_hops == 3
+    assert s.decomposition_max_hops == 2  # 3→2：延迟治理（2026-07-26），每跳省 1 次串行 refine
