@@ -32,11 +32,23 @@ ACTIONS = ("search", "decompose", "grade", "finish")
 
 DECISION_PROMPT = """你是一个检索智能体，通过调用工具为用户问题收集证据。
 
-可用工具：
-- search(query)：用给定查询检索知识库（多路召回+精排）。query 可与原问题不同（改写/精化）。
-- decompose()：把需要跨多个事实拼接答案的多跳问题拆成子问题分别检索并合并。
-- grade()：评估当前已收集的证据是否足以回答问题。
-- finish()：证据已足够，结束检索。
+可用工具（严格按条件使用）：
+- search(query)：用给定查询检索知识库。query 可与原问题不同，但**禁止与已执行查询重复或语义雷同**。
+- decompose()：当问题需要**组合两个或以上事实/实体**才能回答时（如"A和B分别…""X的那个Y在哪里""先…还是…"），**优先使用**，拆成子问题分别检索后合并。
+- grade()：评估当前证据是否足以回答问题；search 之后建议调用一次。
+- finish()：已有 ≥1 篇相关证据时**立即结束**，不要无目的重复 search。
+
+示例1（单事实查询）：
+问题：范廷颂哪一年成为主教？
+{{"thought": "单事实查询，直接检索", "action": "search", "args": {{"query": "范廷颂 任命 主教"}}}}
+（观察：search 返回 5 篇证据，含 1963 年任命信息）
+{{"thought": "证据已含答案", "action": "finish", "args": {{}}}}
+
+示例2（需组合两个事实）：
+问题：范廷颂担任总主教的那个教区在哪里？
+{{"thought": "需先定位教区名称再找位置，两个事实，优先分解", "action": "decompose", "args": {{}}}}
+（观察：decompose 拆出 2 个子问题，合并 8 篇证据）
+{{"thought": "证据充分", "action": "finish", "args": {{}}}}
 
 当前问题：{question}
 已执行步骤：
@@ -91,6 +103,7 @@ class AgenticRetriever:
         result = AgentResult()
         evidence: List[Document] = []
         evidence_ids: set = set()
+        consecutive_empty_search = 0  # 连续零新增 search 计数（收敛护栏）
 
         for step_num in range(1, settings.agentic_max_steps + 1):
             decision = self._decide(question, result.steps, evidence)
@@ -113,11 +126,23 @@ class AgenticRetriever:
             docs, observation = self._execute(step, question, top_k, evidence, result)
             step.observation = observation
             logger.info(f"F13 step {step_num}: {step.action} {step.args} -> {observation[:60]}")
+            new_count = 0
             for d in docs:
                 key = d.metadata.get("chunk_id", id(d))
                 if key not in evidence_ids:
                     evidence_ids.add(key)
                     evidence.append(d)
+                    new_count += 1
+
+            # 零 LLM 收敛护栏：连续两次 search 零新增证据 → 强制停止（复用 F2 收敛概念）
+            if step.action == "search":
+                consecutive_empty_search = consecutive_empty_search + 1 if new_count == 0 else 0
+                if consecutive_empty_search >= 2:
+                    step.observation += "（连续两次检索零新增证据，强制收敛停止）"
+                    result.stop_reason = "converged"
+                    break
+            else:
+                consecutive_empty_search = 0
 
         else:
             result.stop_reason = "max_steps"
@@ -127,8 +152,8 @@ class AgenticRetriever:
 
         # 证据重排压缩到 top_k（复用管道重排，异常时直接截断）
         result.documents = self._final_rerank(question, evidence, top_k)
-        # 空证据标 no_evidence，但不覆盖更具诊断价值的 decision_error
-        if not result.documents and result.stop_reason != "decision_error":
+        # 空证据标 no_evidence，但不覆盖更具诊断价值的 decision_error / converged
+        if not result.documents and result.stop_reason in ("agent_done", "max_steps"):
             result.stop_reason = "no_evidence"
         logger.info(
             f"F13 agentic 检索完成: steps={len(result.steps)} "
@@ -200,13 +225,17 @@ class AgenticRetriever:
 
     def _tool_search(self, step, question, top_k, result) -> tuple[List[Document], str]:
         query = (step.args.get("query") or "").strip() or question
+        duplicate = query in result.queries_used
         result.queries_used.append(query)
         pipeline = self._pipeline
         recall_results = pipeline.recall(question, [query], top_n=top_k)
         fused = pipeline.fuse(recall_results)
         docs = pipeline.rerank(question, fused, top_k)
         snippet = docs[0].page_content[:80] if docs else ""
-        return docs, f"search('{query}') 返回 {len(docs)} 篇证据。首篇摘要: {snippet}"
+        observation = f"search('{query}') 返回 {len(docs)} 篇证据。首篇摘要: {snippet}"
+        if duplicate:
+            observation += "（警告：该查询已执行过，请改用 decompose/grade 或 finish）"
+        return docs, observation
 
     def _tool_decompose(self, question, top_k, result) -> tuple[List[Document], str]:
         pipeline = self._pipeline

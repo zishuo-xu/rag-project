@@ -208,6 +208,58 @@ def test_evidence_dedup_across_steps():
     assert len(result.documents) == 1  # 按 chunk_id 去重
 
 
+# ============ 收敛护栏与重复查询警告（F13 prompt 优化） ============
+
+def test_converged_stop_after_two_empty_searches():
+    """连续两次 search 零新增证据 → 强制收敛停止，不再消耗 max_steps。"""
+    p = _pipeline()
+    p.recall.return_value = {"dense": [], "sparse": []}
+    p.fuse.return_value = []
+    p.rerank.return_value = []  # 所有 search 都返回空
+    agent = AgenticRetriever(p, llm=_llm([
+        '{"action": "search", "args": {"query": "q1"}}',
+        '{"action": "search", "args": {"query": "q2"}}',
+        '{"action": "search", "args": {"query": "q3"}}',  # 不应执行到
+        '{"action": "search", "args": {"query": "q4"}}',
+    ]), settings=_settings(max_steps=4))
+    result = agent.run("问题")
+    assert result.stop_reason == "converged"
+    assert len(result.steps) == 2  # 两次空 search 即停
+
+
+def test_no_converged_stop_when_new_evidence_arrives():
+    """search 有新增证据则重置收敛计数，继续循环。"""
+    p = _pipeline()  # 每次返回同一篇 → 第一次有新增，第二次起零新增
+    agent = AgenticRetriever(p, llm=_llm([
+        '{"action": "search", "args": {"query": "q1"}}',   # +1 新证据
+        '{"action": "search", "args": {"query": "q2"}}',   # 0 新增（重复 chunk）
+        '{"action": "search", "args": {"query": "q3"}}',   # 0 新增 → converged
+        '{"action": "search", "args": {"query": "q4"}}',   # 不应执行
+    ]), settings=_settings(max_steps=4))
+    result = agent.run("问题")
+    assert result.stop_reason == "converged"
+    assert len(result.steps) == 3
+
+
+def test_duplicate_query_warns_in_observation():
+    """重复语义的查询（与已执行完全相同）在 observation 中被警告，引导 finish。"""
+    agent = AgenticRetriever(_pipeline(), llm=_llm([
+        '{"action": "search", "args": {"query": "相同查询"}}',
+        '{"action": "search", "args": {"query": "相同查询"}}',
+        '{"action": "finish", "args": {}}',
+    ]), settings=_settings())
+    result = agent.run("问题")
+    assert "已执行过" in result.steps[1].observation
+
+
+def test_prompt_has_fewshot_and_decompose_condition():
+    """prompt v2：含 few-shot 示例与 decompose 硬条件、finish 引导。"""
+    from app.retrieval.agent import DECISION_PROMPT
+    assert "示例" in DECISION_PROMPT
+    assert "两个或以上事实" in DECISION_PROMPT
+    assert "finish" in DECISION_PROMPT
+
+
 # ============ 管道接线（降级链） ============
 
 def _real_pipeline(settings, **kwargs):

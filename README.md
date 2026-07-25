@@ -102,7 +102,7 @@
 
 护栏：max_steps=4 硬上限 / 决策解析失败即停 / 工具异常写入 observation / **整体异常或空证据降级回七阶段管道**。默认关（`use_agentic=False`），每步 1 次小 token 决策调用（256 tokens / 15s 超时）。
 
-**实测**（15 条多跳集，详见 [F13 验证报告](./docs/superpowers/reports/2026-07-25-f13-agentic-validation.md)）：F1 **0.255→0.283+（四种模式最优）**，延迟 +20%；诚实发现 agent 过度检索（10/15 打满步数）且工具选择 search 主导、跨运行不稳定——prompt 工程引导是下一步。
+**实测**（15 条多跳集，详见 [F13 验证报告](./docs/superpowers/reports/2026-07-25-f13-agentic-validation.md) 与 [Prompt/路由优化报告](./docs/superpowers/reports/2026-07-26-prompt-router-optimization-report.md)）：F1 **0.255→0.283+（四种模式最优）**，延迟 +20%。首轮诚实发现 agent 过度检索（10/15 打满步数）、search 主导（43/52 次决策）、decompose 仅 3 次且跨运行不稳定。**Prompt v2 优化后**（硬工具条件 + 2 条 few-shot + 连续空检索收敛护栏 + 重复查询警告）：decompose 稳定触发 **3→13/14 次**、F1 **0.286→0.298**、主动结束率 5/15→7/15（两次复跑）；代价是分解 LLM 调用使延迟升至 ~12.5s——工具选择行为可用 prompt 工程引导，但 finish 率仍未达 50%，如实记录为开放项。同期修复 F4 路由 multi_hop 召回（1/15→14/15，CMRC 误判维持 3/31），full 模式 F6b 分解触发 1/15→14/15、F1 0.276→0.289。
 
 ```bash
 uv run python run_e2e_eval.py --dataset data/eval_multihop.json --only F13   # 多跳集 agentic 评估
