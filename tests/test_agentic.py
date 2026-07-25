@@ -190,10 +190,12 @@ def test_tool_exception_becomes_observation():
     p.recall.side_effect = RuntimeError("chroma down")
     agent = AgenticRetriever(p, llm=_llm([
         '{"action": "search", "args": {"query": "q"}}',
-        '{"action": "finish", "args": {}}',
+        '{"action": "finish", "args": {}}',   # 空手 finish → 驳回一次（v3 门控）
+        '{"action": "finish", "args": {}}',   # 二次 finish → 接受
     ]), settings=_settings())
     result = agent.run("问题")
     assert "chroma down" in result.steps[0].observation
+    assert "拒绝" in result.steps[1].observation
     assert result.stop_reason == "no_evidence"  # 工具失败无证据
 
 
@@ -257,7 +259,99 @@ def test_prompt_has_fewshot_and_decompose_condition():
     from app.retrieval.agent import DECISION_PROMPT
     assert "示例" in DECISION_PROMPT
     assert "两个或以上事实" in DECISION_PROMPT
-    assert "finish" in DECISION_PROMPT
+
+
+# ============ 收敛优化 v3：信号可见 + finish 门控（2026-07-26） ============
+
+def test_prompt_includes_step_budget_and_rules():
+    """决策 prompt 含步数预算（第 i/N 步）与最后一步必停/新增0即收敛规则。"""
+    from app.retrieval.agent import DECISION_PROMPT
+    assert "最后一步" in DECISION_PROMPT
+    assert "新增为 0" in DECISION_PROMPT
+    llm = _llm([
+        '{"action": "search", "args": {"query": "q"}}',
+        '{"action": "finish", "args": {}}',
+    ])
+    agent = AgenticRetriever(_pipeline(), llm=llm, settings=_settings(max_steps=4))
+    agent.run("问题")
+    prompts = [c.args[0] for c in llm.invoke.call_args_list]
+    assert "第 1/4 步" in prompts[0]
+    assert "第 2/4 步" in prompts[1]
+
+
+def test_search_observation_shows_new_count_prefix():
+    """search observation 前缀展示真实新增量与累计量（前缀位置不被百字截断裁掉）。"""
+    agent = AgenticRetriever(_pipeline(), llm=_llm([
+        '{"action": "search", "args": {"query": "q1"}}',
+        '{"action": "search", "args": {"query": "q2"}}',
+        '{"action": "finish", "args": {}}',
+    ]), settings=_settings())
+    result = agent.run("问题")
+    assert result.steps[0].observation.startswith("[新增1篇/累计1]")
+    assert result.steps[1].observation.startswith("[新增0篇/累计1]")
+
+
+def test_finish_rejected_without_evidence_then_accepted():
+    """零证据首次 finish 被驳回一次；取到证据后 finish 正常接受。"""
+    agent = AgenticRetriever(_pipeline(), llm=_llm([
+        '{"action": "finish", "args": {}}',          # 空手 finish → 驳回
+        '{"action": "search", "args": {"query": "q"}}',
+        '{"action": "finish", "args": {}}',          # 有证据 → 接受
+    ]), settings=_settings())
+    result = agent.run("问题")
+    assert "拒绝" in result.steps[0].observation
+    assert result.stop_reason == "agent_done"
+    assert len(result.steps) == 3
+    assert len(result.documents) == 1
+
+
+def test_second_finish_without_evidence_accepted():
+    """二次 finish 即使仍无证据也接受（防无限循环），空证据覆写为 no_evidence。"""
+    agent = AgenticRetriever(_pipeline(), llm=_llm([
+        '{"action": "finish", "args": {}}',
+        '{"action": "finish", "args": {}}',
+    ]), settings=_settings())
+    result = agent.run("问题")
+    assert len(result.steps) == 2
+    assert result.stop_reason == "no_evidence"  # agent_done → 空证据覆写
+
+
+def test_finish_not_rejected_on_last_step():
+    """最后一步的空手 finish 不驳回（已是最后机会），交由 no_evidence 覆写语义。"""
+    agent = AgenticRetriever(_pipeline(), llm=_llm([
+        '{"action": "finish", "args": {}}',
+    ]), settings=_settings(max_steps=1))
+    result = agent.run("问题")
+    assert len(result.steps) == 1
+    assert "拒绝" not in result.steps[0].observation
+    assert result.stop_reason == "no_evidence"
+
+
+def test_evidence_format_includes_grade_and_streak():
+    """证据摘要附带 grade 与连续零新增步数（LLM 可见收敛信号）。"""
+    out = AgenticRetriever._format_evidence(
+        [Document(page_content="证据文本", metadata={})],
+        grade="correct", empty_streak=1,
+    )
+    assert "grade=correct" in out
+    assert "连续 1 步零新增" in out
+    # 无 grade / 无 streak 时不显示噪声子句
+    plain = AgenticRetriever._format_evidence([Document(page_content="x", metadata={})])
+    assert "grade=" not in plain
+    assert "零新增" not in plain
+
+
+def test_grade_observation_includes_relevant_count():
+    """grade observation 附相关文档数（scores 不再丢弃）。"""
+    p = _pipeline()
+    p.evaluate.return_value = ("ambiguous", [1, 1, 0], "部分相关")
+    agent = AgenticRetriever(p, llm=_llm([
+        '{"action": "search", "args": {"query": "q"}}',
+        '{"action": "grade", "args": {}}',
+        '{"action": "finish", "args": {}}',
+    ]), settings=_settings())
+    result = agent.run("问题")
+    assert "相关 2/" in result.steps[1].observation
 
 
 # ============ 管道接线（降级链） ============

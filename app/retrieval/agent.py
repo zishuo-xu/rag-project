@@ -36,21 +36,22 @@ DECISION_PROMPT = """你是一个检索智能体，通过调用工具为用户�
 - search(query)：用给定查询检索知识库。query 可与原问题不同，但**禁止与已执行查询重复或语义雷同**。
 - decompose()：当问题需要**组合两个或以上事实/实体**才能回答时（如"A和B分别…""X的那个Y在哪里""先…还是…"），**优先使用**，拆成子问题分别检索后合并。
 - grade()：评估当前证据是否足以回答问题；search 之后建议调用一次。
-- finish()：已有 ≥1 篇相关证据时**立即结束**，不要无目的重复 search。
+- finish()：已有 ≥1 篇相关证据时**立即结束**；observation 中**新增为 0** 说明检索已收敛，应 finish 或改用 decompose/grade，不要无目的重复 search；**最后一步无论证据如何都必须 finish**。
 
 示例1（单事实查询）：
 问题：范廷颂哪一年成为主教？
 {{"thought": "单事实查询，直接检索", "action": "search", "args": {{"query": "范廷颂 任命 主教"}}}}
-（观察：search 返回 5 篇证据，含 1963 年任命信息）
+（观察：[新增5篇/累计5] search 返回 5 篇证据，含 1963 年任命信息）
 {{"thought": "证据已含答案", "action": "finish", "args": {{}}}}
 
 示例2（需组合两个事实）：
 问题：范廷颂担任总主教的那个教区在哪里？
 {{"thought": "需先定位教区名称再找位置，两个事实，优先分解", "action": "decompose", "args": {{}}}}
-（观察：decompose 拆出 2 个子问题，合并 8 篇证据）
+（观察：[新增8篇/累计8] decompose 拆出 2 个子问题，合并 8 篇证据）
 {{"thought": "证据充分", "action": "finish", "args": {{}}}}
 
 当前问题：{question}
+进度：第 {step_num}/{max_steps} 步
 已执行步骤：
 {history}
 当前证据摘要：
@@ -74,7 +75,7 @@ class AgentResult:
     """agent 检索结果：证据文档 + 决策轨迹"""
     documents: List[Document] = field(default_factory=list)
     steps: List[AgentStep] = field(default_factory=list)
-    stop_reason: str = ""            # agent_done / max_steps / decision_error / no_evidence
+    stop_reason: str = ""            # agent_done / max_steps / decision_error / converged / no_evidence
     decomposed_subqueries: List[str] = field(default_factory=list)
     decomposition_chain: bool = False
     queries_used: List[str] = field(default_factory=list)
@@ -104,9 +105,15 @@ class AgenticRetriever:
         evidence: List[Document] = []
         evidence_ids: set = set()
         consecutive_empty_search = 0  # 连续零新增 search 计数（收敛护栏）
+        finish_rejected = False       # 空手 finish 只驳回一次，防无限循环
 
         for step_num in range(1, settings.agentic_max_steps + 1):
-            decision = self._decide(question, result.steps, evidence)
+            decision = self._decide(
+                question, result.steps, evidence,
+                step_num, settings.agentic_max_steps,
+                grade=result.crag_grade,
+                empty_streak=consecutive_empty_search,
+            )
             if decision is None:
                 result.stop_reason = "decision_error"
                 break
@@ -119,6 +126,15 @@ class AgenticRetriever:
             result.steps.append(step)
 
             if step.action == "finish":
+                # finish 门控：空手 finish 驳回一次给纠错机会（最后一步除外，已是最后机会）
+                if (
+                    not evidence
+                    and not finish_rejected
+                    and step_num < settings.agentic_max_steps
+                ):
+                    step.observation = "尚无证据，拒绝结束：请先 search 或 decompose 收集证据"
+                    finish_rejected = True
+                    continue
                 step.observation = "agent 判定证据充分"
                 result.stop_reason = "agent_done"
                 break
@@ -133,6 +149,11 @@ class AgenticRetriever:
                     evidence_ids.add(key)
                     evidence.append(d)
                     new_count += 1
+            # 新增量前缀：让 LLM 看到真实收敛信号（前缀位置不被 history 百字截断裁掉）
+            if step.action in ("search", "decompose"):
+                step.observation = (
+                    f"[新增{new_count}篇/累计{len(evidence)}] " + step.observation
+                )
 
             # 零 LLM 收敛护栏：连续两次 search 零新增证据 → 强制停止（复用 F2 收敛概念）
             if step.action == "search":
@@ -164,15 +185,29 @@ class AgenticRetriever:
     # ---- 决策节点（LLM，JSON 输出，失败即停） ----
 
     def _decide(
-        self, question: str, steps: List[AgentStep], evidence: List[Document]
+        self,
+        question: str,
+        steps: List[AgentStep],
+        evidence: List[Document],
+        step_num: int,
+        max_steps: int,
+        grade: str = "",
+        empty_streak: int = 0,
     ) -> Optional[dict]:
-        """调 LLM 产出下一步决策。任何异常/解析失败返回 None（触发 decision_error 终止）。"""
+        """调 LLM 产出下一步决策。任何异常/解析失败返回 None（触发 decision_error 终止）。
+
+        step_num/max_steps 使 LLM 感知步数预算；grade/empty_streak 使收敛信号可见。
+        """
         try:
             llm = self._get_llm()
             prompt = DECISION_PROMPT.format(
                 question=question,
+                step_num=step_num,
+                max_steps=max_steps,
                 history=self._format_history(steps),
-                evidence=self._format_evidence(evidence),
+                evidence=self._format_evidence(
+                    evidence, grade=grade, empty_streak=empty_streak
+                ),
             )
             out = llm.invoke(prompt)
             content = getattr(out, "content", str(out)).strip()
@@ -253,9 +288,10 @@ class AgenticRetriever:
     def _tool_grade(self, question, evidence, result) -> tuple[List[Document], str]:
         if not self._pipeline.crag_evaluator:
             return [], "grade 不可用（无 crag_evaluator）"
-        grade, _, reason = self._pipeline.evaluate(question, evidence)
+        grade, scores, reason = self._pipeline.evaluate(question, evidence)
         result.crag_grade = grade
-        return [], f"grade 评估: {grade}（{reason}）"
+        relevant = sum(1 for s in scores if s and s > 0)
+        return [], f"grade 评估: {grade}（{reason}），相关 {relevant}/{len(evidence)} 篇"
 
     # ---- 收尾 ----
 
@@ -281,12 +317,23 @@ class AgenticRetriever:
         )
 
     @staticmethod
-    def _format_evidence(evidence: List[Document], max_docs: int = 3) -> str:
+    def _format_evidence(
+        evidence: List[Document],
+        max_docs: int = 3,
+        grade: str = "",
+        empty_streak: int = 0,
+    ) -> str:
         if not evidence:
             return "（尚无证据）"
-        return "\n".join(
-            f"- {d.page_content[:100]}" for d in evidence[:max_docs]
-        ) + (f"\n（共 {len(evidence)} 篇）" if len(evidence) > max_docs else "")
+        lines = [f"- {d.page_content[:100]}" for d in evidence[:max_docs]]
+        # 状态行：把已计算的收敛信号（grade/连续零新增）暴露给 LLM，零新增 LLM 调用
+        status = [f"共 {len(evidence)} 篇"]
+        if grade:
+            status.append(f"grade={grade}")
+        if empty_streak:
+            status.append(f"连续 {empty_streak} 步零新增")
+        lines.append("（" + "｜".join(status) + "）")
+        return "\n".join(lines)
 
     def _get_llm(self):
         """决策 LLM：注入优先；否则按配置自建（小 token 预算 + 短超时）。"""
