@@ -16,11 +16,10 @@ import logging
 from typing import List, Optional
 
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.ingestion.graph_extractor import get_graph_builder, KnowledgeGraphBuilder
 
 logger = logging.getLogger(__name__)
@@ -51,15 +50,7 @@ class GraphRetriever:
         settings = get_settings()
         self.graph_builder = graph_builder or get_graph_builder()
         # #17: LLM 添加超时和重试
-        self.llm = llm or ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            temperature=0,
-            request_timeout=30,
-            max_retries=2,
-            extra_body=get_llm_extra_body(),
-        )
+        self.llm = llm or build_chat_llm(timeout=30, retries=2)
         self.max_hops = settings.graph_max_hops
         self.max_entities = settings.graph_max_entities
 

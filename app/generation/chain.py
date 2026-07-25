@@ -7,10 +7,9 @@ from typing import List, Generator
 
 import numpy as np
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.ingestion.indexer import HierarchicalIndexer
 from app.retrieval.dense import DenseRetriever
 from app.retrieval.sparse import SparseRetriever
@@ -143,18 +142,13 @@ class RAGChain:
         self.use_graph = use_graph and settings.graph_enabled
         self.query_strategy = query_strategy
 
-        self.llm = ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            temperature=0,
+        self.llm = build_chat_llm(
             streaming=True,
             # 延迟治理（2026-07-26）：60s×2 → 30s×1，消灭超时/重试叠加的离群尾；
             # max_tokens 封顶防无界长答案拖慢生成
-            request_timeout=30,
-            max_retries=1,
+            timeout=30,
+            retries=1,
             max_tokens=settings.answer_max_tokens,
-            extra_body=get_llm_extra_body(),
         )
 
         # 检索管道（七阶段，可独立测试）

@@ -24,7 +24,7 @@ from typing import List, Optional
 
 from langchain_core.documents import Document
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.retrieval.fusion import chunk_key
 
 logger = logging.getLogger(__name__)
@@ -337,13 +337,8 @@ class AgenticRetriever:
         """决策 LLM：注入优先；否则按配置自建（小 token 预算 + 短超时）。"""
         if self.llm is not None and self.llm is not True:
             return self.llm
-        from langchain_openai import ChatOpenAI
         s = self._settings
-        self.llm = ChatOpenAI(
-            model=s.openai_model, api_key=s.openai_api_key,
-            base_url=s.openai_base_url, temperature=0,
-            max_tokens=s.agentic_decision_max_tokens,
-            request_timeout=15, max_retries=1,
-            extra_body=get_llm_extra_body(),
+        self.llm = build_chat_llm(
+            max_tokens=s.agentic_decision_max_tokens, timeout=15, retries=1
         )
         return self.llm

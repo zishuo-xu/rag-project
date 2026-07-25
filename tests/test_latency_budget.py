@@ -136,13 +136,13 @@ def test_router_first_keeps_transform_for_single_hop():
 
 def test_query_transform_llm_budget_capped():
     """改写 LLM：max_tokens=512 封顶 + 超时 20s + 重试 1 次（原 30s/2 次/无界）。"""
-    with patch("app.retrieval.query_transform.ChatOpenAI") as m:
+    with patch("app.retrieval.query_transform.build_chat_llm") as m:
         from app.retrieval.query_transform import QueryTransformer
         QueryTransformer()
         kw = m.call_args.kwargs
         assert kw["max_tokens"] == 512
-        assert kw["request_timeout"] == 20
-        assert kw["max_retries"] == 1
+        assert kw["timeout"] == 20
+        assert kw["retries"] == 1
 
 
 # ============ F3 重生成预算熔断 ============

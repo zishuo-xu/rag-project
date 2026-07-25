@@ -4,13 +4,12 @@ import logging
 import time
 from typing import List
 
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from dataclasses import dataclass, field
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.utils import extract_json
 
 logger = logging.getLogger(__name__)
@@ -90,18 +89,13 @@ class QueryTransformer:
     """
 
     def __init__(self, llm=None):
-        settings = get_settings()
         # #17: LLM 添加超时和重试
-        self.llm = llm or ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
+        self.llm = llm or build_chat_llm(
             temperature=0.7,
             # 延迟治理（2026-07-26）：30s×2 → 20s×1 + max_tokens 封顶（原无界）
-            request_timeout=20,
-            max_retries=1,
+            timeout=20,
+            retries=1,
             max_tokens=512,
-            extra_body=get_llm_extra_body(),
         )
         # #7: 查询改写结果缓存 {question: (timestamp, queries)}
         self._transform_cache: dict[str, tuple[float, List[str]]] = {}

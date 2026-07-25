@@ -12,9 +12,8 @@ from typing import List, Optional
 
 from langchain_core.documents import Document
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +31,8 @@ CONTEXT_PROMPT = ChatPromptTemplate.from_template(
 )
 
 
-def _get_llm() -> ChatOpenAI:
-    settings = get_settings()
-    return ChatOpenAI(
-        model=settings.openai_model,
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        temperature=0,
-        request_timeout=30,
-        max_retries=2,
-        extra_body=get_llm_extra_body(),
-    )
+def _get_llm():
+    return build_chat_llm(timeout=30, retries=2)
 
 
 def generate_chunk_context(

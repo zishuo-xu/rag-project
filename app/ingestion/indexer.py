@@ -4,10 +4,9 @@ import logging
 from typing import List, Optional
 
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +31,10 @@ def get_embeddings():
         )
 
 
-def get_llm() -> ChatOpenAI:
+def get_llm():
     """获取 OpenAI LLM 实例"""
-    settings = get_settings()
     # #17: LLM 添加超时和重试
-    return ChatOpenAI(
-        model=settings.openai_model,
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
-        temperature=0,
-        request_timeout=60,
-        max_retries=2,
-        extra_body=get_llm_extra_body(),
-    )
+    return build_chat_llm(timeout=60, retries=2)
 
 
 def generate_document_summary(documents: List[Document], llm=None) -> str:

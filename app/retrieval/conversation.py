@@ -13,7 +13,7 @@ import logging
 import re
 from typing import List, Optional, Tuple
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 
 logger = logging.getLogger(__name__)
 
@@ -112,16 +112,9 @@ class ConversationRewriter:
     def _llm_rewrite(self, question: str, history: List, topic: str) -> str:
         """LLM 指代消解；任何异常返回空串（触发启发式回退）。"""
         try:
-            from langchain_openai import ChatOpenAI
             llm = self.llm
             if llm is True:  # 占位：允许注入 True 时按配置自建
-                s = self._settings
-                llm = ChatOpenAI(
-                    model=s.openai_model, api_key=s.openai_api_key,
-                    base_url=s.openai_base_url, temperature=0, max_tokens=64,
-                    request_timeout=15, max_retries=1,
-                    extra_body=get_llm_extra_body(),
-                )
+                llm = build_chat_llm(max_tokens=64, timeout=15, retries=1)
             hist_text = "\n".join(
                 f"{_msg_role_content(m)[0]}: {_msg_role_content(m)[1]}"
                 for m in history[-4:]

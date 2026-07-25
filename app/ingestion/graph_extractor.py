@@ -19,11 +19,10 @@ from typing import Callable, List, Optional
 
 import networkx as nx
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +74,7 @@ class KnowledgeGraphBuilder:
 
     def __init__(self, llm=None):
         settings = get_settings()
-        self.llm = llm or ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            temperature=0,
-            extra_body=get_llm_extra_body(),
-        )
+        self.llm = llm or build_chat_llm()
         self.graph = nx.DiGraph()
         self.persist_path = Path(settings.graph_persist_path)
         self.meta_path = self.persist_path.with_suffix(".meta.json")

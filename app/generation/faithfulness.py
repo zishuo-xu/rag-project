@@ -10,9 +10,8 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.utils import extract_json
 from app.generation.prompts import FAITHFULNESS_CHECK_PROMPT
 
@@ -83,16 +82,7 @@ class FaithfulnessChecker:
             threshold if threshold is not None else settings.faithfulness_threshold
         )
         # 沿用项目模式：LLM 带 timeout/retry，关闭思考模式
-        self.llm = llm or ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            temperature=0,
-            max_tokens=512,
-            request_timeout=30,
-            max_retries=2,
-            extra_body=get_llm_extra_body(),
-        )
+        self.llm = llm or build_chat_llm(max_tokens=512, timeout=30, retries=2)
 
     def check(
         self, question: str, context_docs: List[Document], answer: str

@@ -5,9 +5,8 @@ import re
 from typing import List, Tuple
 
 from langchain_core.documents import Document
-from langchain_openai import ChatOpenAI
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, build_chat_llm
 from app.retrieval.router import is_numeric_question
 from app.utils import extract_json
 
@@ -56,16 +55,7 @@ class CRAGEvaluator:
     def __init__(self):
         settings = get_settings()
         # #17: LLM 添加超时和重试
-        self.llm = ChatOpenAI(
-            model=settings.openai_model,
-            api_key=settings.openai_api_key,
-            base_url=settings.openai_base_url,
-            temperature=0,
-            max_tokens=256,
-            request_timeout=30,
-            max_retries=2,
-            extra_body=get_llm_extra_body(),
-        )
+        self.llm = build_chat_llm(max_tokens=256, timeout=30, retries=2)
         self.threshold = settings.crag_relevance_threshold
 
     def should_retrieve(self, question: str) -> Tuple[bool, str]:

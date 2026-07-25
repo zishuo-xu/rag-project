@@ -3,6 +3,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
+from langchain_openai import ChatOpenAI
+
 
 class Settings(BaseSettings):
     """应用配置，优先从环境变量读取，否则使用默认值"""
@@ -155,3 +157,34 @@ def get_llm_extra_body() -> dict | None:
     if get_settings().llm_thinking_enabled:
         return None
     return {"thinking": {"type": "disabled"}}
+
+
+def build_chat_llm(
+    *,
+    temperature: float = 0,
+    timeout: float | None = None,
+    retries: int | None = None,
+    max_tokens: int | None = None,
+    streaming: bool = False,
+) -> ChatOpenAI:
+    """Chat LLM 构造唯一入口：model/key/base_url/extra_body 统一收口。
+
+    各调用点显式传自己的 timeout/retries/max_tokens（None=不传，沿用
+    ChatOpenAI 默认），保留 2026-07-26 延迟治理的逐点参数差异，不做统一默认。
+    """
+    settings = get_settings()
+    kwargs: dict = {
+        "model": settings.openai_model,
+        "api_key": settings.openai_api_key,
+        "base_url": settings.openai_base_url,
+        "temperature": temperature,
+        "streaming": streaming,
+        "extra_body": get_llm_extra_body(),
+    }
+    if timeout is not None:
+        kwargs["request_timeout"] = timeout
+    if retries is not None:
+        kwargs["max_retries"] = retries
+    if max_tokens is not None:
+        kwargs["max_tokens"] = max_tokens
+    return ChatOpenAI(**kwargs)
