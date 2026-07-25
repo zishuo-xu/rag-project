@@ -21,8 +21,8 @@ def _make_client():
 def test_upload_default_recursive():
     """默认走递归分块"""
     client, chain = _make_client()
-    with patch("app.api.routes.smart_chunk") as mock_chunk, \
-         patch("app.api.routes.load_document") as mock_load:
+    with patch("app.ingestion.service.smart_chunk") as mock_chunk, \
+         patch("app.ingestion.service.load_document") as mock_load:
         mock_load.return_value = [MagicMock(metadata={"doc_id": "d1"})]
         mock_chunk.return_value = [MagicMock()]
         resp = client.post(
@@ -36,8 +36,8 @@ def test_upload_default_recursive():
 def test_upload_semantic_strategy():
     """chunk_strategy=semantic 时启用语义分块"""
     client, chain = _make_client()
-    with patch("app.api.routes.smart_chunk") as mock_chunk, \
-         patch("app.api.routes.load_document") as mock_load:
+    with patch("app.ingestion.service.smart_chunk") as mock_chunk, \
+         patch("app.ingestion.service.load_document") as mock_load:
         mock_load.return_value = [MagicMock(metadata={"doc_id": "d1"})]
         mock_chunk.return_value = [MagicMock()]
         resp = client.post(

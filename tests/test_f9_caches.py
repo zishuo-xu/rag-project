@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import numpy as np
 from langchain_core.documents import Document
 
-from app.retrieval.caches import LRUCache, EmbeddingCache, RerankCache
+from app.retrieval.caching import LRUCache, EmbeddingCache, RerankCache
 from app.retrieval.reranker import Reranker
 
 

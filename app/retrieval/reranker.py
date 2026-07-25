@@ -7,7 +7,7 @@ from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
 from config import get_settings
-from app.retrieval.caches import get_rerank_cache
+from app.retrieval.caching import get_rerank_cache
 
 logger = logging.getLogger(__name__)
 

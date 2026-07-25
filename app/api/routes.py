@@ -17,8 +17,7 @@ from app.api.schemas import (
     EvalRequest, EvalReport, HealthResponse,
 )
 from config import get_settings
-from app.ingestion.loader import load_document
-from app.ingestion.chunker import smart_chunk
+from app.ingestion.service import ingest_file, rebuild_enhanced_indexes
 from app.generation.chain import RAGChain, RAGResponse
 
 logger = logging.getLogger(__name__)
@@ -259,34 +258,8 @@ async def upload_document(
             tmp.write(content)
             tmp_path = tmp.name
 
-        # 加载 -> 分块 -> 索引
-        docs = load_document(tmp_path)
-        chunks = smart_chunk(
-            docs,
-            embeddings=chain.indexer.embeddings if chunk_strategy == "semantic" else None,
-            use_semantic=(chunk_strategy == "semantic"),
-        )
-        chain.indexer.index_documents(chunks)
-
-        # F6a: 接线 Parent-Child（小块检索大块返回，修复"答案不在 top 块"）
-        # 注意：parent_child.index_documents 接收原始文档 docs（其内部自行切分 parent/child）
-        if chain.parent_child_retriever:
-            try:
-                chain.parent_child_retriever.index_documents(docs)
-            except Exception as e:
-                logger.warning(f"F6a Parent-Child 索引构建失败: {e}")
-
-        # F6a: 上下文增强索引（索引时一次性 LLM，零在线增量）
-        if get_settings().use_contextual_chunks:
-            try:
-                from app.ingestion.contextual import build_chunk_contexts
-                contexts = build_chunk_contexts(chunks)
-                chain.indexer.index_documents_contextual(chunks, contexts)
-            except Exception as e:
-                logger.warning(f"F6a 上下文增强索引失败: {e}")
-
-        # #11: 增量更新 BM25 索引（避免全量重建）
-        chain.sparse_retriever.add_documents(chunks)
+        # 加载 → 分块 → 索引 → 增强索引 → BM25 增量（服务层统一编排）
+        docs, chunks = ingest_file(chain, tmp_path, chunk_strategy)
 
         return UploadResponse(
             message=f"文档 '{file.filename}' 上传并索引成功",
@@ -307,17 +280,7 @@ async def reindex_f6a():
     上下文增强需对每块调用一次 LLM，文档多时较慢，属一次性管理操作。
     """
     chain = get_rag_chain()
-    num_docs = chain.rebuild_parent_child_index()
-    num_ctx = 0
-    if get_settings().use_contextual_chunks:
-        try:
-            from app.ingestion.contextual import build_chunk_contexts
-            chunks = chain.indexer.get_all_chunks()
-            contexts = build_chunk_contexts(chunks)
-            chain.indexer.index_documents_contextual(chunks, contexts)
-            num_ctx = len(chunks)
-        except Exception as e:
-            logger.warning(f"F6a 上下文增强重建失败: {e}")
+    num_docs, num_ctx = rebuild_enhanced_indexes(chain)
     return {
         "message": "F6a 索引重建完成",
         "num_documents": num_docs,

@@ -21,8 +21,7 @@ from app.retrieval.graph_retriever import GraphRetriever
 from app.retrieval.parent_child import ParentChildRetriever
 from app.retrieval.crag import CRAGEvaluator
 from app.retrieval.router import QueryRouter
-from app.retrieval.cache import get_semantic_cache
-from app.retrieval.caches import EmbeddingCache
+from app.retrieval.caching import get_semantic_cache, EmbeddingCache
 from app.retrieval.conversation import ConversationRewriter
 from app.generation.faithfulness import FaithfulnessChecker, regen_until_faithful
 from app.generation.citation import CitationBuilder, Citation
