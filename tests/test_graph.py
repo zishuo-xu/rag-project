@@ -103,14 +103,13 @@ def test_extraction_prompt_is_json_typed():
 
 # ============ 边写入：chunk 溯源 + 类型 ============
 
-def test_build_from_documents_edges_carry_chunk_and_types(builder, monkeypatch):
-    """同步构建：边带 chunk_id + head_type/tail_type，节点带类型。"""
-    monkeypatch.setattr(builder, "extract_triples", lambda text: [
-        {"head": "周润发", "head_type": "person", "relation": "出演",
-         "tail": "卧虎藏龙", "tail_type": "work"},
-    ])
-    docs = [Document(page_content="周润发出演卧虎藏龙", metadata={"source": "a.md", "chunk_id": "a_0"})]
-    builder.build_from_documents(docs)
+def test_add_triples_edges_carry_chunk_and_types(builder):
+    """边写入助手（异步构建共用）：边带 chunk_id + head_type/tail_type，节点带类型。"""
+    builder._add_triples(
+        [{"head": "周润发", "head_type": "person", "relation": "出演",
+          "tail": "卧虎藏龙", "tail_type": "work"}],
+        source="a.md", chunk_id="a_0",
+    )
 
     edge = builder.graph.get_edge_data("周润发", "卧虎藏龙")
     assert edge is not None

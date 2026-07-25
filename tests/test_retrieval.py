@@ -3,7 +3,7 @@
 import pytest
 from langchain_core.documents import Document
 
-from app.retrieval.fusion import reciprocal_rank_fusion, weighted_fusion
+from app.retrieval.fusion import reciprocal_rank_fusion
 from app.retrieval.sparse import SparseRetriever
 
 
@@ -51,19 +51,6 @@ class TestRRFFusion:
         results = reciprocal_rank_fusion([docs], k=60)
         assert "rrf_score" in results[0].metadata
         assert results[0].metadata["rrf_score"] == pytest.approx(1.0 / 61)
-
-
-class TestWeightedFusion:
-    """加权融合测试"""
-
-    def test_weighted(self):
-        """加权融合"""
-        list1 = [Document(page_content="A", metadata={"chunk_id": "a"})]
-        list2 = [Document(page_content="B", metadata={"chunk_id": "b"})]
-
-        # 给第一路更高权重
-        results = weighted_fusion([list1, list2], weights=[0.8, 0.2])
-        assert results[0].metadata["chunk_id"] == "a"
 
 
 class TestSparseRetrieverTokenize:

@@ -62,7 +62,7 @@ F9_FLAGS = ["use_embedding_cache", "use_rerank_cache"]
 RAG3_FLAGS = [
     "use_citations", "use_speculative_streaming",
     "use_embedding_cache", "use_rerank_cache",
-    "use_answer_extraction", "use_answer_focus", "use_history_rewrite",
+    "use_answer_extraction", "use_history_rewrite",
 ]
 
 # 模拟真实用户的口语化查询（覆盖边缘场景；引用 CMRC 知识库真实实体 范廷颂）

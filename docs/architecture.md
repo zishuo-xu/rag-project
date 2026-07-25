@@ -159,9 +159,9 @@ POST /api/chat → chat()                          [routes.py:75]
 
 ### 4.4 知识图谱抽取（`app/ingestion/graph_extractor.py`）
 
-> **诚实说明**：被 `/api/graph/build` 调用的主构建路径 `build_from_documents_async`（`:285-415`）
-> 是 **LLM 抽取**三元组；另有一条**零 LLM** 备用路径 `build_fast`（`:97-168`，jieba TF-IDF 关键词作实体 +
-> 共现边），目前未接线到任何 API 端点。
+> **诚实说明**：被 `/api/graph/build` 调用的唯一构建路径 `build_from_documents_async`
+> 是 **LLM 抽取**类型化三元组（2026-07-26 起，边带 `chunk_id` 溯源与端点类型）；
+> 旧零 LLM 共现路径 `build_fast` 已删除（产物被类型化图完全取代，无接线）。
 
 - `KnowledgeGraphBuilder` 基于 `nx.DiGraph`（面向十篇级文档量，故用 NetworkX 而非 Neo4j）。
 - LLM 路径：`extract_triples`（`:170-189`，每块最多 15 个三元组）→ `_parse_triples`（`:191-227`）解析。

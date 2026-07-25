@@ -117,15 +117,13 @@ class Settings(BaseSettings):
     use_rerank_cache: bool = True
     rerank_cache_size: int = 256
 
-    # F10 答案质量增强（聚焦 prompt + 零LLM抽取 + 自适应自一致性）
-    use_answer_focus: bool = True                 # 答案前置聚焦 prompt
+    # F10 答案质量增强（零LLM抽取 + 自适应自一致性）
     use_answer_extraction: bool = True            # 零LLM 抽取核心短答案 span
     use_self_consistency: bool = False            # 默认关以保时延，评测可开
     self_consistency_samples: int = 3             # 采样投票次数
     self_consistency_types: str = "numeric,factual"  # 仅这些查询类型触发自一致性
 
     # F11 可观测性与生产加固
-    enable_metrics: bool = True            # 进程内指标 + /api/metrics 导出
     api_key: str = ""                      # 空=关闭鉴权；非空校验 X-API-Key
     rate_limit_rpm: int = 0                # 每客户端每分钟请求上限，0=关闭
     log_json: bool = False                 # 结构化 JSON 日志

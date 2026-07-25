@@ -31,7 +31,7 @@ from app.generation.answer_boost import AnswerBooster
 from app.generation.streaming import speculative_faithful_stream
 from app.generation.prompts import (
     RAG_SIMPLE_PROMPT, RAG_CHAT_PROMPT, DIRECT_ANSWER_PROMPT, FALLBACK_RESPONSE,
-    STRICT_RAG_PROMPT, STRICT_RAG_CHAT_PROMPT, RAG_FOCUS_PROMPT,
+    STRICT_RAG_PROMPT, STRICT_RAG_CHAT_PROMPT,
 )
 from app.observability.tracing import get_tracer
 from app.observability.metrics import get_metrics

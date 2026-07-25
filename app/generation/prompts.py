@@ -41,26 +41,6 @@ RAG_CHAT_PROMPT = ChatPromptTemplate.from_messages([
 # 简单 RAG Prompt（无对话历史）
 RAG_SIMPLE_PROMPT = ChatPromptTemplate.from_template(RAG_SYSTEM_PROMPT)
 
-# F10 答案聚焦 Prompt：要求"先一句话直接答案，再展开"，把答案前置（改善端到端 EM/F1）
-RAG_FOCUS_PROMPT = ChatPromptTemplate.from_template(
-    """你是一个严格基于文档的知识库问答助手。
-
-## 核心原则：
-1. **仅基于文档**：回答必须100%来自参考文档，不添加文档中没有的信息。
-2. **答案前置**：第一行先用一句简短的话直接给出答案（不要铺垫），然后再展开必要说明。
-3. **精确简洁**：直接回答问题本身，数字/名称/时间要准确，不啰嗦。
-4. **诚实拒答**：文档信息不足时，明确说明"文档中未涉及xxx"。
-5. **标注来源**：使用 [来源: 文档名] 格式。
-
-## 参考文档：
-{context}
-
-## 用户问题：
-{question}
-
-## 回答（第一行直接给答案）："""
-)
-
 # 严格 RAG Chat Prompt（F3 多轮对话忠实度重生成用：带历史 + 严格约束）
 STRICT_RAG_CHAT_PROMPT = ChatPromptTemplate.from_messages([
     ("system", """你是一个极度严格的知识库问答助手，宁可少答也绝不编造。

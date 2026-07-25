@@ -54,7 +54,7 @@
 | RRF 融合 | Reciprocal Rank Fusion 合并多路结果，避免分数不可比 |
 | Cross-Encoder 重排序 | 对融合候选精排，显著提升 top-K 精度 |
 | 查询改写 | Multi-Query 多变体 / HyDE 假设文档，扩大召回面 |
-| Graph RAG | LLM 类型化三元组知识图谱（7 类实体 + chunk 溯源，jieba 零 LLM 兜底），实体多跳召回 |
+| Graph RAG | LLM 类型化三元组知识图谱（7 类实体 + chunk 溯源），实体多跳召回 |
 | Parent-Child | 小块检索 + 大块返回，兼顾命中精度与上下文完整 |
 | CRAG 自纠正 | 门控判断是否检索 + 相关性分级 + 不合格时 HyDE 补救 |
 | 智能分块 | 递归字符分块 + 语义分块（基于 embedding 边界检测） |
@@ -248,7 +248,7 @@ pytest tests/ -v
 │   │   ├── loader.py           # 多格式加载
 │   │   ├── chunker.py          # 智能分块
 │   │   ├── indexer.py          # 层级索引
-│   │   └── graph_extractor.py  # 知识图谱抽取（LLM 类型化三元组，jieba 零 LLM 兜底）
+│   │   └── graph_extractor.py  # 知识图谱抽取（LLM 类型化三元组 + chunk 溯源）
 │   ├── retrieval/              # 检索模块
 │   │   ├── pipeline.py         # ★ RetrievalPipeline 7 阶段统一编排
 │   │   ├── dense.py            # 稠密检索

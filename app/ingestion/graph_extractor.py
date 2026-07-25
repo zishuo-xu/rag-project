@@ -102,79 +102,6 @@ class KnowledgeGraphBuilder:
         if self.persist_path.exists():
             self._load()
 
-    def build_fast(self, documents: List[Document], top_keywords: int = 8) -> dict:
-        """
-        快速构建知识图谱（零 LLM 调用）。
-
-        策略：
-        - 使用 jieba TF-IDF 关键词抽取作为实体
-        - 同一 chunk 中的关键词建立共现关系
-        - 相邻 chunk 的关键词建立 "上下文关联" 关系
-
-        速度：纯本地计算，100 个 chunk < 2 秒。
-
-        Args:
-            documents: 文档分块列表
-            top_keywords: 每个 chunk 最多抽取的关键词数
-
-        Returns:
-            构建统计信息
-        """
-        import jieba.analyse
-
-        total_triples = 0
-        processed = 0
-        prev_keywords: List[str] = []  # 上一个 chunk 的关键词（用于跨 chunk 关联）
-        prev_source = ""
-
-        for doc in documents:
-            text = doc.page_content
-            source = doc.metadata.get("source", "unknown")
-
-            # jieba TF-IDF 关键词抽取（零 LLM）
-            keywords = jieba.analyse.extract_tags(text, topK=top_keywords)
-            # 过滤太短的关键词
-            keywords = [kw for kw in keywords if len(kw) >= 2]
-
-            if not keywords:
-                processed += 1
-                continue
-
-            # 1. 同 chunk 内关键词 → 共现关系
-            for i, head in enumerate(keywords):
-                self.graph.add_node(head, type="entity", source=source)
-                # 与排名紧随其后的关键词建立关系
-                for tail in keywords[i + 1:i + 3]:  # 每个实体最多连 2 个
-                    self.graph.add_node(tail, type="entity", source=source)
-                    if not self.graph.has_edge(head, tail):
-                        self.graph.add_edge(head, tail, relation="共现", source=source)
-                        total_triples += 1
-
-            # 2. 同文档相邻 chunk → 上下文关联
-            if source == prev_source and prev_keywords:
-                for kw in keywords[:3]:  # 取 top3 关键词
-                    for pk in prev_keywords[:3]:
-                        if kw != pk and not self.graph.has_edge(pk, kw):
-                            self.graph.add_edge(pk, kw, relation="上下文关联", source=source)
-                            total_triples += 1
-
-            prev_keywords = keywords
-            prev_source = source
-            processed += 1
-
-        # 持久化
-        self._save()
-
-        stats = {
-            "processed_docs": processed,
-            "total_triples": total_triples,
-            "num_nodes": self.graph.number_of_nodes(),
-            "num_edges": self.graph.number_of_edges(),
-            "method": "fast (jieba TF-IDF, zero LLM)",
-        }
-        logger.info(f"快速图谱构建完成: {stats}")
-        return stats
-
     def extract_triples(self, text: str) -> List[dict]:
         """
         使用 LLM 从文本中抽取类型化三元组。
@@ -278,52 +205,16 @@ class KnowledgeGraphBuilder:
             "tail_type": _norm_type(raw.get("tail_type")),
         }
 
-    def build_from_documents(self, documents: List[Document]) -> dict:
-        """
-        从文档分块批量构建知识图谱（同步版本，保留兼容）。
-
-        Args:
-            documents: 文档分块列表
-
-        Returns:
-            构建统计信息
-        """
-        total_triples = 0
-        processed = 0
-
-        for i, doc in enumerate(documents):
-            text = doc.page_content
-            source = doc.metadata.get("source", "unknown")
-            chunk_id = doc.metadata.get("chunk_id", "")
-
-            triples = self.extract_triples(text)
-            for t in triples:
-                head, tail = t["head"], t["tail"]
-                # 添加节点（带类型与来源信息）
-                self.graph.add_node(head, type=t["head_type"], source=source)
-                self.graph.add_node(tail, type=t["tail_type"], source=source)
-                # 添加边（关系 + chunk 溯源 + 端点类型）
-                self.graph.add_edge(
-                    head, tail, relation=t["relation"], source=source,
-                    chunk_id=chunk_id, head_type=t["head_type"], tail_type=t["tail_type"],
-                )
-                total_triples += 1
-
-            processed += 1
-            if (i + 1) % 5 == 0:
-                logger.info(f"图谱构建进度: {i+1}/{len(documents)} 文档, 累计 {total_triples} 三元组")
-
-        # 持久化
-        self._save()
-
-        stats = {
-            "processed_docs": processed,
-            "total_triples": total_triples,
-            "num_nodes": self.graph.number_of_nodes(),
-            "num_edges": self.graph.number_of_edges(),
-        }
-        logger.info(f"知识图谱构建完成: {stats}")
-        return stats
+    def _add_triples(self, triples: List[dict], source: str, chunk_id: str) -> None:
+        """将类型化三元组写入图（节点带类型与来源，边带关系 + chunk 溯源 + 端点类型）。"""
+        for t in triples:
+            head, tail = t["head"], t["tail"]
+            self.graph.add_node(head, type=t["head_type"], source=source)
+            self.graph.add_node(tail, type=t["tail_type"], source=source)
+            self.graph.add_edge(
+                head, tail, relation=t["relation"], source=source,
+                chunk_id=chunk_id, head_type=t["head_type"], tail_type=t["tail_type"],
+            )
 
     # ============ 异步构建（并发 + 增量 + 进度追踪） ============
 
@@ -411,14 +302,7 @@ class KnowledgeGraphBuilder:
                 # 写入图（NetworkX 非线程安全，但 asyncio 是单线程事件循环，安全）
                 # 合并单元溯源到首个 chunk（相邻块合并抽取，三元组归属近似）
                 chunk_id = unit["chunk_ids"][0] if unit["chunk_ids"] else ""
-                for t in triples:
-                    head, tail = t["head"], t["tail"]
-                    self.graph.add_node(head, type=t["head_type"], source=unit["source"])
-                    self.graph.add_node(tail, type=t["tail_type"], source=unit["source"])
-                    self.graph.add_edge(
-                        head, tail, relation=t["relation"], source=unit["source"],
-                        chunk_id=chunk_id, head_type=t["head_type"], tail_type=t["tail_type"],
-                    )
+                self._add_triples(triples, unit["source"], chunk_id)
 
                 total_triples += len(triples)
                 newly_processed_ids.extend(unit["chunk_ids"])

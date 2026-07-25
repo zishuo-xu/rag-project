@@ -29,7 +29,6 @@ class RetrievalResult:
     graph_results: List[Document] = field(default_factory=list)
     summary_results: List[Document] = field(default_factory=list)
     fused_results: List[Document] = field(default_factory=list)
-    reranked_results: List[Document] = field(default_factory=list)
     queries_used: List[str] = field(default_factory=list)
     retrieval_time_ms: float = 0
     crag_grade: str = ""    # correct / ambiguous / incorrect / recovered
@@ -43,7 +42,6 @@ class RetrievalResult:
     # F6 答案定位增强观测字段
     decomposed_subqueries: List[str] = field(default_factory=list)  # F6b: 分解出的子问题
     decomposition_chain: bool = False                              # F6b: 是否依赖链
-    answer_localization_method: str = ""                           # F6a: parent_child / contextual / ""
     # F13 Agentic RAG 观测字段
     agent_steps: List[dict] = field(default_factory=list)  # F13: ReAct 决策轨迹
     agent_stop_reason: str = ""                            # F13: agent_done / max_steps / decision_error
@@ -427,7 +425,6 @@ class RetrievalPipeline:
                 logger.warning(f"F13 agentic 检索异常，降级回七阶段管道: {e}")
             if agent_result is not None and agent_result.documents:
                 result.documents = agent_result.documents
-                result.reranked_results = agent_result.documents
                 result.queries_used = agent_result.queries_used
                 result.decomposed_subqueries = agent_result.decomposed_subqueries
                 result.decomposition_chain = agent_result.decomposition_chain
@@ -582,13 +579,12 @@ class RetrievalPipeline:
         if trace_id:
             tracer.start_span(trace_id, "rerank")
         result.pre_autocut_count = len(result.fused_results)
-        result.reranked_results = self.rerank(
+        result.documents = self.rerank(
             question, result.fused_results, effective_top_k,
             use_rerank=use_rerank,
             use_autocut=settings.use_autocut,
             autocut_min_docs=effective_autocut_min,
         )
-        result.documents = result.reranked_results
         if trace_id:
             tracer.end_span(trace_id, "rerank", {
                 "enabled": use_rerank,
@@ -654,12 +650,6 @@ class RetrievalPipeline:
                 "iterations_used": result.iterations_used,
                 "stop_reason": result.iterative_stop_reason,
             })
-
-        # F6a 观测：标注答案定位主要来源（parent_child 优先，其次 contextual）
-        if any(d.metadata.get("retrieval_method") == "parent_child" for d in result.documents):
-            result.answer_localization_method = "parent_child"
-        elif settings.use_contextual_chunks:
-            result.answer_localization_method = "contextual"
 
         result.retrieval_time_ms = (time.time() - start_time) * 1000
         logger.info(
