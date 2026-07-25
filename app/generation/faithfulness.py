@@ -7,13 +7,13 @@
 
 import logging
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 
 from config import get_settings, get_llm_extra_body
-from app.retrieval.crag import CRAGEvaluator
+from app.utils import extract_json
 from app.generation.prompts import FAITHFULNESS_CHECK_PROMPT
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,46 @@ class FaithfulnessResult:
     score: float = 0.0         # 被支撑论断占比 [0,1]
     unsupported: List[str] = field(default_factory=list)  # 未被上下文支撑的论断
     reason: str = ""
+
+
+def regen_until_faithful(
+    checker: "FaithfulnessChecker",
+    question: str,
+    documents: List[Document],
+    answer: str,
+    produce_fn: Callable[[], str],
+    max_regen: int = 1,
+    deadline=None,
+    on_regen: Optional[Callable[[str], None]] = None,
+) -> tuple[str, Optional[bool], float, bool]:
+    """忠实度 check+regen 共享循环（chain F3 阻塞路径 / F8 投机流式 共用）。
+
+    对初始答案做忠实度检查；不忠实则调用 produce_fn 严格重生成，最多 max_regen 次。
+    时延预算熔断：deadline 超预算时跳过后续重生成（每次重生成 = 2 次串行 LLM）。
+
+    Args:
+        produce_fn: 严格重生成函数（strict prompt），返回新答案
+        deadline: 延迟治理 Deadline（可选）；F8 流式路径同样受预算约束
+        on_regen: 每次重生成后的回调（F8 用于发 correction 事件）
+
+    Returns:
+        (最终答案, faithful, score, 是否触发过重生成)
+    """
+    fb = checker.check(question, documents, answer)
+    regenerated = False
+    regen_left = max_regen
+    while fb.faithful is False and regen_left > 0:
+        if deadline is not None and deadline.check_skip("F3_regen"):
+            logger.info("忠实度不足但时延预算耗尽，跳过严格重生成")
+            break
+        logger.info(f"忠实度不足(score={fb.score:.2f})，触发严格重生成")
+        answer = produce_fn()
+        regenerated = True
+        regen_left -= 1
+        if on_regen:
+            on_regen(answer)
+        fb = checker.check(question, documents, answer)
+    return answer, fb.faithful, fb.score, regenerated
 
 
 class FaithfulnessChecker:
@@ -67,7 +107,7 @@ class FaithfulnessChecker:
                 question=question, context=context, answer=answer,
             )
             response = self.llm.invoke(prompt)
-            data = CRAGEvaluator._extract_json(response.content)
+            data = extract_json(response.content)
             if not data:
                 return FaithfulnessResult(faithful=None, reason="LLM 输出无法解析为JSON")
 

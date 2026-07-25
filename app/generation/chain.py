@@ -25,7 +25,7 @@ from app.retrieval.router import QueryRouter
 from app.retrieval.cache import get_semantic_cache
 from app.retrieval.caches import EmbeddingCache
 from app.retrieval.conversation import ConversationRewriter
-from app.generation.faithfulness import FaithfulnessChecker
+from app.generation.faithfulness import FaithfulnessChecker, regen_until_faithful
 from app.generation.citation import CitationBuilder, Citation
 from app.generation.answer_boost import AnswerBooster
 from app.generation.streaming import speculative_faithful_stream
@@ -341,7 +341,7 @@ class RAGChain:
 
         流程：生成答案 → 忠实度检查 → 若不忠实则用 strict prompt 重生成，
         最多 faithfulness_max_regen 次（成本兜底）。检查器关闭或异常时放行。
-        时延预算熔断：超预算跳过重生成（每次重生成 = 2 次串行 LLM）。
+        check+regen 循环体复用 faithfulness.regen_until_faithful（F8 流式同源）。
 
         Returns:
             (answer, faithful, faithfulness_score, regenerated)
@@ -349,21 +349,14 @@ class RAGChain:
         answer = self.generate(question, documents, chat_history)
         if not self.faithfulness_checker:
             return answer, None, 0.0, False
-
-        fb = self.faithfulness_checker.check(question, documents, answer)
-        regenerated = False
-        regen_left = self._settings.faithfulness_max_regen
-        while fb.faithful is False and regen_left > 0:
-            if deadline is not None and deadline.check_skip("F3_regen"):
-                logger.info("忠实度不足但时延预算耗尽，跳过严格重生成")
-                break
-            logger.info(f"忠实度不足(score={fb.score:.2f})，触发严格重生成")
-            answer = self.generate(question, documents, chat_history, strict=True)
-            regenerated = True
-            regen_left -= 1
-            fb = self.faithfulness_checker.check(question, documents, answer)
-
-        return answer, fb.faithful, fb.score, regenerated
+        return regen_until_faithful(
+            self.faithfulness_checker, question, documents, answer,
+            produce_fn=lambda: self.generate(
+                question, documents, chat_history, strict=True
+            ),
+            max_regen=self._settings.faithfulness_max_regen,
+            deadline=deadline,
+        )
 
     def invoke(
         self,
@@ -481,6 +474,7 @@ class RAGChain:
                 checker=self.faithfulness_checker,
                 regen_fn=lambda: self.generate(question, docs, chat_history, strict=True),
                 max_regen=self._settings.faithfulness_max_regen,
+                deadline=retrieval_result.deadline,  # 修复：流式路径同受时延预算约束
             ):
                 if event["type"] == "token":
                     full_answer += event["data"]

@@ -7,6 +7,7 @@
 4. 不忠实→严格重生成：发 correction，final answer=重生成、regenerated=True
 5. 重生成被 max_regen 兜住
 6. 事件顺序：token 先于 correction/final（保证首屏快）
+7. 时延预算耗尽 → 流式路径同样跳过重生成（与 chain F3 同源）
 """
 from unittest.mock import MagicMock
 
@@ -117,3 +118,31 @@ def test_token_before_correction_ordering():
     last_token = max(i for i, t in enumerate(types) if t == "token")
     assert last_token < first_correction  # token 全部先于 correction
     assert types[-1] == "final"
+
+
+def test_deadline_exhausted_skips_regen():
+    """时延预算耗尽：流式路径跳过严格重生成（修复此前流式忽略预算的隐性分歧）。"""
+    from app.retrieval.deadline import Deadline
+
+    checker = MagicMock()
+    checker.check.return_value = FaithfulnessResult(faithful=False, score=0.2)
+    t = {"v": 0.0}
+    deadline = Deadline(1000, clock=lambda: t["v"])
+    t["v"] = 9999.0  # 预算已耗尽
+
+    regen_calls = {"n": 0}
+    def regen():
+        regen_calls["n"] += 1
+        return "严格答案"
+
+    events = _collect(
+        stream_fn=_stream(["答案"]), question="q", documents=_docs(),
+        chat_history=None, checker=checker, regen_fn=regen, max_regen=1,
+        deadline=deadline,
+    )
+    assert regen_calls["n"] == 0  # 预算耗尽，不重生成
+    assert "F3_regen" in deadline.skipped
+    final = [e for e in events if e["type"] == "final"][0]["data"]
+    assert final["regenerated"] is False
+    assert final["faithful"] is False  # 如实返回未校验通过
+    assert not [e for e in events if e["type"] == "correction"]

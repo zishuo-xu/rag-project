@@ -8,12 +8,16 @@ RAG 2.0 的 F3 在流式路径会"先非流式完整生成+自检，再整体吐
 
 时延：TTFT 从 ~完整生成 降到 ~首 token；自检与重生成只在流末发生，不阻塞首屏。
 降级：checker 为 None 时直接放行（与 F3 关闭行为一致）。
+check+regen 循环与 chain F3 阻塞路径同源（faithfulness.regen_until_faithful），
+流式路径同样受延迟预算约束（deadline 透传）。
 """
 
 import logging
 from typing import Callable, Generator, List, Optional
 
 from langchain_core.documents import Document
+
+from app.generation.faithfulness import regen_until_faithful
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,7 @@ def speculative_faithful_stream(
     checker,                       # FaithfulnessChecker 或 None
     regen_fn: Callable[[], str],   # 严格重生成（strict=True）
     max_regen: int = 1,
+    deadline=None,                 # 延迟治理 Deadline（与 chain F3 同一 F3_regen 熔断）
 ) -> Generator[dict, None, None]:
     """投机流式生成 + 流末忠实度自检。
 
@@ -47,20 +52,17 @@ def speculative_faithful_stream(
         }}
         return
 
-    # 流末忠实度检查 + 有界严格重生成
-    answer = full_answer
-    fb = checker.check(question, documents, answer)
-    regenerated = False
-    regen_left = max_regen
-    while fb.faithful is False and regen_left > 0:
-        logger.info(f"F8 投机流式: 忠实度不足(score={fb.score:.2f})，严格重生成")
-        answer = regen_fn()
-        regenerated = True
-        regen_left -= 1
-        yield {"type": "correction", "data": answer}
-        fb = checker.check(question, documents, answer)
+    # 流末忠实度检查 + 有界严格重生成（与 chain F3 共用循环体）
+    corrections: List[str] = []
+    answer, faithful, fb_score, regenerated = regen_until_faithful(
+        checker, question, documents, full_answer,
+        produce_fn=regen_fn, max_regen=max_regen, deadline=deadline,
+        on_regen=corrections.append,
+    )
+    for correction in corrections:
+        yield {"type": "correction", "data": correction}
 
     yield {"type": "final", "data": {
-        "answer": answer, "faithful": fb.faithful,
-        "score": fb.score, "regenerated": regenerated,
+        "answer": answer, "faithful": faithful,
+        "score": fb_score, "regenerated": regenerated,
     }}

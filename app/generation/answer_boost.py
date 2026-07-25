@@ -19,12 +19,11 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 from config import get_settings
+from app.retrieval.router import is_numeric_question
 
 logger = logging.getLogger(__name__)
 
 _SOURCE_TAG = re.compile(r"\[(?:来源|文档|source|doc)[^\]]*\]", re.IGNORECASE)
-# 数字型问题信号
-_NUMERIC_Q = re.compile(r"什么时候|哪一年|何时|多少|几个|几年|第几|when|what year|how many|how much", re.IGNORECASE)
 # 答案前置填充词（抽取时剔除）
 _FILLER = re.compile(r"^(?:答案是|答案为|根据文档[，,]?|根据参考文档[，,]?|根据上述文档[，,]?|答[:：]|回答[:：]|简答[:：])")
 
@@ -48,8 +47,8 @@ def extract_short_answer(question: str, answer: str) -> str:
         return ""
     ans = _SOURCE_TAG.sub(" ", answer)
 
-    # 数字型：优先抽数字/年份
-    if _NUMERIC_Q.search(question or ""):
+    # 数字型：优先抽数字/年份（与 router 共用唯一判定）
+    if is_numeric_question(question):
         m = re.search(r"\d{2,4}\s*年", ans) or re.search(r"\d+(?:\.\d+)?\s*[%％]?", ans)
         if m:
             return m.group().strip()

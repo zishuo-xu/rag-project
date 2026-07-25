@@ -12,7 +12,7 @@ from config import get_settings
 from app.retrieval.autocut import autocut_truncate
 from app.retrieval.crag import CRAGEvaluator
 from app.retrieval.deadline import Deadline
-from app.retrieval.fusion import reciprocal_rank_fusion
+from app.retrieval.fusion import reciprocal_rank_fusion, chunk_key, dedup_by_chunk_id
 from app.observability.tracing import get_tracer
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ class RetrievalPipeline:
 
         for ch in ("dense", "sparse"):
             if ch in results:
-                results[ch] = self._deduplicate(results[ch])
+                results[ch] = dedup_by_chunk_id(results[ch])
         return results
 
     # ---- 阶段 4: RRF 融合 ----
@@ -292,7 +292,7 @@ class RetrievalPipeline:
         """
         settings = self._settings
         accumulated = list(initial_docs)
-        acc_ids = {d.metadata.get("chunk_id", id(d)) for d in accumulated}
+        acc_ids = {chunk_key(d) for d in accumulated}
         iterations_used = 0
         stop_reason = "max_iterations"
 
@@ -313,10 +313,7 @@ class RetrievalPipeline:
             )
 
             # ② 收敛性终止：无新增相关文档
-            new_docs = [
-                d for d in new_ranked
-                if d.metadata.get("chunk_id", id(d)) not in acc_ids
-            ]
+            new_docs = [d for d in new_ranked if chunk_key(d) not in acc_ids]
             if not new_docs:
                 stop_reason = "converged"
                 break
@@ -327,7 +324,7 @@ class RetrievalPipeline:
                 use_autocut=settings.use_autocut,
                 autocut_min_docs=settings.autocut_min_docs,
             )
-            acc_ids = {d.metadata.get("chunk_id", id(d)) for d in accumulated}
+            acc_ids = {chunk_key(d) for d in accumulated}
             iterations_used += 1
             grade, _, reason = self.evaluate(question, accumulated)
 
@@ -400,7 +397,7 @@ class RetrievalPipeline:
         current_subs = list(subs)[: settings.decomposition_max_hops]
         for i, sq in enumerate(current_subs):
             docs = self._retrieve_subquery(question, sq, top_k)
-            accumulated = self._deduplicate(accumulated + docs)
+            accumulated = dedup_by_chunk_id(accumulated + docs)
             # 若不是最后一跳，用已检索证据精化下一跳（复用 F2 精化，异常回退原子问题）
             if i < len(current_subs) - 1 and self.query_transformer:
                 try:
@@ -681,14 +678,3 @@ class RetrievalPipeline:
         )
         return result
 
-    @staticmethod
-    def _deduplicate(documents: List[Document]) -> List[Document]:
-        """基于 chunk_id 去重"""
-        seen = set()
-        unique = []
-        for doc in documents:
-            key = doc.metadata.get("chunk_id", id(doc))
-            if key not in seen:
-                seen.add(key)
-                unique.append(doc)
-        return unique

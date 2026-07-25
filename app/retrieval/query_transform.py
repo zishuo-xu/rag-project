@@ -11,7 +11,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from dataclasses import dataclass, field
 
 from config import get_settings, get_llm_extra_body
-from app.retrieval.crag import CRAGEvaluator
+from app.utils import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +213,7 @@ class QueryTransformer:
             )
             result = self.llm.invoke(prompt_value.to_messages())
             raw = result.content if hasattr(result, "content") else str(result)
-            data = CRAGEvaluator._extract_json(raw)
+            data = extract_json(raw)
             if not isinstance(data, dict):
                 return fallback
             subs = [str(s).strip() for s in data.get("sub_questions", []) if str(s).strip()]

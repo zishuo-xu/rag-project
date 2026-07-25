@@ -137,6 +137,20 @@ class GraphRetriever:
             logger.warning(f"实体抽取失败: {e}")
             return []
 
+    def _collect_relations(self, entities: List[str]) -> List[dict]:
+        """汇集所有实体的关系并按 (head, relation, tail) 去重（保序）。"""
+        all_relations = []
+        for entity in entities:
+            all_relations.extend(self.graph_builder.get_entity_relations(entity))
+        seen = set()
+        unique = []
+        for r in all_relations:
+            key = (r["head"], r["relation"], r["tail"])
+            if key not in seen:
+                seen.add(key)
+                unique.append(r)
+        return unique
+
     def retrieve(self, question: str, top_k: int = 5) -> List[Document]:
         """
         图检索主入口：抽取实体 → 子图扩展 → 格式化为 Document。
@@ -156,20 +170,8 @@ class GraphRetriever:
         if not entities:
             return []
 
-        # Step 2: 获取每个实体的关系
-        all_relations = []
-        for entity in entities:
-            relations = self.graph_builder.get_entity_relations(entity)
-            all_relations.extend(relations)
-
-        # 去重
-        seen = set()
-        unique_relations = []
-        for r in all_relations:
-            key = (r["head"], r["relation"], r["tail"])
-            if key not in seen:
-                seen.add(key)
-                unique_relations.append(r)
+        # Step 2: 获取每个实体的关系（含去重）
+        unique_relations = self._collect_relations(entities)
 
         # Step 3: 获取子图（用于补充上下文）
         subgraph = self.graph_builder.get_subgraph(entities, max_hops=self.max_hops)
@@ -202,20 +204,8 @@ class GraphRetriever:
         if not entities:
             return {"entities": [], "relations": [], "subgraph_stats": {}, "context_text": ""}
 
-        # 获取关系
-        all_relations = []
-        for entity in entities:
-            relations = self.graph_builder.get_entity_relations(entity)
-            all_relations.extend(relations)
-
-        # 去重
-        seen = set()
-        unique_relations = []
-        for r in all_relations:
-            key = (r["head"], r["relation"], r["tail"])
-            if key not in seen:
-                seen.add(key)
-                unique_relations.append(r)
+        # 获取关系（含去重）
+        unique_relations = self._collect_relations(entities)
 
         # 子图
         subgraph = self.graph_builder.get_subgraph(entities, max_hops=self.max_hops)

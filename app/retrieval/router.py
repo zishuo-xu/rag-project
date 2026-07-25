@@ -24,6 +24,11 @@ _NUMERIC_PATTERNS = [
     r"什么时候|哪一年|哪年|何时|多少|几个|几年|第几|\d+年",
     r"when\b|what year|how many|how much",
 ]
+
+
+def is_numeric_question(q: str) -> bool:
+    """数字型问题判定（全管道唯一定义：router / crag / answer_boost 共用）。"""
+    return any(re.search(p, q or "", re.IGNORECASE) for p in _NUMERIC_PATTERNS)
 # 对比型：需更多候选参与比较
 _COMPARATIVE_PATTERN = re.compile(
     r"区别|差异|对比|比较|优劣|优缺点|哪个好|哪种好|有何不同|(?:^|\s)vs(?:\s|$)|VS",
@@ -109,7 +114,7 @@ class QueryRouter:
 
     @staticmethod
     def _is_numeric(q: str) -> bool:
-        return any(re.search(p, q, re.IGNORECASE) for p in _NUMERIC_PATTERNS)
+        return is_numeric_question(q)
 
     @staticmethod
     def _is_comparative(q: str) -> bool:

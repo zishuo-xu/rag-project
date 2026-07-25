@@ -1,4 +1,4 @@
-"""RRF 融合策略 - Reciprocal Rank Fusion 合并多路召回结果"""
+"""RRF 融合策略 - Reciprocal Rank Fusion 合并多路召回结果 + 文档去重原语"""
 
 import logging
 from typing import List, Dict
@@ -8,6 +8,28 @@ from langchain_core.documents import Document
 from config import get_settings
 
 logger = logging.getLogger(__name__)
+
+
+def chunk_key(doc: Document):
+    """文档唯一标识：chunk_id 优先，缺失时退化为对象 id（仅与自身去重）。
+
+    全管道共用的文档身份定义（召回去重 / 迭代收敛判断 / agent 证据累积）。
+    注：RRF 融合内部用内容哈希兜底（跨通道同内容不同对象也要合并计分），
+    是融合算法的一部分，不使用本函数。
+    """
+    return doc.metadata.get("chunk_id", id(doc))
+
+
+def dedup_by_chunk_id(documents: List[Document]) -> List[Document]:
+    """按 chunk_key 去重，保留首次出现（保序）。"""
+    seen = set()
+    unique = []
+    for doc in documents:
+        key = chunk_key(doc)
+        if key not in seen:
+            seen.add(key)
+            unique.append(doc)
+    return unique
 
 
 def reciprocal_rank_fusion(

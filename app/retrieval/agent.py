@@ -25,6 +25,7 @@ from typing import List, Optional
 from langchain_core.documents import Document
 
 from config import get_settings, get_llm_extra_body
+from app.retrieval.fusion import chunk_key
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class AgenticRetriever:
             logger.info(f"F13 step {step_num}: {step.action} {step.args} -> {observation[:60]}")
             new_count = 0
             for d in docs:
-                key = d.metadata.get("chunk_id", id(d))
+                key = chunk_key(d)
                 if key not in evidence_ids:
                     evidence_ids.add(key)
                     evidence.append(d)

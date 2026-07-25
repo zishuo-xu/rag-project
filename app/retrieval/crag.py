@@ -1,6 +1,5 @@
 """CRAG (Corrective RAG) - 自纠正检索：评估检索质量并自动补救"""
 
-import json
 import logging
 import re
 from typing import List, Tuple
@@ -9,6 +8,8 @@ from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
 
 from config import get_settings, get_llm_extra_body
+from app.retrieval.router import is_numeric_question
+from app.utils import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class CRAGEvaluator:
         try:
             prompt = CRAG_SHOULD_RETRIEVE_PROMPT.format(question=question)
             response = self.llm.invoke(prompt)
-            data = self._extract_json(response.content)
+            data = extract_json(response.content)
             if data:
                 need = data.get("need_retrieval", True)
                 reason = data.get("reason", "")
@@ -118,7 +119,7 @@ class CRAGEvaluator:
                 documents=docs_text,
             )
             response = self.llm.invoke(prompt)
-            data = self._extract_json(response.content)
+            data = extract_json(response.content)
             if data:
                 grade = data.get("grade", "ambiguous")
                 indices = data.get("relevant_indices", [])
@@ -159,13 +160,8 @@ class CRAGEvaluator:
         Returns:
             True 表示检索结果中包含数字答案，False 表示缺失
         """
-        # 判断问题是否在询问数字型信息
-        numeric_patterns = [
-            r'什么时候|哪一年|何时|多少|几个|几年|\d+年',
-            r'when|what year|how many|how much',
-        ]
-        is_numeric_q = any(re.search(p, question, re.IGNORECASE) for p in numeric_patterns)
-        if not is_numeric_q:
+        # 判断问题是否在询问数字型信息（与 router 共用唯一判定）
+        if not is_numeric_question(question):
             return True  # 非数字型问题，跳过校验
 
         # 检查检索结果中是否包含数字信息
@@ -173,19 +169,3 @@ class CRAGEvaluator:
         has_numbers = bool(re.search(r'\d{2,}', all_context))
         return has_numbers
 
-    @staticmethod
-    def _extract_json(text: str) -> dict | None:
-        """从 LLM 输出中提取 JSON"""
-        json_match = re.search(r'\{[\s\S]*\}', text)
-        if not json_match:
-            return None
-        raw = json_match.group()
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            # 修复尾部逗号
-            cleaned = re.sub(r',\s*([}\]])', r'\1', raw)
-            try:
-                return json.loads(cleaned)
-            except json.JSONDecodeError:
-                return None
