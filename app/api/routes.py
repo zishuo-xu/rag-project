@@ -447,18 +447,16 @@ async def retrieval_compare(request: ChatRequest):
     sparse_docs = chain.sparse_retriever.retrieve(question, top_k=top_k)
     sparse_ms = (_time.time() - t0) * 1000
 
-    # 3. Hybrid RRF (no rerank)
+    # 3. Hybrid RRF (no rerank) —— 复用管道融合原语
     t0 = _time.time()
-    from app.retrieval.fusion import reciprocal_rank_fusion
-    fused_docs = reciprocal_rank_fusion([dense_docs, sparse_docs])[:top_k]
+    fused_docs = chain.pipeline.fuse(
+        {"dense": dense_docs, "sparse": sparse_docs}
+    )[:top_k]
     rrf_ms = (_time.time() - t0) * 1000
 
-    # 4. Hybrid + Rerank
+    # 4. Hybrid + Rerank —— 复用管道重排原语
     t0 = _time.time()
-    if chain.reranker:
-        reranked_docs = chain.reranker.rerank(question, fused_docs, top_k=top_k)
-    else:
-        reranked_docs = fused_docs
+    reranked_docs = chain.pipeline.rerank(question, fused_docs, top_k)
     rerank_ms = (_time.time() - t0) * 1000
 
     def _fmt(docs):

@@ -219,6 +219,31 @@ class RetrievalPipeline:
             return self.reranker.rerank(question, documents, top_k=top_k)
         return documents[:top_k]
 
+    # ---- 复合原语: 召回 → RRF 融合 → 重排（检索最小闭环） ----
+
+    def search(
+        self,
+        question: str,
+        queries: List[str],
+        top_k: int,
+        channels=ALL_CHANNELS,
+        use_autocut: bool = False,
+        autocut_min_docs: int = 2,
+        trace_id: str | None = None,
+    ) -> List[Document]:
+        """召回 → 融合 → 重排 的复合原语，返回最终文档。
+
+        供只需最终文档的路径共用（补救 / 迭代补召 / agent 检索）；
+        主路径 run() 需要逐通道中间结果填充 trace 与观测字段，继续内联三阶段。
+        """
+        recall_results = self.recall(
+            question, queries, top_n=top_k, channels=channels, trace_id=trace_id,
+        )
+        return self.rerank(
+            question, self.fuse(recall_results), top_k,
+            use_autocut=use_autocut, autocut_min_docs=autocut_min_docs,
+        )
+
     # ---- 阶段 6: CRAG 评估（数字型问题走零 LLM 快速路径） ----
 
     def evaluate(
@@ -238,12 +263,10 @@ class RetrievalPipeline:
         if not self.query_transformer:
             return []
         hyde_queries = self.query_transformer.transform(question, "hyde")
-        recall_results = self.recall(
-            question, hyde_queries, top_n=top_k,
+        return self.search(
+            question, hyde_queries, top_k,
             channels=("dense", "sparse"), trace_id=trace_id,
         )
-        fused = self.fuse(recall_results)
-        return self.rerank(question, fused, top_k)
 
     # ---- 阶段 7b: Self-RAG 迭代检索（F2，质量驱动终止） ----
 
@@ -281,14 +304,12 @@ class RetrievalPipeline:
 
             # 精化查询（基于已有证据 + 缺口理由）
             refined_q = self._refine_query(question, accumulated, reason)
-            recall_results = self.recall(
-                question, [refined_q], top_n=top_k,
-                channels=("dense", "sparse"), trace_id=trace_id,
-            )
-            new_ranked = self.rerank(
-                question, self.fuse(recall_results), top_k,
+            new_ranked = self.search(
+                question, [refined_q], top_k,
+                channels=("dense", "sparse"),
                 use_autocut=settings.use_autocut,
                 autocut_min_docs=settings.autocut_min_docs,
+                trace_id=trace_id,
             )
 
             # ② 收敛性终止：无新增相关文档

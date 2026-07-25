@@ -52,6 +52,11 @@ def _pipeline():
     p.fuse.return_value = [doc]
     p.rerank.return_value = [doc]
     p.evaluate.return_value = ("correct", [0], "证据充分")
+    # search 复合原语委托回三阶段 mock，各测试对 recall/fuse/rerank 的覆写继续生效
+    p.search.side_effect = (
+        lambda question, queries, top_k, **kw:
+        p.rerank(question, p.fuse(p.recall(question, queries)), top_k)
+    )
     return p
 
 

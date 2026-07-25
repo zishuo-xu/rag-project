@@ -60,6 +60,15 @@ class RAGResponse:
     rewritten_query: str = ""         # F12 历史感知重写后的查询
 
 
+@dataclass
+class _GenOutcome:
+    """生成步骤的契约：invoke / invoke_stream 的生成路径都归一为这四个值。"""
+    answer: str
+    faithful: bool | None = None      # True=忠实 / False=含幻觉 / None=未检查
+    fb_score: float = 0.0
+    regenerated: bool = False
+
+
 class RAGChain:
     """
     RAG 编排层：
@@ -377,63 +386,35 @@ class RAGChain:
             metrics.observe("request_latency_ms", cached.total_time_ms)
             return cached
 
-        # F12 历史感知查询重写：带历史时解析指代/省略，用重写查询检索
-        retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
-        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
+        rewritten_query, retrieval_result = self._rewrite_and_retrieve(
+            question, chat_history, top_k, trace_id
+        )
 
         tracer.start_span(trace_id, "generation")
         if retrieval_result.gate_skipped:
-            answer = self.generate_direct(question, chat_history)
-            faithful, fb_score, regenerated = None, 0.0, False
+            outcome = _GenOutcome(answer=self.generate_direct(question, chat_history))
         elif self.faithfulness_checker and retrieval_result.documents:
-            answer, faithful, fb_score, regenerated = self._generate_faithful(
+            outcome = _GenOutcome(*self._generate_faithful(
                 question, retrieval_result.documents, chat_history,
                 deadline=retrieval_result.deadline,
-            )
+            ))
         else:
             # 无文档（召回为空）或自检关闭：直接生成，不做忠实度校验
-            answer = self.generate(question, retrieval_result.documents, chat_history)
-            faithful, fb_score, regenerated = None, 0.0, False
+            outcome = _GenOutcome(
+                answer=self.generate(question, retrieval_result.documents, chat_history)
+            )
         tracer.end_span(trace_id, "generation", {
-            "answer_chars": len(answer),
+            "answer_chars": len(outcome.answer),
             "num_sources": len(retrieval_result.documents),
             "gate_skipped": retrieval_result.gate_skipped,
-            "faithful": faithful,
-            "faithfulness_score": fb_score,
-            "regenerated": regenerated,
+            "faithful": outcome.faithful,
+            "faithfulness_score": outcome.fb_score,
+            "regenerated": outcome.regenerated,
         })
 
-        # F7 引用溯源 + F10 答案增强（零/低开销，异常降级）
-        citations = self._build_citations(question, answer, retrieval_result.documents)
-        boost = self._boost_answer(question, answer, retrieval_result.query_type)
-        short_answer = boost.short_answer if boost else ""
-        sc_used = bool(boost and boost.self_consistency_used)
-
-        total_time = (time.time() - start_time) * 1000
-        tracer.end_trace(trace_id, answer_preview=answer)
-        self._write_cache(
-            question, chat_history, q_embedding, answer, retrieval_result.documents
-        )
-
-        # F11 指标：时延 / 忠实度分布
-        metrics.observe("request_latency_ms", total_time)
-        if faithful is True:
-            metrics.inc("faithfulness_total", verdict="faithful")
-        elif faithful is False:
-            metrics.inc("faithfulness_total", verdict="unfaithful")
-
-        return RAGResponse(
-            answer=answer,
-            sources=retrieval_result.documents,
-            retrieval_result=retrieval_result,
-            total_time_ms=total_time,
-            faithful=faithful,
-            faithfulness_score=fb_score,
-            regenerated=regenerated,
-            citations=citations,
-            short_answer=short_answer,
-            self_consistency_used=sc_used,
-            rewritten_query=rewritten_query,
+        return self._finalize(
+            question, chat_history, q_embedding, outcome,
+            retrieval_result, rewritten_query, trace_id, start_time,
         )
 
     def invoke_stream(
@@ -464,15 +445,16 @@ class RAGChain:
         )
         if cached:
             metrics.inc("cache_hits_total", level="semantic")
+            metrics.observe("request_latency_ms", cached.total_time_ms)
             yield {"type": "cache_hit", "data": cached}
             yield {"type": "done", "data": cached}
             return
 
+        # SSE 顺序约束：retrieving 事件必须先于检索发出，故检索步骤在事件之间调用
         yield {"type": "retrieving", "data": "正在检索相关文档..."}
-
-        # F12 历史感知查询重写：带历史时解析指代/省略，用重写查询检索
-        retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
-        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
+        rewritten_query, retrieval_result = self._rewrite_and_retrieve(
+            question, chat_history, top_k, trace_id
+        )
         yield {"type": "retrieval", "data": retrieval_result}
 
         tracer.start_span(trace_id, "generation")
@@ -533,37 +515,10 @@ class RAGChain:
             "speculative": use_speculative,
         })
 
-        # F7 引用溯源 + F10 答案增强
-        citations = self._build_citations(question, full_answer, retrieval_result.documents)
-        boost = self._boost_answer(question, full_answer, retrieval_result.query_type)
-        short_answer = boost.short_answer if boost else ""
-        sc_used = bool(boost and boost.self_consistency_used)
-
-        total_time = (time.time() - start_time) * 1000
-        tracer.end_trace(trace_id, answer_preview=full_answer)
-        self._write_cache(
-            question, chat_history, q_embedding, full_answer,
-            retrieval_result.documents,
-        )
-
-        metrics.observe("request_latency_ms", total_time)
-        if faithful is True:
-            metrics.inc("faithfulness_total", verdict="faithful")
-        elif faithful is False:
-            metrics.inc("faithfulness_total", verdict="unfaithful")
-
-        yield {"type": "done", "data": RAGResponse(
-            answer=full_answer,
-            sources=retrieval_result.documents,
-            retrieval_result=retrieval_result,
-            total_time_ms=total_time,
-            faithful=faithful,
-            faithfulness_score=fb_score,
-            regenerated=regenerated,
-            citations=citations,
-            short_answer=short_answer,
-            self_consistency_used=sc_used,
-            rewritten_query=rewritten_query,
+        outcome = _GenOutcome(full_answer, faithful, fb_score, regenerated)
+        yield {"type": "done", "data": self._finalize(
+            question, chat_history, q_embedding, outcome,
+            retrieval_result, rewritten_query, trace_id, start_time,
         )}
 
     # ---- RAG 3.0 增强辅助方法（F7/F9/F10/F12，异常均优雅降级） ----
@@ -586,6 +541,22 @@ class RAGChain:
             logger.warning(f"F12 查询重写失败，沿用原问题: {e}")
         return question, ""
 
+    def _rewrite_and_retrieve(
+        self,
+        question: str,
+        chat_history: List | None,
+        top_k: int | None,
+        trace_id: str,
+    ) -> tuple[str, RetrievalResult]:
+        """检索步骤（invoke / invoke_stream 共用）：F12 重写 → 完整检索管道。
+
+        Returns:
+            (重写后的查询或 "", 检索结果)
+        """
+        retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
+        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
+        return rewritten_query, retrieval_result
+
     def _build_citations(
         self, question: str, answer: str, documents: List[Document]
     ) -> List[Citation]:
@@ -605,6 +576,58 @@ class RAGChain:
         except Exception as e:
             logger.warning(f"F10 答案增强失败: {e}")
             return None
+
+    def _finalize(
+        self,
+        question: str,
+        chat_history: List | None,
+        q_embedding: np.ndarray | None,
+        outcome: _GenOutcome,
+        retrieval_result: RetrievalResult,
+        rewritten_query: str,
+        trace_id: str,
+        start_time: float,
+    ) -> RAGResponse:
+        """收尾步骤（invoke / invoke_stream 共用）：
+        F7 引用 + F10 增强 + trace 收尾 + 缓存写入 + F11 指标 + 响应组装。
+        """
+        citations = self._build_citations(
+            question, outcome.answer, retrieval_result.documents
+        )
+        boost = self._boost_answer(
+            question, outcome.answer, retrieval_result.query_type
+        )
+        short_answer = boost.short_answer if boost else ""
+        sc_used = bool(boost and boost.self_consistency_used)
+
+        total_time = (time.time() - start_time) * 1000
+        get_tracer().end_trace(trace_id, answer_preview=outcome.answer)
+        self._write_cache(
+            question, chat_history, q_embedding, outcome.answer,
+            retrieval_result.documents,
+        )
+
+        # F11 指标：时延 / 忠实度分布
+        metrics = get_metrics()
+        metrics.observe("request_latency_ms", total_time)
+        if outcome.faithful is True:
+            metrics.inc("faithfulness_total", verdict="faithful")
+        elif outcome.faithful is False:
+            metrics.inc("faithfulness_total", verdict="unfaithful")
+
+        return RAGResponse(
+            answer=outcome.answer,
+            sources=retrieval_result.documents,
+            retrieval_result=retrieval_result,
+            total_time_ms=total_time,
+            faithful=outcome.faithful,
+            faithfulness_score=outcome.fb_score,
+            regenerated=outcome.regenerated,
+            citations=citations,
+            short_answer=short_answer,
+            self_consistency_used=sc_used,
+            rewritten_query=rewritten_query,
+        )
 
     # ---- 缓存公共逻辑（invoke / invoke_stream 共用） ----
 

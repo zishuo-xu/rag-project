@@ -262,10 +262,7 @@ class AgenticRetriever:
         query = (step.args.get("query") or "").strip() or question
         duplicate = query in result.queries_used
         result.queries_used.append(query)
-        pipeline = self._pipeline
-        recall_results = pipeline.recall(question, [query], top_n=top_k)
-        fused = pipeline.fuse(recall_results)
-        docs = pipeline.rerank(question, fused, top_k)
+        docs = self._pipeline.search(question, [query], top_k)
         snippet = docs[0].page_content[:80] if docs else ""
         observation = f"search('{query}') 返回 {len(docs)} 篇证据。首篇摘要: {snippet}"
         if duplicate:
