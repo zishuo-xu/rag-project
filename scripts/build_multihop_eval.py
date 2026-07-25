@@ -1,22 +1,96 @@
-"""半自动构造多跳评估集：列出知识库实体候选，输出待人工填写 gold 的骨架。
+"""半自动构造多跳评估集：基于 CMRC 三篇文档的真实实体链，输出带 gold 的评估集。
 
 用法: uv run python scripts/build_multihop_eval.py --out data/eval_multihop.json
-产出后必须人工核对每条 ground_truth 与 source，再提交。
+
+⚠️ 流程纪律：SEED 中的 ground_truth/hops 由语料原文起草，**必须人工逐条核对**
+（对照 data/cmrc_docs/ 下对应 source 文件）后才可用于评估结论。
+tests/test_eval_dataset_integrity.py 会拦截任何残留的 TODO 占位。
 """
+
 import argparse
 import json
 from pathlib import Path
 
-
-# 基于知识库真实实体（范廷颂/天主教/总主教/教区）的多跳问题模板。
-# ground_truth 为占位，需人工对照 data/sample_docs 核对后填写真实答案。
+# 多跳问题种子：chain=True 为链式（第二跳依赖第一跳答案），False 为并行（两事实合并）。
+# 全部 gold 可在 metadata.source 指向的文档中直接核对；hops 记录推理链便于归因。
 SEED = [
-    {"id": "mh1", "question": "范廷颂担任总主教的那个教区在哪里？",
-     "ground_truth": "TODO_核对知识库", "chain": True, "slice": "multihop"},
-    {"id": "mh2", "question": "范廷颂受封主教那一年的教宗是谁？",
-     "ground_truth": "TODO_核对知识库", "chain": True, "slice": "multihop"},
-    {"id": "mh3", "question": "总主教和主教在天主教圣统制中的区别是什么？",
-     "ground_truth": "TODO_核对知识库", "chain": False, "slice": "multihop"},
+    # ---- 链式多跳（8+4=12 条）----
+    {"id": "mh1", "chain": True, "slice": "multihop",
+     "question": "范廷颂担任总主教的那个教区在哪里？",
+     "ground_truth": "天主教河内总教区，位于越南河内",
+     "hops": ["范廷颂1994年擢升为天主教河内总教区总主教", "该总教区位于越南河内"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh2", "chain": True, "slice": "multihop",
+     "question": "范廷颂被擢升为枢机的那一年，他还兼任了哪个教区的宗座署理？",
+     "ground_truth": "天主教谅山教区（1994年任河内总教区总主教并兼谅山教区宗座署理）",
+     "hops": ["1994年11月26日擢升为枢机", "同年3月23日任总主教并兼天主教谅山教区宗座署理"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh3", "chain": False, "slice": "multihop",
+     "question": "范廷颂是先成为总主教还是先成为枢机？",
+     "ground_truth": "先成为总主教（1994年3月23日擢升为总主教，同年11月26日擢升为枢机）",
+     "hops": ["1994年3月23日擢升总主教", "1994年11月26日擢升枢机"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh4", "chain": True, "slice": "multihop",
+     "question": "岸本早未的出道单曲被用作哪部动画的片头曲？",
+     "ground_truth": "TBS动画《侦探学园Q》",
+     "hops": ["出道单曲为「迷Q!?-迷宫-MAKE★YOU-」", "该曲作为片头曲用于侦探学园Q"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh5", "chain": True, "slice": "multihop",
+     "question": "大卫·克劳斯在《为爱朗读》中饰演的男主角爱上了哪位女性？",
+     "ground_truth": "汉娜·舒密士（一位36岁的妇女）",
+     "hops": ["克劳斯扮演男主角米歇尔·伯格", "米歇尔爱上了36岁的汉娜·舒密士"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh6", "chain": True, "slice": "multihop",
+     "question": "北陆新干线轻井泽至长野段唯一的高架车站位于日本哪个县？",
+     "ground_truth": "长野县（上田车站，位于长野县上田市）",
+     "hops": ["该唯一高架车站是上田车站", "上田车站位于长野县上田市"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh7", "chain": True, "slice": "multihop",
+     "question": "丁谓修缮被烧毁的宫殿时，引哪条河的水进入挖开的大沟运送建材？",
+     "ground_truth": "汴水",
+     "hops": ["丁谓命工人挖大街取土成深沟", "把汴水引入沟中用竹筏木筏运建材"],
+     "metadata": {"source": "cmrc_culture_history.md"}},
+    {"id": "mh8", "chain": True, "slice": "multihop",
+     "question": "《太平天历》是在太平军攻克哪里之后正式颁行的？",
+     "ground_truth": "永安（今广西壮族自治区蒙山县）",
+     "hops": ["太平军1851年攻克永安后建号改元", "在永安正式颁行《太平天历》"],
+     "metadata": {"source": "cmrc_culture_history.md"}},
+    {"id": "mh9", "chain": True, "slice": "multihop",
+     "question": "沃蒂夫教堂是为感谢天主护佑哪位皇帝遇刺后死里逃生而兴建的？",
+     "ground_truth": "弗朗茨·约瑟夫皇帝（弗兰茨·约瑟夫）",
+     "hops": ["教堂起源与弗朗茨·约瑟夫皇帝遇刺事件有关", "为感谢其死里逃生而捐资兴建"],
+     "metadata": {"source": "cmrc_culture_history.md"}},
+    {"id": "mh10", "chain": True, "slice": "multihop",
+     "question": "潘德夫在意甲联赛的第一个帽子戏法是效力哪支球队时上演的？",
+     "ground_truth": "拉齐奥（2009年1月11日对雷吉纳的比赛中）",
+     "hops": ["2009年1月11日拉素对雷吉纳", "潘德夫上演意甲首个帽子戏法"],
+     "metadata": {"source": "cmrc_nature_sports.md"}},
+    {"id": "mh11", "chain": True, "slice": "multihop",
+     "question": "八斗子渔港兴建时计划取代哪个渔港的功能，最终哪一年兴建完成？",
+     "ground_truth": "计划取代正滨渔港的功能，1979年兴建完成",
+     "hops": ["计划以八斗子新渔港取代正滨渔港", "1975年动工，1979年兴建完成"],
+     "metadata": {"source": "cmrc_nature_sports.md"}},
+    {"id": "mh12", "chain": True, "slice": "multihop",
+     "question": "半领彩鹬所属的彩鹬科，除半领彩鹬属外还有几个物种？",
+     "ground_truth": "彩鹬科只有另一属另外两个物种",
+     "hops": ["半领彩鹬属于彩鹬科", "彩鹬科只有另一属另外两个物种"],
+     "metadata": {"source": "cmrc_nature_sports.md"}},
+    # ---- 并行多跳（跨段落/跨文章，两事实合并，chain=False）----
+    {"id": "mh13", "chain": False, "slice": "multihop",
+     "question": "大卫·克劳斯和岸本早未分别是哪国人？",
+     "ground_truth": "大卫·克劳斯是德国人，岸本早未是日本人",
+     "hops": ["大卫·克劳斯是德国男演员", "岸本早未是前日本女歌手"],
+     "metadata": {"source": "cmrc_people_geo.md"}},
+    {"id": "mh14", "chain": False, "slice": "multihop",
+     "question": "《初恋的回忆》和《小咩的管家》分别是什么类型的作品？",
+     "ground_truth": "《初恋的回忆》是美国爱情电影，《小咩的管家》是日本爱情漫画",
+     "hops": ["《初恋的回忆》是2002年美国爱情电影", "《小咩的管家》是日本爱情漫画"],
+     "metadata": {"source": "cmrc_culture_history.md"}},
+    {"id": "mh15", "chain": False, "slice": "multihop",
+     "question": "米象和半领彩鹬各自的食性是什么？",
+     "ground_truth": "米象以谷粒为食；半领彩鹬是杂食性，吞食无脊椎动物及种子",
+     "hops": ["米象幼虫以谷粒为食", "半领彩鹬杂食性，食无脊椎动物及种子"],
+     "metadata": {"source": "cmrc_people_geo.md|cmrc_nature_sports.md"}},
 ]
 
 
@@ -25,14 +99,18 @@ def main():
     parser.add_argument("--out", default="data/eval_multihop.json")
     args = parser.parse_args()
 
-    payload = {"samples": [
-        {**s, "metadata": {"source": ""}} for s in SEED
-    ]}
+    payload = {
+        "version": "1.1",
+        "num_samples": len(SEED),
+        "description": "多跳评估集：基于 CMRC 三篇文档真实实体链构造（chain=链式/False=并行），gold 需人工核对",
+        "samples": SEED,
+    }
     Path(args.out).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    print(f"已写出 {args.out}（{len(SEED)} 条骨架）。")
-    print("⚠️ 请人工核对每条 ground_truth 与 metadata.source 后再用于评估。")
+    print(f"已写出 {args.out}（{len(SEED)} 条："
+          f"链式 {sum(1 for s in SEED if s['chain'])} / 并行 {sum(1 for s in SEED if not s['chain'])}）。")
+    print("⚠️ 请人工核对每条 ground_truth 与 metadata.source 后再用于评估结论。")
 
 
 if __name__ == "__main__":

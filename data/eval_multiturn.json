@@ -1,0 +1,163 @@
+{
+  "version": "1.0",
+  "num_samples": 12,
+  "description": "F12 多轮对话评估集：基于 sample_docs 技术文档构造，每组含历史 + 指代/省略型追问。rewrite_gold 为改写后查询必须命中的关键词（重写层零LLM判定）；ground_truth 可从 metadata.source 文档核对。",
+  "samples": [
+    {
+      "id": "mt1",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 Redis 的缓存穿透？"},
+        {"role": "assistant", "content": "缓存穿透指查询不存在的数据，导致请求直接打到数据库。"}
+      ],
+      "question": "它的解决方案有哪些？",
+      "rewrite_gold": ["Redis", "缓存穿透"],
+      "ground_truth": "布隆过滤器在缓存前拦截不存在的 key；空值缓存（SET key 空值加短过期时间）；参数校验，ID 格式不合法直接拒绝",
+      "metadata": {"source": "redis.md"}
+    },
+    {
+      "id": "mt2",
+      "rewrite_type": "ellipsis",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 Redis 的哨兵机制？"},
+        {"role": "assistant", "content": "Sentinel 监控主节点健康，自动故障转移，至少 3 个哨兵节点防脑裂。"}
+      ],
+      "question": "那集群模式呢？",
+      "rewrite_gold": ["Redis"],
+      "ground_truth": "Cluster 集群：16384 个 slot 分配到多个主节点，Gossip 协议交换状态信息，客户端通过 MOVED/ASK 重定向，节点互相 PING 做故障检测",
+      "metadata": {"source": "redis.md"}
+    },
+    {
+      "id": "mt3",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 Kafka 的 ISR 机制？"},
+        {"role": "assistant", "content": "ISR 是与 Leader 保持同步的副本集合。"}
+      ],
+      "question": "它和 Unclean 选举有什么关系？",
+      "rewrite_gold": ["Kafka", "ISR"],
+      "ground_truth": "ISR 是与 Leader 保持同步的副本集合，Leader 选举从 ISR 中选出新 Leader；Unclean 选举允许非 ISR 副本成为 Leader，可能丢数据",
+      "metadata": {"source": "message_queue.md"}
+    },
+    {
+      "id": "mt4",
+      "rewrite_type": "ellipsis",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "介绍一下 RocketMQ 的事务消息"},
+        {"role": "assistant", "content": "事务消息基于半消息 + 本地事务 + 回查，实现分布式事务最终一致。"}
+      ],
+      "question": "还有延迟消息呢？",
+      "rewrite_gold": ["RocketMQ"],
+      "ground_truth": "延迟消息指定延迟级别后投递，RocketMQ 支持 18 个延迟级别，典型场景如超时取消订单（30 分钟）",
+      "metadata": {"source": "message_queue.md"}
+    },
+    {
+      "id": "mt5",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 CAP 定理？"},
+        {"role": "assistant", "content": "CAP 定理指出分布式系统不能同时满足一致性、可用性、分区容错性，最多满足两个。"}
+      ],
+      "question": "它在实际系统中怎么取舍？",
+      "rewrite_gold": ["CAP"],
+      "ground_truth": "网络分区不可避免，实际只能在 CP 和 AP 之间选择：CP 系统如 ZooKeeper、etcd、HBase 牺牲可用性保证一致性；AP 系统如 Cassandra、DynamoDB、Eureka 牺牲强一致保证可用",
+      "metadata": {"source": "distributed_system.md"}
+    },
+    {
+      "id": "mt6",
+      "rewrite_type": "ellipsis",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 Raft 协议的 Leader 选举？"},
+        {"role": "assistant", "content": "节点启动为 Follower，超时未收到心跳转为 Candidate，获得多数票成为 Leader。"}
+      ],
+      "question": "那日志复制呢？",
+      "rewrite_gold": ["Raft"],
+      "ground_truth": "客户端请求发送给 Leader，Leader 追加日志并发送 AppendEntries 给 Follower，多数节点确认后 Leader 提交，再通知 Follower 提交",
+      "metadata": {"source": "distributed_system.md"}
+    },
+    {
+      "id": "mt7",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "Docker 的镜像和容器有什么区别？"},
+        {"role": "assistant", "content": "镜像是只读模板，容器是镜像的运行实例。"}
+      ],
+      "question": "它的数据持久化怎么做？",
+      "rewrite_gold": ["Docker", "数据持久化"],
+      "ground_truth": "Volume（Docker 管理的持久化存储，推荐方式）、Bind Mount（挂载宿主机目录，开发常用）、tmpfs（内存存储，容器停止后消失）",
+      "metadata": {"source": "docker_kubernetes.md"}
+    },
+    {
+      "id": "mt8",
+      "rewrite_type": "ellipsis",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 Kubernetes 的滚动更新？"},
+        {"role": "assistant", "content": "逐步替换旧 Pod，零停机，可配置 maxSurge 和 maxUnavailable。"}
+      ],
+      "question": "还有别的部署策略吗？",
+      "rewrite_gold": ["Kubernetes"],
+      "ground_truth": "蓝绿部署：两套完整环境瞬间切换流量，回滚快但资源翻倍；金丝雀发布：先将 5% 流量导到新版本，观察指标正常后逐步放量，工具有 Istio、Argo Rollouts、Flagger",
+      "metadata": {"source": "docker_kubernetes.md"}
+    },
+    {
+      "id": "mt9",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是覆盖索引？"},
+        {"role": "assistant", "content": "查询的列全部包含在索引中，无需回表。"}
+      ],
+      "question": "它为什么能避免回表？",
+      "rewrite_gold": ["覆盖索引"],
+      "ground_truth": "查询的列全部包含在索引中，可以直接从索引返回结果，无需访问数据页（即无需回表）",
+      "metadata": {"source": "database_indexing.md"}
+    },
+    {
+      "id": "mt10",
+      "rewrite_type": "ellipsis",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "联合索引的最左前缀原则是什么？"},
+        {"role": "assistant", "content": "联合索引 (a,b,c) 按 a→b→c 顺序排列，查询必须包含最左列才能使用索引。"}
+      ],
+      "question": "那哪些情况会导致索引失效？",
+      "rewrite_gold": ["联合索引", "索引失效"],
+      "ground_truth": "对索引列使用函数、隐式类型转换、LIKE 左模糊（%开头）、OR 条件（除非各有独立索引）、NOT IN/NOT EXISTS、数据量小时优化器判断全表扫描更快",
+      "metadata": {"source": "database_indexing.md"}
+    },
+    {
+      "id": "mt11",
+      "rewrite_type": "pronoun",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 LoRA 微调？"},
+        {"role": "assistant", "content": "LoRA 将权重更新分解为两个低秩矩阵，训练时冻结原始权重，只训练低秩矩阵。"}
+      ],
+      "question": "它相比全参数微调有什么优势？",
+      "rewrite_gold": ["LoRA"],
+      "ground_truth": "显存降低 60% 以上，训练速度快，可为不同任务保存不同 LoRA 适配器，推理时可将增量权重合并回原始权重，不增加推理延迟",
+      "metadata": {"source": "llm_technology.md"}
+    },
+    {
+      "id": "mt12",
+      "rewrite_type": "mixed",
+      "slice": "multiturn",
+      "history": [
+        {"role": "user", "content": "什么是 KV Cache？"},
+        {"role": "assistant", "content": "自回归生成时缓存已计算的 Key/Value，避免重复计算。"}
+      ],
+      "question": "那它的显存占用怎么优化？",
+      "rewrite_gold": ["KVCache", "显存"],
+      "ground_truth": "通过 GQA（分组查询注意力）、MQA（多查询注意力）减少 KV Cache 的显存占用",
+      "metadata": {"source": "llm_technology.md"}
+    }
+  ]
+}

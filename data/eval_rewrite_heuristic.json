@@ -1,0 +1,227 @@
+{
+  "summary": {
+    "path": "heuristic",
+    "num_samples": 12,
+    "trigger_rate": 1.0,
+    "rewrite_rate": 1.0,
+    "keyword_hit_rate": 1.0,
+    "by_type": {
+      "mixed": {
+        "n": 1,
+        "keyword_hit_rate": 1.0
+      },
+      "pronoun": {
+        "n": 6,
+        "keyword_hit_rate": 1.0
+      },
+      "ellipsis": {
+        "n": 5,
+        "keyword_hit_rate": 1.0
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "mt1",
+      "rewrite_type": "pronoun",
+      "question": "它的解决方案有哪些？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "Redis缓存穿透解决方案有哪些？",
+      "gold_keywords": [
+        "Redis",
+        "缓存穿透"
+      ],
+      "hits": [
+        "Redis",
+        "缓存穿透"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt2",
+      "rewrite_type": "ellipsis",
+      "question": "那集群模式呢？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "Redis哨兵机制集群模式呢？",
+      "gold_keywords": [
+        "Redis"
+      ],
+      "hits": [
+        "Redis"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt3",
+      "rewrite_type": "pronoun",
+      "question": "它和 Unclean 选举有什么关系？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "KafkaISR机制和 Unclean 选举有什么关系？",
+      "gold_keywords": [
+        "Kafka",
+        "ISR"
+      ],
+      "hits": [
+        "Kafka",
+        "ISR"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt4",
+      "rewrite_type": "ellipsis",
+      "question": "还有延迟消息呢？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "一下RocketMQ事务消息的延迟消息呢？",
+      "gold_keywords": [
+        "RocketMQ"
+      ],
+      "hits": [
+        "RocketMQ"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt5",
+      "rewrite_type": "pronoun",
+      "question": "它在实际系统中怎么取舍？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "CAP定理在实际系统中怎么取舍？",
+      "gold_keywords": [
+        "CAP"
+      ],
+      "hits": [
+        "CAP"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt6",
+      "rewrite_type": "ellipsis",
+      "question": "那日志复制呢？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "Raft协议Leader选举日志复制呢？",
+      "gold_keywords": [
+        "Raft"
+      ],
+      "hits": [
+        "Raft"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt7",
+      "rewrite_type": "pronoun",
+      "question": "它的数据持久化怎么做？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "Docker镜像和容器有什么区别数据持久化怎么做？",
+      "gold_keywords": [
+        "Docker",
+        "数据持久化"
+      ],
+      "hits": [
+        "Docker",
+        "数据持久化"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt8",
+      "rewrite_type": "ellipsis",
+      "question": "还有别的部署策略吗？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "Kubernetes滚动更新的别的部署策略吗？",
+      "gold_keywords": [
+        "Kubernetes"
+      ],
+      "hits": [
+        "Kubernetes"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt9",
+      "rewrite_type": "pronoun",
+      "question": "它为什么能避免回表？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "覆盖索引为什么能避免回表？",
+      "gold_keywords": [
+        "覆盖索引"
+      ],
+      "hits": [
+        "覆盖索引"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt10",
+      "rewrite_type": "ellipsis",
+      "question": "那哪些情况会导致索引失效？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "联合索引最左前缀原则哪些情况会导致索引失效？",
+      "gold_keywords": [
+        "联合索引",
+        "索引失效"
+      ],
+      "hits": [
+        "联合索引",
+        "索引失效"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt11",
+      "rewrite_type": "pronoun",
+      "question": "它相比全参数微调有什么优势？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "LoRA微调相比全参数微调有什么优势？",
+      "gold_keywords": [
+        "LoRA"
+      ],
+      "hits": [
+        "LoRA"
+      ],
+      "missed": [],
+      "ok": true
+    },
+    {
+      "id": "mt12",
+      "rewrite_type": "mixed",
+      "question": "那它的显存占用怎么优化？",
+      "triggered": true,
+      "changed": true,
+      "rewritten": "那KVCache显存占用怎么优化？",
+      "gold_keywords": [
+        "KVCache",
+        "显存"
+      ],
+      "hits": [
+        "KVCache",
+        "显存"
+      ],
+      "missed": [],
+      "ok": true
+    }
+  ]
+}

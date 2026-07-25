@@ -180,7 +180,26 @@ uv run python run_concurrency_bench.py
 uv run python run_e2e_eval.py --mode full --colloquial   # 全特性开 + 口语化查询检视
 uv run python run_e2e_eval.py --mode baseline            # RAG1.0 基线（F1-F4 全关）
 #    → data/eval_e2e_{full,baseline}.json (检索命中/生成忠实度/端到端F1/EM/命中 + A/B)
+
+# 5. 切片评估：多跳（F6b）与多轮（F12）
+uv run python run_e2e_eval.py --dataset data/eval_multihop.json --mode full      # 多跳 15 条
+uv run python run_e2e_eval.py --dataset data/eval_multiturn.json --only F12      # 多轮 12 组
+#    → data/eval_e2e_{multihop,multiturn}_*.json
+
+# 6. F12 重写层评估（零 LLM，秒级，可进 CI）
+uv run python run_rewrite_eval.py
+#    → data/eval_rewrite_heuristic.json (触发率/改写率/gold 关键词命中率)
 ```
+
+**切片评估实测结论（2026-07-25，详见[验证报告](./docs/superpowers/reports/2026-07-25-eval-closure-report.md)）**：
+
+- **F12 多轮**：重写层启发式路径 12/12 全命中（触发率/改写率/关键词命中率均 100%）；
+  端到端检索命中率 0.67→0.75（+8pp），典型样本「它的解决方案有哪些？」覆盖率 0→0.60。
+  但启发式话题回填是双刃剑——话题噪声词也会拉低已可检索样本（mt7 覆盖率 0.83→0），
+  端到端 F1 持平（0.297→0.291）。**改写质量决定多轮收益**，LLM 重写路径留作后续优化。
+- **F6b 多跳**：规则路由（F4）在本多跳集上仅判出 1/15 为 multi_hop，分解率 6.7%，
+  分解收益无法有效测量；`--only F6` 实验同时证实分解触发依赖 F4 路由输出（路由关则分解率 0）。
+  **多跳分解的瓶颈在路由召回而非分解器本身**，路由 multi_hop 规则优化留作下一步。
 
 > 评估口径说明：检索质量以**与 LLM 解耦的 CMRC 评估**为准（命中率 100%）；
 > RAGAS 四维受生成/评判模型影响，跨模型对比时需注明口径。详见
@@ -200,6 +219,8 @@ pytest tests/ -v
 ├── run_eval.py                 # RAGAS 四维质量评估
 ├── run_retrieval_eval.py       # CMRC 检索命中评估（零 LLM）
 ├── run_concurrency_bench.py    # 并发性能评测
+├── run_e2e_eval.py             # 端到端三层评估 + 特性 A/B（支持多跳/多轮 slice）
+├── run_rewrite_eval.py         # F12 重写层评估（零 LLM，秒级）
 ├── app/
 │   ├── ingestion/              # 文档摄入
 │   │   ├── loader.py           # 多格式加载

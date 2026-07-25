@@ -126,10 +126,12 @@ def eval_sample(chain, sample) -> dict:
     question = sample["question"]
     gold = sample["ground_truth"]
     expected_source = sample.get("metadata", {}).get("source", "")
+    # F12 多轮评估：样本带 history 时透传给 chain（无 history 样本行为不变）
+    history = sample.get("history")
 
     t0 = time.time()
     try:
-        resp = chain.invoke(question)
+        resp = chain.invoke(question, chat_history=history)
     except Exception as e:
         logger.warning(f"样本失败 [{question[:20]}]: {e}")
         return {
@@ -174,8 +176,9 @@ def eval_sample(chain, sample) -> dict:
         "hit_short": answer_hit(gold, short) if short else False,
         # F7 引用溯源
         "num_citations": len(getattr(resp, "citations", []) or []),
-        # F12 重写
+        # F12 重写（记录改写后查询字符串，便于归因"重写对但检索错"类问题）
         "rewritten": bool(getattr(resp, "rewritten_query", "")),
+        "rewritten_query": getattr(resp, "rewritten_query", "") or "",
         # 观测
         "query_type": rr.query_type, "iterations": rr.iterations_used,
         "stop_reason": rr.iterative_stop_reason,
@@ -277,8 +280,8 @@ def main():
     parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4|F6")
     parser.add_argument("--colloquial", action="store_true", help="追加口语化查询检视")
     parser.add_argument("--limit", type=int, default=0, help="仅跑前N题（0=全部）")
-    parser.add_argument("--slice", default="", choices=["", "multihop", "finegrained"],
-                        help="按样本 slice 字段过滤（多跳/细粒度子集）")
+    parser.add_argument("--slice", default="", choices=["", "multihop", "finegrained", "multiturn"],
+                        help="按样本 slice 字段过滤（多跳/细粒度/多轮子集）")
     parser.add_argument("--output", default="")
     args = parser.parse_args()
 
