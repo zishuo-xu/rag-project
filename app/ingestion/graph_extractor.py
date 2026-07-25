@@ -27,22 +27,30 @@ from config import get_settings, get_llm_extra_body
 
 logger = logging.getLogger(__name__)
 
-# 实体/关系抽取 Prompt
+# 实体类型集（head_type/tail_type 必须从中选择，未知类型归一为 other）
+ENTITY_TYPES = ("person", "work", "place", "org", "position", "event", "other")
+
+# 实体/关系抽取 Prompt（JSON 类型化三元组 + 传记/影视体 few-shot，2026-07-26 升级）
 EXTRACTION_PROMPT = ChatPromptTemplate.from_template(
-    """你是一个知识图谱构建专家。请从以下文本中抽取所有有意义的实体和关系。
+    """你是一个知识图谱构建专家。请从以下文本中抽取实体和关系，以 JSON 输出。
+
+## 实体类型（head_type / tail_type 必须从以下选择）
+- person（人物）、work（作品/影视/书籍）、place（地点）、org（组织/机构）、position（职位/头衔）、event（事件/奖项/活动）、other（其他关键概念）
 
 ## 要求
-1. 实体：提取关键概念、技术名词、工具、算法、协议等（不要提取代词和通用词）
-2. 关系：用简短动词/短语描述实体间的关系（如"使用"、"包含"、"优于"、"解决"）
-3. 每个三元组格式：(头实体, 关系, 尾实体)
-4. 每行一个三元组，不要编号
-5. 实体名保持原文，不要翻译或缩写
-6. 最多提取 15 个最重要的三元组
+1. 关系 relation 用简短动词/短语（如"饰演"、"导演"、"位于"、"获得"、"担任"）
+2. 实体名保持原文，不翻译不缩写；不提取代词和通用词
+3. 最多提取 15 个最重要的三元组
+4. 仅输出 JSON，不要任何解释或代码块标记
+
+## 示例
+文本：周润发在《卧虎藏龙》中饰演李慕白，该片由李安导演，获得奥斯卡最佳外语片奖。
+输出：{{"triples": [{{"head": "周润发", "head_type": "person", "relation": "饰演", "tail": "李慕白", "tail_type": "person"}}, {{"head": "周润发", "head_type": "person", "relation": "出演", "tail": "卧虎藏龙", "tail_type": "work"}}, {{"head": "李安", "head_type": "person", "relation": "导演", "tail": "卧虎藏龙", "tail_type": "work"}}, {{"head": "卧虎藏龙", "head_type": "work", "relation": "获得", "tail": "奥斯卡最佳外语片奖", "tail_type": "event"}}]}}
 
 ## 文本
 {text}
 
-## 输出（每行一个三元组，格式：头实体, 关系, 尾实体）"""
+## 输出（仅 JSON，格式：{{"triples": [{{"head": "...", "head_type": "...", "relation": "...", "tail": "...", "tail_type": "..."}}]}}）"""
 )
 
 
@@ -167,15 +175,15 @@ class KnowledgeGraphBuilder:
         logger.info(f"快速图谱构建完成: {stats}")
         return stats
 
-    def extract_triples(self, text: str) -> List[tuple]:
+    def extract_triples(self, text: str) -> List[dict]:
         """
-        使用 LLM 从文本中抽取三元组。
+        使用 LLM 从文本中抽取类型化三元组。
 
         Args:
             text: 输入文本
 
         Returns:
-            [(head, relation, tail), ...] 三元组列表
+            [{"head", "head_type", "relation", "tail", "tail_type"}, ...]
         """
         chain = EXTRACTION_PROMPT | self.llm | StrOutputParser()
 
@@ -188,15 +196,34 @@ class KnowledgeGraphBuilder:
             logger.warning(f"三元组抽取失败: {e}")
             return []
 
-    def _parse_triples(self, text: str) -> List[tuple]:
+    def _parse_triples(self, text: str) -> List[dict]:
         """
-        解析 LLM 输出的三元组文本。
+        解析 LLM 输出的三元组（2026-07-26 升级：JSON 类型化优先，逐行解析兜底）。
 
-        支持格式：
-        - (A, 关系, B)
-        - A, 关系, B
-        - (A, 关系, B)
+        优先按 JSON 解析 {"triples": [{head, head_type, relation, tail, tail_type}]}
+        （容忍 ```json 代码块包裹）；解析失败或无有效三元组时回退旧版逐行格式
+        （头实体, 关系, 尾实体），类型统一置 other。
+
+        Returns:
+            [{"head", "head_type", "relation", "tail", "tail_type"}, ...]
         """
+        # ---- JSON 路径 ----
+        body = text.strip()
+        body = re.sub(r"^```[a-zA-Z]*\s*", "", body)
+        body = re.sub(r"\s*```$", "", body)
+        start, end = body.find("{"), body.rfind("}")
+        if start != -1 and end > start:
+            try:
+                data = json.loads(body[start:end + 1])
+                raw = data.get("triples", []) if isinstance(data, dict) else []
+                triples = [self._normalize_triple(t) for t in raw if isinstance(t, dict)]
+                # JSON 解析成功即以 JSON 为准（即使全无效也不回退逐行，
+                # 否则会把 JSON 文本按逗号拆成垃圾三元组）
+                return [t for t in triples if t]
+            except (json.JSONDecodeError, ValueError):
+                pass
+
+        # ---- 兜底：旧版逐行解析（类型置 other） ----
         triples = []
         for line in text.strip().split("\n"):
             line = line.strip()
@@ -222,9 +249,34 @@ class KnowledgeGraphBuilder:
 
                 # 过滤无效三元组
                 if head and relation and tail and len(head) > 1 and len(tail) > 1:
-                    triples.append((head, relation, tail))
+                    triples.append({
+                        "head": head, "head_type": "other",
+                        "relation": relation,
+                        "tail": tail, "tail_type": "other",
+                    })
 
         return triples
+
+    @staticmethod
+    def _normalize_triple(raw: dict) -> Optional[dict]:
+        """校验并归一化单个 JSON 三元组；无效返回 None。"""
+        head = str(raw.get("head", "")).strip().strip('"\'')
+        relation = str(raw.get("relation", "")).strip().strip('"\'')
+        tail = str(raw.get("tail", "")).strip().strip('"\'')
+        if not (head and relation and tail and len(head) > 1 and len(tail) > 1):
+            return None
+
+        def _norm_type(value) -> str:
+            t = str(value or "").strip().lower()
+            return t if t in ENTITY_TYPES else "other"
+
+        return {
+            "head": head,
+            "head_type": _norm_type(raw.get("head_type")),
+            "relation": relation,
+            "tail": tail,
+            "tail_type": _norm_type(raw.get("tail_type")),
+        }
 
     def build_from_documents(self, documents: List[Document]) -> dict:
         """
@@ -242,14 +294,19 @@ class KnowledgeGraphBuilder:
         for i, doc in enumerate(documents):
             text = doc.page_content
             source = doc.metadata.get("source", "unknown")
+            chunk_id = doc.metadata.get("chunk_id", "")
 
             triples = self.extract_triples(text)
-            for head, relation, tail in triples:
-                # 添加节点（带来源信息）
-                self.graph.add_node(head, type="entity", source=source)
-                self.graph.add_node(tail, type="entity", source=source)
-                # 添加边（关系）
-                self.graph.add_edge(head, tail, relation=relation, source=source)
+            for t in triples:
+                head, tail = t["head"], t["tail"]
+                # 添加节点（带类型与来源信息）
+                self.graph.add_node(head, type=t["head_type"], source=source)
+                self.graph.add_node(tail, type=t["tail_type"], source=source)
+                # 添加边（关系 + chunk 溯源 + 端点类型）
+                self.graph.add_edge(
+                    head, tail, relation=t["relation"], source=source,
+                    chunk_id=chunk_id, head_type=t["head_type"], tail_type=t["tail_type"],
+                )
                 total_triples += 1
 
             processed += 1
@@ -352,10 +409,16 @@ class KnowledgeGraphBuilder:
                     triples = []
 
                 # 写入图（NetworkX 非线程安全，但 asyncio 是单线程事件循环，安全）
-                for head, relation, tail in triples:
-                    self.graph.add_node(head, type="entity", source=unit["source"])
-                    self.graph.add_node(tail, type="entity", source=unit["source"])
-                    self.graph.add_edge(head, tail, relation=relation, source=unit["source"])
+                # 合并单元溯源到首个 chunk（相邻块合并抽取，三元组归属近似）
+                chunk_id = unit["chunk_ids"][0] if unit["chunk_ids"] else ""
+                for t in triples:
+                    head, tail = t["head"], t["tail"]
+                    self.graph.add_node(head, type=t["head_type"], source=unit["source"])
+                    self.graph.add_node(tail, type=t["tail_type"], source=unit["source"])
+                    self.graph.add_edge(
+                        head, tail, relation=t["relation"], source=unit["source"],
+                        chunk_id=chunk_id, head_type=t["head_type"], tail_type=t["tail_type"],
+                    )
 
                 total_triples += len(triples)
                 newly_processed_ids.extend(unit["chunk_ids"])
@@ -414,8 +477,8 @@ class KnowledgeGraphBuilder:
             self._notify_progress(progress_callback)
             raise
 
-    async def _extract_triples_async(self, text: str) -> List[tuple]:
-        """异步 LLM 三元组抽取"""
+    async def _extract_triples_async(self, text: str) -> List[dict]:
+        """异步 LLM 三元组抽取（类型化 dict）"""
         chain = EXTRACTION_PROMPT | self.llm | StrOutputParser()
         result = await chain.ainvoke({"text": text[:2000]})
         triples = self._parse_triples(result)
@@ -518,7 +581,7 @@ class KnowledgeGraphBuilder:
         获取实体的所有关系（入边 + 出边）。
 
         Returns:
-            [{"head": ..., "relation": ..., "tail": ...}, ...]
+            [{"head", "relation", "tail", "source", "chunk_id", "head_type", "tail_type"}, ...]
         """
         matched = self._fuzzy_match_nodes(entity)
         relations = []
@@ -531,6 +594,9 @@ class KnowledgeGraphBuilder:
                     "relation": data.get("relation", ""),
                     "tail": target,
                     "source": data.get("source", ""),
+                    "chunk_id": data.get("chunk_id", ""),
+                    "head_type": data.get("head_type", "other"),
+                    "tail_type": data.get("tail_type", "other"),
                 })
             # 入边
             for source, _, data in self.graph.in_edges(node, data=True):
@@ -539,6 +605,9 @@ class KnowledgeGraphBuilder:
                     "relation": data.get("relation", ""),
                     "tail": node,
                     "source": data.get("source", ""),
+                    "chunk_id": data.get("chunk_id", ""),
+                    "head_type": data.get("head_type", "other"),
+                    "tail_type": data.get("tail_type", "other"),
                 })
 
         return relations
@@ -552,6 +621,9 @@ class KnowledgeGraphBuilder:
                 "relation": data.get("relation", ""),
                 "tail": tail,
                 "source": data.get("source", ""),
+                "chunk_id": data.get("chunk_id", ""),
+                "head_type": data.get("head_type", "other"),
+                "tail_type": data.get("tail_type", "other"),
             })
             if len(triples) >= limit:
                 break

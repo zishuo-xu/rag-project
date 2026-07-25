@@ -344,9 +344,13 @@ class RetrievalPipeline:
     def _retrieve_subquery(
         self, question: str, subq: str, top_n: int
     ) -> List[Document]:
-        """子问题轻量检索：跳过门控/改写，直接 dense+sparse 召回 + fuse。"""
+        """子问题轻量检索：跳过门控/改写，直接 dense+sparse+graph 召回 + fuse。
+
+        graph 通道以子问题（而非原问题）做实体匹配——多跳分解的价值正在于
+        每个子问题独立命中各自的关系链（2026-07-26 接入）。
+        """
         recall_results = self.recall(
-            question, [subq], top_n=top_n, channels=("dense", "sparse")
+            subq, [subq], top_n=top_n, channels=("dense", "sparse", "graph")
         )
         return self.fuse(recall_results)
 

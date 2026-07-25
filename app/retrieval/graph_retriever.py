@@ -25,9 +25,9 @@ from app.ingestion.graph_extractor import get_graph_builder, KnowledgeGraphBuild
 
 logger = logging.getLogger(__name__)
 
-# 实体抽取 Prompt
+# 实体抽取 Prompt（通用措辞，适配传记/影视/百科等语料，2026-07-26 去技术域）
 ENTITY_EXTRACT_PROMPT = ChatPromptTemplate.from_template(
-    """从以下问题中提取关键技术实体（技术名词、工具、算法、协议、概念等）。
+    """从以下问题中提取关键实体（人物、作品、地点、机构、职位、事件或其他关键名词）。
 只输出实体名，每行一个，不要编号，不要解释。最多 5 个。
 
 问题：{question}
@@ -257,14 +257,22 @@ class GraphRetriever:
             for r in entity_rels[:8]:  # 每个实体最多 8 条关系
                 lines.append(f"  - {r['head']} → [{r['relation']}] → {r['tail']}")
 
+            # chunk 溯源：graph: 前缀避免与真实分块在 RRF 中同 key 互覆盖，
+            # source_chunk_ids 保留完整来源列表（接通 F7 引用溯源）
+            chunk_ids = sorted({r["chunk_id"] for r in entity_rels if r.get("chunk_id")})
+            metadata = {
+                "source": "knowledge_graph",
+                "type": "graph_relations",
+                "entity": entity,
+                "num_relations": len(entity_rels),
+                "source_chunk_ids": chunk_ids,
+            }
+            if chunk_ids:
+                metadata["chunk_id"] = "graph:" + chunk_ids[0]
+
             doc = Document(
                 page_content="\n".join(lines),
-                metadata={
-                    "source": "knowledge_graph",
-                    "type": "graph_relations",
-                    "entity": entity,
-                    "num_relations": len(entity_rels),
-                },
+                metadata=metadata,
             )
             documents.append(doc)
 
