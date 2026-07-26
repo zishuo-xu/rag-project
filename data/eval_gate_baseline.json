@@ -1,35 +1,56 @@
 {
-  "num_samples": 31,
-  "num_ok": 31,
+  "num_samples": 30,
+  "num_ok": 30,
   "num_failed": 0,
   "retrieval": {
     "hit_rate": 1.0,
     "avg_coverage": 1.0,
-    "avg_num_docs": 4.1935,
-    "avg_pre_autocut": 60.5806
+    "avg_num_docs": 3.8333,
+    "avg_pre_autocut": 56.6
   },
   "generation": {
-    "avg_faithfulness": 0.8,
-    "regen_rate": 0.2258
+    "avg_faithfulness": 0.8333,
+    "regen_rate": 0.2333
   },
   "end_to_end": {
-    "avg_f1": 0.3569,
-    "em_rate": 0.0,
-    "hit_rate": 0.4194
+    "avg_f1": 0.5207,
+    "em_rate": 0.0333,
+    "hit_rate": 0.3,
+    "answer_in_top_context_rate": 1.0
   },
-  "avg_latency_ms": 8795.8032,
+  "answer_quality": {
+    "avg_f1_short": 0.5035,
+    "em_rate_short": 0.0667,
+    "hit_rate_short": 0.3
+  },
+  "rag3": {
+    "avg_num_citations": 0.9667,
+    "rewrite_rate": 0.0
+  },
+  "avg_latency_ms": 8285.78,
   "routing_dist": {
     "numeric": 9,
     "multi_hop": 3,
     "conceptual": 7,
-    "factual": 12
+    "factual": 11
   },
   "iterative": {
-    "avg_iterations": 0.0645,
+    "avg_iterations": 0.1,
     "stop_reasons": {
-      "sufficient": 24,
-      "max_iterations": 1,
-      "converged": 6
+      "sufficient": 23,
+      "converged": 6,
+      "max_iterations": 1
     }
+  },
+  "decomposition": {
+    "decomposed_rate": 0.1,
+    "chain_rate": 0.0667
+  },
+  "agentic": {
+    "avg_steps": 0.0,
+    "stop_reasons": {
+      "n/a": 30
+    },
+    "action_dist": {}
   }
 }

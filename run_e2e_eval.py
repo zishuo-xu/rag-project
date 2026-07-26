@@ -31,7 +31,7 @@ from collections import Counter
 from pathlib import Path
 
 from config import get_settings
-from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context
+from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context, normalize_answer
 from app.evaluation.gate import evaluate_gate, format_gate_report
 
 logging.basicConfig(level=logging.WARNING)
@@ -127,6 +127,19 @@ def keyword_coverage(question: str, ground_truth: str, documents) -> float:
     context = " ".join(d.page_content for d in documents)
     hits = sum(1 for kw in keywords if kw in context)
     return hits / len(keywords)
+
+
+def filter_gradable(samples: list) -> tuple[list, list]:
+    """按可评分性切分样本：gold 归一化后非空才可评分。
+
+    抽取式数据（如 CMRC）偶有 gold 为空占位——源文档实体缺失留下的《""》，
+    归一化（仅留汉字/字母/数字）后为空串 → F1/EM/hit 结构性恒 0，纳入会拉低
+    均值且无法反映真实质量。返回 (可评分, 不可评分)，由调用方透明上报后者。
+    """
+    gradable, ungradable = [], []
+    for s in samples:
+        (gradable if normalize_answer(s.get("ground_truth", "")) else ungradable).append(s)
+    return gradable, ungradable
 
 
 def eval_sample(chain, sample) -> dict:
@@ -339,6 +352,11 @@ def main():
     samples = dataset["samples"]
     if args.slice:
         samples = [s for s in samples if s.get("slice") == args.slice]
+    # 数据卫生：剔除 gold 归一化为空的不可评分样本（结构性恒 0，拉低均值），透明上报
+    samples, ungradable = filter_gradable(samples)
+    if ungradable:
+        ids = [s.get("id") for s in ungradable]
+        print(f"[数据卫生] 跳过 {len(ids)} 条不可评分样本（gold 归一化为空）: ids={ids}")
     if args.limit > 0:
         samples = samples[: args.limit]
 

@@ -342,12 +342,17 @@ cache.py（语义响应缓存）与 caches.py（embedding/rerank 缓存）已合
 
 | 模板 | 用途 |
 |------|------|
-| `RAG_SYSTEM_PROMPT` / `RAG_SIMPLE_PROMPT` | 标准 RAG（6 条核心原则：仅基于文档 / 不补充 / 精确引用 / 诚实拒答 / 聚焦 / 结构清晰） |
+| `RAG_SYSTEM_PROMPT` / `RAG_SIMPLE_PROMPT` | 标准 RAG（4 条核心原则：答案优先 / 仅基于文档 / 简洁聚焦 / 据实作答） |
 | `RAG_CHAT_PROMPT` | 多轮对话（`MessagesPlaceholder("chat_history")`） |
 | `STRICT_RAG_PROMPT` / `STRICT_RAG_CHAT_PROMPT` | F3 严格重生成（信息不足必须明说） |
 | `DIRECT_ANSWER_PROMPT` | 门控跳过检索时的通用回答 |
 | `FAITHFULNESS_CHECK_PROMPT` | F3 LLM-judge，输出 `{score, unsupported[], reason}` |
 | `FALLBACK_RESPONSE` | 无文档兜底文案 |
+
+> **生成 prompt 重构**：四个生成模板统一为「答案优先 / 简洁聚焦 / 去掉正文内联来源（溯源交由 F7）/
+> 软化拒答（仅当文档确实完全没有才说明无法回答）」四条约束，直击端到端 F1 偏低的生成侧两类损失
+> （冗长稀释 + 过度拒答）；防幻觉硬约束与 F3 忠实度自检保留不动。契约由 `tests/test_generation_prompts.py`
+> 锁定，指标解读与数据卫生见 README「生成质量」小节。
 
 ---
 
