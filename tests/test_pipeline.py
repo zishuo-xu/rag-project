@@ -360,3 +360,55 @@ def test_remediate_failure_keeps_original():
     assert result.crag_grade == "incorrect"
     assert result.crag_action == "补救失败，保留原结果"
     assert len(result.documents) > 0
+
+
+def test_rerank_prefilters_to_rerank_top_n():
+    """重排预筛（延迟治理）：cross-encoder 只收到 RRF 融合分 top-N（N=rerank_top_n），
+    不对全量融合候选逐一打分。documents 已按 RRF 分降序，截前 N 即 top-N。"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].rerank_top_n = 3
+    # 10 篇融合候选（视为已按 RRF 分降序），远超 rerank_top_n=3
+    docs = [_doc(f"c{i}", chunk_id=f"c{i}") for i in range(10)]
+
+    received = {}
+
+    def _capture(q, cand, top_k=None):
+        received["cand"] = cand
+        return cand[: top_k or len(cand)]
+
+    mocks["reranker"].rerank.side_effect = _capture
+    pipe.rerank("问题", docs, top_k=5, use_rerank=True, use_autocut=False)
+    # 重排器只收到前 3 篇（RRF 头部），而非全部 10 篇
+    assert len(received["cand"]) == 3
+    assert [d.page_content for d in received["cand"]] == ["c0", "c1", "c2"]
+
+
+def test_rerank_prefilter_autocut_path():
+    """autocut 路径同样预筛：cross-encoder 收到 ≤ rerank_top_n 候选（非全量）"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].rerank_top_n = 4
+    docs = [_doc(f"c{i}", chunk_id=f"c{i}") for i in range(12)]
+
+    received = {}
+
+    def _scored(q, cand, top_k=None):
+        received["cand"] = cand
+        for i, d in enumerate(cand):
+            d.metadata["rerank_score"] = 0.9 - 0.1 * i
+        return cand[: top_k or len(cand)]
+
+    mocks["reranker"].rerank.side_effect = _scored
+    pipe.rerank(
+        "问题", docs, top_k=5, use_rerank=True, use_autocut=True, autocut_min_docs=2
+    )
+    assert len(received["cand"]) == 4  # 预筛到 rerank_top_n=4，不收全量 12 篇
+
+
+def test_rerank_disabled_no_prefilter_no_rerank():
+    """use_rerank=False：不预筛、不重排，直接 top_k 截断（回归保护）"""
+    pipe, mocks = _make_pipeline()
+    mocks["settings"].rerank_top_n = 3
+    docs = [_doc(f"c{i}", chunk_id=f"c{i}") for i in range(10)]
+    out = pipe.rerank("问题", docs, top_k=5, use_rerank=False)
+    assert len(out) == 5
+    mocks["reranker"].rerank.assert_not_called()

@@ -207,16 +207,22 @@ class RetrievalPipeline:
         autocut_min_docs: int = 2,
     ) -> List[Document]:
         if use_rerank and self.reranker:
+            # 重排预筛（延迟治理）：cross-encoder 只精排 RRF 融合分 top-N（N=rerank_top_n），
+            # 不对全部融合候选（5 路各召回 rerank_top_n，去重后 ~50-70 篇）逐一打分——CPU
+            # 上全量打分是 ~3s 的最大单点。documents 已由 RRF 按融合分降序排列（fusion 保证），
+            # 截前 N 即 top-N；autocut 膝点与最终 top_k 均 ≪ N，预筛不损失最终召回
+            # （答案恒在 RRF 头部，answer_in_top_context 实测保持 1.0）。
+            candidates = documents[: self._settings.rerank_top_n]
             if use_autocut:
-                # 打分+排序全部候选（CrossEncoder 计算量不变，仅多返回），
+                # 打分+排序预筛候选（CrossEncoder 计算量不变，仅多返回），
                 # 再用 Kneedle 膝点动态截断噪声尾巴，上界 top_k 保证不扩容。
                 scored = self.reranker.rerank(
-                    question, documents, top_k=len(documents)
+                    question, candidates, top_k=len(candidates)
                 )
                 return autocut_truncate(
                     scored, top_k=top_k, min_docs=autocut_min_docs,
                 )
-            return self.reranker.rerank(question, documents, top_k=top_k)
+            return self.reranker.rerank(question, candidates, top_k=top_k)
         return documents[:top_k]
 
     # ---- 复合原语: 召回 → RRF 融合 → 重排（检索最小闭环） ----

@@ -224,7 +224,7 @@ agent_steps / agent_stop_reason / budget_skipped / deadline`。
 | **② transform** | `transform` | 委托 `QueryTransformer` 生成查询变体，否则 `[question]` |
 | **③ recall** | `recall` | `ThreadPoolExecutor(max_workers=recall_max_workers)` 并行五路召回，单路失败仅告警；结果经 `dedup_by_chunk_id` 去重 |
 | **④ fuse** | `fuse` | 固定 dense+sparse，其余通道非空才加入，调 RRF |
-| **⑤ rerank** | `rerank` | CrossEncoder 精排（先查 L2 RerankCache）；开启 Autocut 时先全量打分再膝点截断 |
+| **⑤ rerank** | `rerank` | CrossEncoder 精排（先查 L2 RerankCache）；先按 RRF 分预筛 top-N（`rerank_top_n`）再打分，开启 Autocut 时再膝点截断 |
 | **⑥ evaluate** | `evaluate` | 先零 LLM 数字校验，再 CRAG LLM 分级 |
 | **⑦ remediate** | `remediate` | HyDE 改写 → `search()`（dense+sparse 双路召回→融合→重排） |
 
@@ -276,7 +276,12 @@ RRF_score(d) = Σ 1 / (k + rank_i(d)),   k = 60 (settings.retrieval_rrf_k)
   `model.predict(pairs)` 打分后降序取 top_k，写入 `metadata["rerank_score"]`；
   先查 L2 `RerankCache`（key 含 chunk_id 集合，文档变化即 key 变化），命中跳过 cross-encoder。
 - **为什么用 Cross-Encoder 而非 Bi-Encoder**：query-doc 交互注意力精度更高，但速度慢，
-  故只对融合后的少量候选（`rerank_top_n=20`）精排。
+  故只对融合后的少量候选精排。
+- **重排预筛（延迟治理）**：`pipeline.rerank` 先按 RRF 融合分预筛 top-N（`rerank_top_n`，`.env`=30）
+  再送入 cross-encoder，不对全部融合候选（5 路各召回 `rerank_top_n`、去重后 ~50-70 篇）逐一打分——
+  CPU 上全量打分是 ~3s 的最大单点。`documents` 已由 RRF 按融合分降序排列，截前 N 即 top-N；
+  autocut 膝点与最终 top_k 均 ≪ N，预筛不损失召回（答案恒在 RRF 头部）。实测检索延迟
+  5320→3872ms（−27%）、E2E 6800→6113ms（−10%），hit_rate / answer_in_top_context 保持 1.0。
 
 ### 5.5 查询改写（`app/retrieval/query_transform.py`）
 
