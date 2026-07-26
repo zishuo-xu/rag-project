@@ -353,6 +353,9 @@ cache.py（语义响应缓存）与 caches.py（embedding/rerank 缓存）已合
 > 软化拒答（仅当文档确实完全没有才说明无法回答）」四条约束，直击端到端 F1 偏低的生成侧两类损失
 > （冗长稀释 + 过度拒答）；防幻觉硬约束与 F3 忠实度自检保留不动。契约由 `tests/test_generation_prompts.py`
 > 锁定，指标解读与数据卫生见 README「生成质量」小节。
+> **残差天花板**：重构后残余的「过度拒答」（11/30、`answer_in_top_context_rate=1.0`）经两轮正交 prompt
+> 实验（详略自适应 / 先查后拒守卫）证实**无法由 prompt 撬动**——属 deepseek-v4-flash 的抽取能力天花板，
+> 非检索 / 非 prompt 问题；生成侧 prompt 杠杆已用尽，再提正确率需换更强模型或增设上下文聚焦预抽取阶段。
 
 ---
 
