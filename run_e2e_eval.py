@@ -319,7 +319,9 @@ def aggregate(results: list) -> dict:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="data/eval_dataset_cmrc.json")
+    parser.add_argument("--dataset", default="data/eval_dataset_cmrc_expanded.json",
+                        help="默认用扩容评测集（100 题，CMRC2018 人工标注 gold，含 40 干扰篇章）；"
+                             "旧 31 题集 data/eval_dataset_cmrc.json 仍可显式指定做快速冒烟")
     parser.add_argument("--mode", default="full", choices=["baseline", "full"])
     parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4|F6")
     parser.add_argument("--colloquial", action="store_true", help="追加口语化查询检视")
