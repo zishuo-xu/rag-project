@@ -264,12 +264,6 @@ st.markdown("""
         width: 8px; height: 8px; border-radius: 50%;
         background: #334155; transition: background 0.3s;
     }
-    .stage-item.active { color: #FBBF24; }
-    .stage-item.active .dot {
-        background: #F59E0B;
-        animation: pulseGlow 1s ease infinite;
-        box-shadow: 0 0 8px rgba(245,158,11,0.5);
-    }
     .stage-item.done { color: #34D399; }
     .stage-item.done .dot { background: #34D399; }
     .stage-sep { color: #334155; padding: 0 8px; font-size: 0.8rem; }
@@ -310,54 +304,6 @@ st.markdown("""
         animation: shimmer 1.6s linear infinite;
         border-radius: 12px 12px 0 0;
     }
-
-    /* 检索仪表盘卡片 */
-    .retrieval-dash {
-        background: #172033; border: 1px solid #334155;
-        border-radius: 12px; padding: 14px 16px; margin: 8px 0;
-        animation: fadeInUp 0.35s ease both;
-    }
-    .rd-flow {
-        display: flex; align-items: center; gap: 0; flex-wrap: wrap;
-        margin-bottom: 10px;
-    }
-    .rd-node {
-        text-align: center; padding: 6px 12px;
-        background: #1E293B; border: 1px solid #334155;
-        border-radius: 8px; min-width: 72px;
-        transition: border-color 0.2s, transform 0.2s;
-    }
-    .rd-node:hover { border-color: #38BDF8; transform: translateY(-2px); }
-    .rd-node .n { font-size: 1.05rem; font-weight: 700; color: #E2E8F0; }
-    .rd-node .l { font-size: 0.65rem; color: #64748B; margin-top: 1px; }
-    .rd-arrow { color: #475569; padding: 0 6px; font-size: 0.9rem; }
-    .rd-meta {
-        display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-        font-size: 0.72rem; color: #94A3B8;
-    }
-    .rd-meta .q-tag {
-        background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25);
-        color: #7DD3FC; border-radius: 5px; padding: 2px 8px; font-size: 0.7rem;
-    }
-    .rd-time-bar {
-        height: 6px; background: #1E293B; border-radius: 3px;
-        margin-top: 10px; overflow: hidden;
-    }
-    .rd-time-fill {
-        height: 100%; border-radius: 3px;
-        background: linear-gradient(90deg, #F59E0B, #FBBF24);
-        transition: width 0.5s ease;
-    }
-
-    /* 反馈按钮 */
-    .feedback-row { display: flex; gap: 6px; margin-top: 6px; }
-    .fb-btn {
-        background: transparent; border: 1px solid #334155;
-        border-radius: 6px; padding: 2px 10px; font-size: 0.78rem;
-        color: #64748B; cursor: pointer; transition: all 0.2s;
-    }
-    .fb-btn:hover { border-color: #F59E0B; color: #FBBF24; }
-    .fb-btn.selected { background: rgba(245,158,11,0.12); border-color: #F59E0B; color: #FBBF24; }
 
     /* 打字指示 */
     .typing-dots { display: inline-flex; gap: 4px; padding: 4px 0; }
@@ -527,10 +473,10 @@ def render_track(mode: str, detail: dict = None, answer_len: int = 0, placeholde
     """
     if mode == "cache":
         html = (
-            '<div class="stage-track cache-track">'
-            '<span class="stage-item done"><span class="dot"></span>'
-            '<span class="stage-text"><span class="stage-label">⚡ 缓存命中</span>'
-            '<span class="stage-out">跳过全链路</span></span></span>'
+            '<div class="stage-track" style="border-color:#F59E0B">'
+            '<span class="stage-item done"><span class="dot" style="background:#F59E0B"></span>'
+            '⚡ 缓存命中</span>'
+            '<span class="stage-sep" style="color:#F59E0B">— 跳过全链路</span>'
             '</div>'
         )
     else:
@@ -792,10 +738,7 @@ def render_sources(sources: list):
                 f'<span class="src-score">相关度 {src["score"]:.3f}</span>'
                 if src.get("score") else ""
             )
-            content_escaped = (
-                src["content"][:200]
-                .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            )
+            content_escaped = _esc(src["content"][:200])
             st.markdown(
                 f'<div class="source-card">'
                 f'{score_html}'
@@ -891,10 +834,7 @@ def render_index_explorer():
             f'<span class="term-tag">{t["term"]}<span class="term-count"> ×{t["count"]}</span></span>'
             for t in chunk["top_terms"][:8]
         )
-        content_escaped = (
-            chunk["content"]
-            .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        )
+        content_escaped = _esc(chunk["content"])
         st.markdown(
             f'<div class="chunk-card">'
             f'<div class="chunk-header">'
@@ -956,14 +896,7 @@ def run_chat_turn(prompt: str):
                             full_answer = cache_data.get("answer", "")
                             sources = cache_data.get("sources", [])
                             cache_hit = True
-                            stage_placeholder.markdown(
-                                '<div class="stage-track" style="border-color:#F59E0B">'
-                                '<span class="stage-item done"><span class="dot" style="background:#F59E0B"></span>'
-                                '\u26a1 缓存命中</span>'
-                                '<span class="stage-sep" style="color:#F59E0B">\u2014 \u8df3\u8fc7\u5168\u94fe\u8def</span>'
-                                '</div>',
-                                unsafe_allow_html=True,
-                            )
+                            render_track("cache", placeholder=stage_placeholder)
                             placeholder.markdown(full_answer)
                         elif event_type == "token":
                             if not tokens_started:

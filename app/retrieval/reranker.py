@@ -110,35 +110,3 @@ class Reranker:
             f"(最高分: {scores.max():.4f}, 最低分: {scores.min():.4f})"
         )
         return results
-
-    def rerank_with_scores(
-        self,
-        query: str,
-        documents: List[Document],
-        top_k: int | None = None,
-    ) -> List[dict]:
-        """
-        带分数的重排序。
-
-        Returns:
-            [{"document": Document, "score": float}, ...]
-        """
-        settings = get_settings()
-        top_k = top_k or settings.retrieval_top_k
-
-        if not documents:
-            return []
-
-        pairs = [(query, doc.page_content) for doc in documents]
-        scores = self.model.predict(pairs)
-
-        ranked = sorted(
-            zip(documents, scores),
-            key=lambda x: x[1],
-            reverse=True,
-        )
-
-        return [
-            {"document": doc, "score": float(score)}
-            for doc, score in ranked[:top_k]
-        ]

@@ -254,15 +254,6 @@ class SemanticCache:
     def size(self) -> int:
         return len(self._cache)
 
-    def _evict_expired(self):
-        """清理过期条目"""
-        now = time.time()
-        before = len(self._cache)
-        self._cache = [e for e in self._cache if now - e.timestamp <= self.ttl]
-        evicted = before - len(self._cache)
-        if evicted > 0:
-            logger.debug(f"缓存过期清理: 移除 {evicted} 条")
-
     @staticmethod
     def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
         """计算余弦相似度"""

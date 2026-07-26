@@ -13,7 +13,6 @@
 """
 
 import logging
-import re
 from typing import List, Optional
 
 from langchain_core.documents import Document
@@ -22,6 +21,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from config import get_settings, build_chat_llm
 from app.ingestion.graph_extractor import get_graph_builder, KnowledgeGraphBuilder
+from app.utils import norm_key
 
 logger = logging.getLogger(__name__)
 
@@ -36,17 +36,13 @@ _WEAK_RELATIONS = frozenset({
 })
 
 
-def _norm_rel(rel: str) -> str:
-    """relation 归一化：去空白 + 小写，与 _fuzzy_match_nodes 口径一致。"""
-    return re.sub(r"\s+", "", (rel or "").lower())
-
-
 def is_weak_relation(rel: str) -> bool:
     """判定一条 relation 是否为上位概念/分类学边（弱语义边）。
 
     读侧实时判定，词表可调、零迁移；用于路径搜索区分强/弱边与前端诚实标注。
+    归一化口径与图节点匹配共用 :func:`app.utils.norm_key`。
     """
-    n = _norm_rel(rel)
+    n = norm_key(rel)
     return n in _WEAK_RELATIONS or n.startswith("属于")
 
 # 实体抽取 Prompt（通用措辞，适配传记/影视/百科等语料，2026-07-26 去技术域）
@@ -102,38 +98,21 @@ class GraphRetriever:
         return self._llm_extract_entities(question)
 
     def _fast_entity_match(self, question: str) -> List[str]:
+        """基于图节点的快速实体匹配（无 LLM 调用）。
+
+        复用 :meth:`KnowledgeGraphBuilder.match_nodes` 原语，配置为快速路径：
+        单向包含（节点名出现在查询中）+ 度数降序 + 去子串 + 过滤单字节点。
+        归一化口径（去空白+小写）与子图/路径检索一致，修复历史"仅 lower 漏去
+        空白"导致带空格节点（如 "B+ 树"）失配的问题。
         """
-        基于图节点的快速实体匹配（无 LLM 调用）。
-
-        策略：将查询与图中所有节点名做包含匹配，
-        按节点度数排序返回 top-K。
-        """
-        graph = self.graph_builder.graph
-        if graph.number_of_nodes() == 0:
-            return []
-
-        question_lower = question.lower()
-        degrees = dict(graph.degree())
-        matched = []
-
-        for node in graph.nodes():
-            node_lower = node.lower()
-            # 节点名必须 >= 2 字符且出现在查询中
-            if len(node_lower) >= 2 and node_lower in question_lower:
-                matched.append((node, degrees.get(node, 0)))
-
-        # 按度数降序，取 top-K
-        matched.sort(key=lambda x: x[1], reverse=True)
-
-        # 去除被更长实体包含的子串（如 "Redis" 和 "Redis Cluster"）
-        result = []
-        for node, deg in matched:
-            if not any(node.lower() != m.lower() and node.lower() in m.lower() for m in result):
-                result.append(node)
-            if len(result) >= self.max_entities:
-                break
-
-        return result[:self.max_entities]
+        return self.graph_builder.match_nodes(
+            question,
+            top_k=self.max_entities,
+            bidirectional=False,
+            rank_by_degree=True,
+            dedup_substrings=True,
+            min_len=2,
+        )
 
     def _llm_extract_entities(self, question: str) -> List[str]:
         """使用 LLM 从查询中抽取实体（回退路径）"""
@@ -349,8 +328,8 @@ class GraphRetriever:
         empty = {"found": False, "path": [], "path_length": 0, "weak_only": False}
 
         # 模糊匹配（归一化口径，top_k=1 取最佳匹配节点）
-        nodes_a = self.graph_builder._fuzzy_match_nodes(entity_a, top_k=1)
-        nodes_b = self.graph_builder._fuzzy_match_nodes(entity_b, top_k=1)
+        nodes_a = self.graph_builder.match_nodes(entity_a, top_k=1)
+        nodes_b = self.graph_builder.match_nodes(entity_b, top_k=1)
         if not nodes_a or not nodes_b:
             return empty
 

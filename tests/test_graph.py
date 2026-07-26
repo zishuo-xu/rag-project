@@ -284,3 +284,80 @@ def test_find_path_fuzzy_match_ignores_space_case(retriever, builder):
     assert res["weak_only"] is False  # 直连强边
     assert res["path"][0]["from"] == "MySQL"
     assert res["path"][0]["to"] == "B+ 树"
+
+
+# ============ 节点匹配原语 match_nodes（两历史实现合并，统一 norm_key 口径）============
+
+def test_match_nodes_empty_graph(builder):
+    """空图返回空列表（快速路径与子图检索共用的前置守卫）。"""
+    assert builder.match_nodes("任意查询") == []
+
+
+def test_match_nodes_default_bidirectional(builder):
+    """默认模糊匹配是双向包含：query↔node 任一方向命中即可。"""
+    builder.graph.add_edge("卧虎藏龙", "李安", relation="导演")
+    # node 包含 query
+    assert "卧虎藏龙" in builder.match_nodes("卧虎")
+    # query 包含 node
+    assert "李安" in builder.match_nodes("李安导演了哪部片")
+
+
+def test_match_nodes_normalizes_space_and_case(builder):
+    """统一归一化（去空白+小写）：'b+树' 命中节点 'B+ 树'，返回原始节点名。"""
+    builder.graph.add_edge("MySQL", "B+ 树", relation="使用")
+    assert "B+ 树" in builder.match_nodes("b+树")
+
+
+def test_match_nodes_exact_match_first(builder):
+    """非度数排序时，完全匹配优先于包含匹配。"""
+    builder.graph.add_edge("Redis", "RedisCluster", relation="包含")
+    matched = builder.match_nodes("redis", top_k=5)
+    assert matched[0] == "Redis"
+
+
+def test_match_nodes_rank_by_degree(builder):
+    """快速路径配置（rank_by_degree）：度数高者排前。"""
+    g = builder.graph
+    g.add_edge("中心", "x", relation="r")
+    g.add_edge("中心", "y", relation="r")
+    g.add_edge("中心", "z", relation="r")   # 中心 degree 3
+    g.add_edge("边缘", "x", relation="r")   # 边缘 degree 1
+    matched = builder.match_nodes(
+        "中心和边缘", bidirectional=False, rank_by_degree=True, min_len=2
+    )
+    assert matched[0] == "中心"
+
+
+def test_match_nodes_dedup_substrings(builder):
+    """快速路径配置（dedup_substrings）：被更长已选节点包含的子串节点被去除。"""
+    g = builder.graph
+    g.add_edge("Redis Cluster", "n1", relation="r")
+    g.add_edge("Redis Cluster", "n2", relation="r")  # Redis Cluster degree 2
+    g.add_edge("Redis", "n1", relation="r")           # Redis degree 1
+    matched = builder.match_nodes(
+        "Redis Cluster 和 Redis", bidirectional=False,
+        rank_by_degree=True, dedup_substrings=True, min_len=2,
+    )
+    assert matched == ["Redis Cluster"]  # "Redis" 是其子串，被去重
+
+
+def test_match_nodes_min_len_filters_short_nodes(builder):
+    """快速路径配置（min_len=2）：过滤单字节点，即便出现在查询中。"""
+    g = builder.graph
+    g.add_edge("A", "B", relation="r")
+    g.add_edge("数据库", "A", relation="r")
+    matched = builder.match_nodes("A 和 数据库", bidirectional=False, min_len=2)
+    assert "数据库" in matched
+    assert "A" not in matched
+
+
+def test_fast_entity_match_unified_normalization(retriever, builder):
+    """快速实体匹配修复回归：带空格节点 'B+ 树' 对无空格查询 'b+树' 也能命中。
+
+    历史 _fast_entity_match 仅 .lower() 漏去空白，此场景失配回退 LLM；
+    合并到 match_nodes（统一 norm_key）后快速路径直接命中。LLM 被 mock，
+    回退路径只会得到空列表，故断言命中即证明走了快速路径。
+    """
+    builder.graph.add_edge("MySQL", "B+ 树", relation="使用")
+    entities = retriever.extract_entities("b+树是什么数据结构")
+    assert "B+ 树" in entities

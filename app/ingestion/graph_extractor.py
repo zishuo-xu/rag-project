@@ -23,6 +23,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
 from config import get_settings, build_chat_llm
+from app.utils import norm_key
 
 logger = logging.getLogger(__name__)
 
@@ -432,7 +433,7 @@ class KnowledgeGraphBuilder:
         nodes = set()
         for entity in entities:
             # 模糊匹配：找到图中包含该关键词的节点
-            matched = self._fuzzy_match_nodes(entity)
+            matched = self.match_nodes(entity)
             nodes.update(matched)
 
         if not nodes:
@@ -460,7 +461,7 @@ class KnowledgeGraphBuilder:
         Returns:
             [{"head", "relation", "tail", "source", "chunk_id", "head_type", "tail_type"}, ...]
         """
-        matched = self._fuzzy_match_nodes(entity)
+        matched = self.match_nodes(entity)
         relations = []
 
         for node in matched:
@@ -528,31 +529,71 @@ class KnowledgeGraphBuilder:
             "density": round(nx.density(self.graph), 6),
         }
 
-    def _fuzzy_match_nodes(self, query: str, top_k: int = 3) -> List[str]:
-        """
-        模糊匹配图节点（支持部分匹配）。
+    def match_nodes(
+        self,
+        query: str,
+        *,
+        top_k: int = 3,
+        bidirectional: bool = True,
+        rank_by_degree: bool = False,
+        dedup_substrings: bool = False,
+        min_len: int = 0,
+    ) -> List[str]:
+        """图节点匹配原语（归一化口径统一，唯一的节点匹配实现）。
+
+        归一化用 :func:`app.utils.norm_key`（去空白+小写），避免 "b+树" 与
+        图节点 "B+ 树" 因空格/大小写失配。两组历史实现（子图/关系检索的模糊
+        匹配、实体抽取的快速匹配）合并为本原语，差异收敛为下列行为开关：
 
         Args:
             query: 查询关键词
             top_k: 最多返回数量
+            bidirectional: True=双向包含（query↔node，子图/关系/路径检索用）；
+                False=单向（node 出现在 query 中，实体快速匹配用）
+            rank_by_degree: True=按节点度数降序（实体快速匹配用）；
+                False=保持"完全匹配优先 + 插入序"
+            dedup_substrings: True=去除被更长已选节点包含的子串节点
+                （如 "Redis" 与 "Redis Cluster"，实体快速匹配用）
+            min_len: 归一化后节点名最小长度（实体快速匹配用 2，过滤单字噪声）
 
         Returns:
-            匹配到的节点名列表
+            匹配到的原始节点名列表
         """
-        query_lower = query.lower()
-        # 归一化：去空白 + 小写，避免 "b+树" 与图节点 "B+ 树" 因空格/大小写失配
-        query_norm = re.sub(r"\s+", "", query_lower)
-        matched = []
+        graph = self.graph
+        if graph.number_of_nodes() == 0:
+            return []
 
-        for node in self.graph.nodes():
-            node_lower = node.lower()
-            node_norm = re.sub(r"\s+", "", node_lower)
-            # 完全匹配（归一化后）
-            if node_norm == query_norm:
-                matched.insert(0, node)
-            # 包含匹配（归一化后）
-            elif query_norm in node_norm or node_norm in query_norm:
-                matched.append(node)
+        q = norm_key(query)
+        if not q:
+            return []
+
+        degrees = dict(graph.degree()) if rank_by_degree else None
+        exact: List[str] = []
+        contains: List[str] = []
+        for node in graph.nodes():
+            n = norm_key(node)
+            if len(n) < min_len:
+                continue
+            if n == q:
+                exact.append(node)
+            elif bidirectional and (q in n or n in q):
+                contains.append(node)
+            elif not bidirectional and n in q:
+                contains.append(node)
+
+        matched = exact + contains
+        if rank_by_degree:
+            matched.sort(key=lambda x: degrees.get(x, 0), reverse=True)
+
+        if dedup_substrings:
+            result: List[str] = []
+            for node in matched:
+                n = norm_key(node)
+                if not any(n != norm_key(m) and n in norm_key(m) for m in result):
+                    result.append(node)
+                if len(result) >= top_k:
+                    break
+            return result[:top_k]
 
         return matched[:top_k]
 
