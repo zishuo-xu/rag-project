@@ -175,6 +175,57 @@ def _eval_answer_relevancy(question: str, answer: str) -> float:
     return 0.5
 
 
+# ==================== Answer Correctness（语义正确率，端到端语义裁判） ====================
+
+def answer_correctness(question: str, answer: str, ground_truth: str) -> float:
+    """语义正确率：回答与参考答案在**语义**上是否等价（LLM-as-judge）。
+
+    端到端词法指标（char-F1 / 子串 hit / EM）量的是「span 复现度」，对「长句型 gold vs
+    凝练/改写答案」结构性苛刻（已实证：hit 掉点样本 F1 反而上升）。本指标作为更真的质量
+    信号：允许同义改写、语序调整、详略差异，只看语义是否覆盖参考答案。供 run_e2e_eval.py
+    的 `--judge` 路径与 full 闸门使用（每样本 1 次 LLM 调用，故默认关）。
+
+    空 answer 或空 gold → 0.0（结构性不可评）；judge 失败 → 0.5（中间值，与其他 judge 一致）。
+    """
+    if not answer or not answer.strip() or not ground_truth or not ground_truth.strip():
+        return 0.0
+
+    prompt = f"""你是一个严格但通情达理的评估专家。请评估"待评估回答"相对于"参考答案"的语义正确性。
+
+## 问题
+{question}
+
+## 参考答案（事实基准）
+{ground_truth}
+
+## 待评估回答
+{answer}
+
+## 评估标准
+- 1.0：语义完全等价——回答覆盖了参考答案的全部关键事实，只是措辞/句式不同
+- 0.8：基本正确——覆盖参考答案主要事实，仅有次要细节差异或轻微冗余
+- 0.5：部分正确——答对了一部分，但遗漏或错掉了参考答案的相当一部分关键信息
+- 0.2：基本错误——仅个别词碰巧重合，整体与参考答案不符
+- 0.0：完全错误或矛盾，或答非所问
+
+## 重要原则（务必遵守）
+- 允许同义改写、语序调整、详略差异，**不苛求字面逐字一致**：改写但语义对 = 高分
+- 参考答案中的来源标注（如[来源: xxx]）、标点、格式不影响评分
+- 只判断语义是否等价于参考答案，不评价回答风格
+
+## 输出格式（严格JSON）
+{{"reasoning": "一句话说明评分理由", "score": 0.0到1.0之间的小数}}"""
+
+    try:
+        result = _llm_judge(prompt)
+        data = _extract_json(result)
+        if data:
+            return float(data.get("score", 0.5))
+    except Exception as e:
+        logger.warning(f"Answer Correctness 评估失败: {e}")
+    return 0.5
+
+
 # ==================== Context Precision（上下文精确度） ====================
 
 def _eval_context_precision(question: str, contexts: List[str], ground_truth: str) -> float:

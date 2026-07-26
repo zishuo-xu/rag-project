@@ -629,7 +629,7 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 |------|------|--------------------|
 | `run_eval.py` | RAGAS 四维（faithfulness / answer_relevancy / context_precision / context_recall） | 是 |
 | `run_retrieval_eval.py` | CMRC 检索命中率 / 覆盖率 / 平均检索耗时 | **否**（与 LLM 解耦，作为检索质量决定性指标） |
-| `run_e2e_eval.py` | 端到端三层 + A/B 特性归因 + 口语化定性检视 | 部分（忠实度用 LLM） |
+| `run_e2e_eval.py` | 端到端三层 + A/B 特性归因 + 口语化定性检视 + `--judge` 语义裁判 | 部分（忠实度 + 可选 `--judge` 用 LLM） |
 | `run_concurrency_bench.py` | QPS / P50 / P95 / P99 / 错误率 / 瓶颈分析（并发 1/3/5/10/20） | — |
 
 **RAGAS 四维自实现**（`app/evaluation/metrics.py`，不依赖 ragas 包）：
@@ -638,6 +638,9 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 - `_eval_answer_relevancy`：按 1.0/0.8/0.6/0.4/0.0 档评分。
 - `_eval_context_precision`：Weighted Precision@K = `Σ(precision@k · rel(k)) / num_relevant`。
 - `_eval_context_recall`：拆标准答案为 claim 判 attributable，`recall = attributable / 总`。
+- `answer_correctness`（公开，端到端**语义裁判**）：LLM 判答案与 gold 是否语义等价，**允许同义改写/语序/详略**，
+  只看语义覆盖。`run_e2e_eval --judge` 产出 `end_to_end.avg_correctness`，gate 以 full-only + 相对基线
+  （容差 0.05）接入、未跑则键缺失自动跳过。纠偏词法 F1/子串 hit 对「长句型 gold vs 凝练答案」的结构性苛刻。
 
 > **测量严谨性**：换 LLM 会导致 RAGAS「生成模型 + 评判模型」同时变化、与历史基线不可比。
 > 故以**与 LLM 解耦的 CMRC 检索评估**（命中率 100%）作为检索质量的决定性指标。

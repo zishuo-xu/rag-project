@@ -104,3 +104,48 @@ def test_gate_full_without_baseline_skips_e2e_compare():
     res = evaluate_gate(_good_summary(), mode="full", baseline=None)
     assert res.passed is True
     assert any(i["metric"] == "end_to_end.avg_f1" for i in res.infos)
+
+
+# ============ 语义正确率 avg_correctness（--judge 产出，full-only/needs_baseline） ============
+
+def _with_correctness(s, val):
+    s["end_to_end"]["avg_correctness"] = val
+    return s
+
+
+def test_gate_correctness_regression_detected():
+    """跑了 judge 且基线含 correctness：退化超容差 → violation。"""
+    base = _with_correctness(_good_summary(), 0.80)
+    cur = _with_correctness(_good_summary(), 0.60)  # delta -0.20 < -tol(0.05)
+    res = evaluate_gate(cur, mode="full", baseline=base)
+    assert res.passed is False
+    assert any(v["metric"] == "end_to_end.avg_correctness" for v in res.violations)
+
+
+def test_gate_correctness_tolerance_absorbs_jitter():
+    """correctness 轻降在容差内 → 不阻断（warning）。"""
+    base = _with_correctness(_good_summary(), 0.80)
+    cur = _with_correctness(_good_summary(), 0.77)  # delta -0.03 ∈ [-0.05, 0)
+    res = evaluate_gate(cur, mode="full", baseline=base)
+    assert res.passed is True
+    assert any(w["metric"] == "end_to_end.avg_correctness" for w in res.warnings)
+
+
+def test_gate_correctness_absent_is_backward_compatible():
+    """judge 关 → summary 无 correctness：仅 warning 跳过，不判 violation（向后兼容快路径）。"""
+    base = _with_correctness(_good_summary(), 0.80)
+    cur = _good_summary()  # 无 avg_correctness
+    res = evaluate_gate(cur, mode="full", baseline=base)
+    assert res.passed is True
+    assert not any(v["metric"] == "end_to_end.avg_correctness" for v in res.violations)
+    assert any(w["metric"] == "end_to_end.avg_correctness" for w in res.warnings)
+
+
+def test_gate_correctness_old_baseline_skipped():
+    """跑了 judge 但基线是旧版（无 correctness）→ info 跳过比对，不误报（兼容旧基线）。"""
+    base = _good_summary()  # 旧基线无 avg_correctness
+    cur = _with_correctness(_good_summary(), 0.60)
+    res = evaluate_gate(cur, mode="full", baseline=base)
+    assert res.passed is True
+    assert not any(v["metric"] == "end_to_end.avg_correctness" for v in res.violations)
+    assert any(i["metric"] == "end_to_end.avg_correctness" for i in res.infos)

@@ -6,6 +6,8 @@
 3. 结果记录 rewritten_query 字符串（F12 归因用）
 4. 多轮样本异常时优雅降级（ok=False）
 5. --slice multiturn 过滤逻辑与数据集 slice 字段一致
+6. --judge 语义裁判接线：judge=True 追加 correctness / 默认关不写键 / gold 不可评分不写键
+7. aggregate 对 avg_correctness 的条件 emit（有则 emit、无则省略，保 gate 向后兼容）
 """
 
 import json
@@ -13,7 +15,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from run_e2e_eval import eval_sample
+from run_e2e_eval import eval_sample, aggregate
 
 
 def _stub_doc(content="Redis 缓存穿透可用布隆过滤器解决", source="redis.md"):
@@ -102,3 +104,49 @@ def test_multiturn_slice_filter_matches_dataset():
     samples = dataset["samples"]
     filtered = [s for s in samples if s.get("slice") == "multiturn"]
     assert len(filtered) == len(samples) >= 10
+
+
+# ============ --judge 语义裁判接线 + aggregate 条件 emit ============
+
+def test_judge_true_adds_correctness(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        "run_e2e_eval.answer_correctness",
+        lambda q, a, g: calls.append((q, a, g)) or 0.9,
+    )
+    result = eval_sample(_stub_chain(), _sample(), judge=True)
+    assert result["correctness"] == 0.9
+    # 裁判拿到的是 (question, answer, gold)
+    assert calls == [("它的解决方案有哪些？", "布隆过滤器可以拦截不存在的 key。",
+                      "布隆过滤器、空值缓存、参数校验")]
+
+
+def test_judge_false_omits_correctness(monkeypatch):
+    def _boom(*a, **k):
+        raise AssertionError("judge 关时不应调用 answer_correctness")
+    monkeypatch.setattr("run_e2e_eval.answer_correctness", _boom)
+    result = eval_sample(_stub_chain(), _sample())  # 默认 judge=False
+    assert "correctness" not in result
+
+
+def test_judge_skips_ungradable_gold(monkeypatch):
+    """gold 归一化为空（不可评分）→ 即便 judge=True 也不写 correctness。"""
+    monkeypatch.setattr("run_e2e_eval.answer_correctness", lambda q, a, g: 0.9)
+    s = _sample()
+    s["ground_truth"] = '《""》'  # 归一化后为空
+    result = eval_sample(_stub_chain(), s, judge=True)
+    assert "correctness" not in result
+
+
+def test_aggregate_emits_avg_correctness_when_present(monkeypatch):
+    monkeypatch.setattr("run_e2e_eval.answer_correctness", lambda q, a, g: 0.8)
+    results = [eval_sample(_stub_chain(), _sample(), judge=True) for _ in range(3)]
+    summary = aggregate(results)
+    assert summary["end_to_end"]["avg_correctness"] == 0.8
+
+
+def test_aggregate_omits_avg_correctness_when_absent():
+    """judge 关 → 无样本带 correctness → summary 不含该键（gate 据此 info 跳过）。"""
+    results = [eval_sample(_stub_chain(), _sample()) for _ in range(3)]
+    summary = aggregate(results)
+    assert "avg_correctness" not in summary["end_to_end"]

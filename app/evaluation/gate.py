@@ -37,12 +37,17 @@ _METRICS: List[Dict[str, Any]] = [
      "needs_baseline": True, "modes": ["full"]},
     {"key": "end_to_end.hit_rate", "name": "端到端宽松命中率",
      "needs_baseline": True, "modes": ["full"]},
+    # 语义正确率（LLM-judge，--judge 才产出）：比词法 F1/hit 更真的质量信号。
+    # full-only + needs_baseline → 未跑 judge 时键缺失记 info 跳过（非 violation），向后兼容。
+    {"key": "end_to_end.avg_correctness", "name": "端到端语义正确率",
+     "needs_baseline": True, "modes": ["full"]},
 ]
 
 # 相对基线退化的容差（吸收 LLM 非确定性抖动；低于 -tol 才判 violation）
 DEFAULT_TOL: Dict[str, float] = {
     "end_to_end.avg_f1": 0.05,
     "end_to_end.hit_rate": 0.08,
+    "end_to_end.avg_correctness": 0.05,
 }
 
 

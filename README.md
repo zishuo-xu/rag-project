@@ -216,6 +216,9 @@ uv run python run_rewrite_eval.py
 uv run python run_e2e_eval.py --smoke --gate            # push 前：smoke 鲁棒集卡点
 uv run python run_e2e_eval.py --mode full --gate        # 发版前：叠加端到端基线退化
 uv run python run_e2e_eval.py --mode full --update-baseline  # 确认未退化后刷新基线
+
+# 8. 语义裁判（--judge，需 LLM API）：每样本 +1 次 LLM 调用，比词法 F1/hit 更真的质量信号
+uv run python run_e2e_eval.py --mode full --judge       # 追加 end_to_end.avg_correctness
 ```
 
 **切片评估实测结论（2026-07-25，详见[验证报告](./docs/superpowers/reports/2026-07-25-eval-closure-report.md)）**：
@@ -276,6 +279,11 @@ uv run python run_e2e_eval.py --mode full --update-baseline  # 确认未退化�
 > 聚焦/改写答案」天然苛刻——实测 prompt 重构后 4 个 hit 掉点样本的 `avg_f1` **同时全部上升**，即 hit 掉点
 > 是测量假象而非质量回退。故以 **`avg_f1` 为主信号**，EM/hit 仅作参照，**不要追 EM=1 / hit=1**；
 > `f1_short` / `em_rate_short`（F10 短答案）是有意义的 EM 参照。
+> **语义裁判（更真的信号）**：词法 F1/hit 量的是「span 复现度」而非「答案质量」。`run_e2e_eval --judge`
+> 追加 LLM-as-judge 的 `end_to_end.avg_correctness`（`app/evaluation/metrics.py::answer_correctness`）——
+> 允许同义改写、语序调整、详略差异，只看语义是否等价于 gold，正是对上述苛刻性的纠偏。每样本 +1 次 LLM
+> 调用，故**默认关、仅 full 用**；gate 以 full-only + 相对基线（容差 0.05）接入，未跑 judge 时键缺失自动
+> 跳过、向后兼容。发版前建议跑 `--mode full --judge` 用语义正确率复核词法指标看不出的改写正确性。
 > **数据卫生**：抽取式数据偶有 gold 为空占位（如 CMRC 源文档实体缺失留下的 `《""》`），归一化后为空 →
 > F1/EM/hit 结构性恒 0，`run_e2e_eval` 会透明跳过并打印这些样本 id，不计入均值（非刷分，正当清洗）。
 

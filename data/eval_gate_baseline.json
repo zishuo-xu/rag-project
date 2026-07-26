@@ -5,21 +5,22 @@
   "retrieval": {
     "hit_rate": 1.0,
     "avg_coverage": 1.0,
-    "avg_num_docs": 3.8333,
-    "avg_pre_autocut": 56.6
+    "avg_num_docs": 3.9,
+    "avg_pre_autocut": 56.0667
   },
   "generation": {
     "avg_faithfulness": 0.8333,
-    "regen_rate": 0.2333
+    "regen_rate": 0.2667
   },
   "end_to_end": {
     "avg_f1": 0.5207,
     "em_rate": 0.0333,
     "hit_rate": 0.3,
-    "answer_in_top_context_rate": 1.0
+    "answer_in_top_context_rate": 1.0,
+    "avg_correctness": 0.61
   },
   "answer_quality": {
-    "avg_f1_short": 0.5035,
+    "avg_f1_short": 0.5036,
     "em_rate_short": 0.0667,
     "hit_rate_short": 0.3
   },
@@ -27,7 +28,7 @@
     "avg_num_citations": 0.9667,
     "rewrite_rate": 0.0
   },
-  "avg_latency_ms": 8285.78,
+  "avg_latency_ms": 7823.2867,
   "routing_dist": {
     "numeric": 9,
     "multi_hop": 3,
@@ -35,16 +36,16 @@
     "factual": 11
   },
   "iterative": {
-    "avg_iterations": 0.1,
+    "avg_iterations": 0.1333,
     "stop_reasons": {
       "sufficient": 23,
-      "converged": 6,
-      "max_iterations": 1
+      "max_iterations": 2,
+      "converged": 5
     }
   },
   "decomposition": {
     "decomposed_rate": 0.1,
-    "chain_rate": 0.0667
+    "chain_rate": 0.1
   },
   "agentic": {
     "avg_steps": 0.0,

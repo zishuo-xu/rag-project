@@ -31,7 +31,7 @@ from collections import Counter
 from pathlib import Path
 
 from config import get_settings
-from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context, normalize_answer
+from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context, normalize_answer, answer_correctness
 from app.evaluation.gate import evaluate_gate, format_gate_report
 
 logging.basicConfig(level=logging.WARNING)
@@ -142,8 +142,12 @@ def filter_gradable(samples: list) -> tuple[list, list]:
     return gradable, ungradable
 
 
-def eval_sample(chain, sample) -> dict:
-    """对单个带 gold 的样本跑全链路并度量三层指标。异常优雅降级。"""
+def eval_sample(chain, sample, judge: bool = False) -> dict:
+    """对单个带 gold 的样本跑全链路并度量三层指标。异常优雅降级。
+
+    judge=True 时追加语义正确率 `correctness`（LLM-as-judge，每样本 1 次 LLM 调用）——
+    比词法 F1/hit 更真的质量信号；默认关以保住零 LLM 快路径。
+    """
     question = sample["question"]
     gold = sample["ground_truth"]
     expected_source = sample.get("metadata", {}).get("source", "")
@@ -175,7 +179,7 @@ def eval_sample(chain, sample) -> dict:
     # F10 短答案：抽取的核心 span，用于度量答案对齐（改善 EM=0）
     short = getattr(resp, "short_answer", "") or ""
 
-    return {
+    result = {
         "id": sample.get("id"), "question": question, "gold": gold,
         "answer": resp.answer,
         "ok": True,
@@ -214,6 +218,10 @@ def eval_sample(chain, sample) -> dict:
         "agent_stop_reason": rr.agent_stop_reason,
         "agent_actions": [s.get("action") for s in rr.agent_steps],
     }
+    # 语义裁判（--judge）：仅当开启且 gold 可评分时追加，judge 关时不写该键、不污染聚合
+    if judge and normalize_answer(gold):
+        result["correctness"] = round(answer_correctness(question, resp.answer, gold), 4)
+    return result
 
 
 def eval_colloquial(chain, query: str) -> dict:
@@ -254,7 +262,7 @@ def aggregate(results: list) -> dict:
         return {"num_samples": len(results), "num_ok": 0, "num_failed": len(results)}
 
     faith_vals = [r["faithfulness"] for r in ok if r["faithful"] is not None]
-    return {
+    summary = {
         "num_samples": len(results),
         "num_ok": n,
         "num_failed": len(results) - n,
@@ -301,6 +309,12 @@ def aggregate(results: list) -> dict:
             "action_dist": dict(Counter(a for r in ok for a in r.get("agent_actions", []))),
         },
     }
+    # 语义正确率（--judge）：仅当至少一个样本带 correctness 时才 emit，
+    # judge 关时键缺失 → gate 记 info 跳过（非 violation），向后兼容快路径
+    corr_vals = [r["correctness"] for r in ok if r.get("correctness") is not None]
+    if corr_vals:
+        summary["end_to_end"]["avg_correctness"] = _mean(corr_vals)
+    return summary
 
 
 def main():
@@ -309,6 +323,9 @@ def main():
     parser.add_argument("--mode", default="full", choices=["baseline", "full"])
     parser.add_argument("--only", default=None, help="单特性归因: F1|F2|F3|F4|F6")
     parser.add_argument("--colloquial", action="store_true", help="追加口语化查询检视")
+    parser.add_argument("--judge", action="store_true",
+                        help="追加语义正确率（LLM-as-judge，每样本+1次LLM调用）；"
+                             "比词法F1/hit更真的质量信号，默认关以保住零LLM快路径")
     parser.add_argument("--limit", type=int, default=0, help="仅跑前N题（0=全部）")
     parser.add_argument("--slice", default="", choices=["", "multihop", "finegrained", "multiturn"],
                         help="按样本 slice 字段过滤（多跳/细粒度/多轮子集）")
@@ -363,13 +380,15 @@ def main():
     # 增量评估 + 写盘（断点不丢）
     results = []
     for i, sample in enumerate(samples, 1):
-        r = eval_sample(chain, sample)
+        r = eval_sample(chain, sample, judge=args.judge)
         results.append(r)
         status = "✓" if r.get("ok") else "✗"
         extra = (
             f"f1={r.get('f1', 0):.2f} hit={int(r.get('hit', False))} "
             f"faith={r.get('faithfulness')}" if r.get("ok") else r.get("error", "")
         )
+        if r.get("correctness") is not None:
+            extra += f" corr={r['correctness']:.2f}"
         print(f"[{i}/{len(samples)}] {status} {sample['question'][:30]} {extra}")
         _save(output, tag, feature_state, results, None)
 
