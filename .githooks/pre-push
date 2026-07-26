@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# pre-push 质量闸门（eval-as-gate）：push 前跑 smoke 真实链路，质量退化即阻断。
+#
+# 默认【不启用】——git 不会自动使用本目录，需手动激活一次：
+#     git config core.hooksPath .githooks
+#
+# 能力边界（诚实）：smoke 只卡检索命中率/答案入上下文/延迟/链路健康度，
+# 不卡端到端 F1（小样本+生成抖动会误报）。端到端退化请用
+#     uv run python run_e2e_eval.py --mode full --gate
+# 在发版前手动跑。
+
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+# 无 LLM key 则友好跳过：gate 必须跑真链路，没 key 跑不了，不应阻断无 key 协作者。
+HAS_KEY=$(uv run python -c "from config import get_settings; print('1' if get_settings().openai_api_key else '0')" 2>/dev/null || echo 0)
+if [ "$HAS_KEY" != "1" ]; then
+  echo "[pre-push] 未检测到 LLM key，跳过质量闸门（push 不阻断）。"
+  exit 0
+fi
+
+echo "[pre-push] 运行质量闸门 smoke（真实链路，约 1-2 分钟）…"
+uv run python run_e2e_eval.py --smoke --gate
+# 非零退出码（gate 未通过=2）会因 set -e 向上传播，阻断本次 push。

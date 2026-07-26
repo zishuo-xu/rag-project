@@ -25,12 +25,14 @@ import argparse
 import json
 import logging
 import re
+import sys
 import time
 from collections import Counter
 from pathlib import Path
 
 from config import get_settings
 from app.evaluation.metrics import answer_f1, normalized_exact_match, answer_hit, answer_in_top_context
+from app.evaluation.gate import evaluate_gate, format_gate_report
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -298,7 +300,26 @@ def main():
     parser.add_argument("--slice", default="", choices=["", "multihop", "finegrained", "multiturn"],
                         help="按样本 slice 字段过滤（多跳/细粒度/多轮子集）")
     parser.add_argument("--output", default="")
+    # —— 质量闸门（eval-as-gate）：默认不触发，行为中性 ——
+    parser.add_argument("--gate", action="store_true",
+                        help="跑完后做质量闸门判定，退化即 exit 2")
+    parser.add_argument("--gate-mode", default=None, choices=["smoke", "full"],
+                        help="闸门模式：smoke=鲁棒集 / full=叠加端到端基线退化；"
+                             "缺省随 --limit 推（>0→smoke 否则 full）")
+    parser.add_argument("--baseline", default="data/eval_gate_baseline.json",
+                        help="full 模式相对退化比对的基线 summary 路径")
+    parser.add_argument("--update-baseline", action="store_true",
+                        help="把本次 summary 写为基线（更新前须人工确认质量未退）")
+    parser.add_argument("--smoke", action="store_true",
+                        help="便捷别名：--limit 8 --gate-mode smoke（配合 --gate 用）")
     args = parser.parse_args()
+
+    # --smoke 别名展开 + gate-mode 缺省推断
+    if args.smoke:
+        if args.limit == 0:
+            args.limit = 8
+        args.gate_mode = "smoke"
+    gate_mode = args.gate_mode or ("smoke" if args.limit > 0 else "full")
 
     feature_state = apply_feature_mode(args.mode, args.only)
     tag = args.only.upper() if args.only else args.mode
@@ -355,6 +376,29 @@ def main():
     print(f"\n=== 汇总 [{tag}] ===")
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     print(f"\n报告已写入: {output}")
+
+    # —— 质量闸门分支（默认不进入，行为中性）——
+    if args.update_baseline:
+        Path(args.baseline).write_text(
+            json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(f"\n⚠️  基线已更新为本次 summary: {args.baseline}")
+        print("   （请确认本次质量未退化后再更新，否则卡点失效）")
+        return
+
+    if args.gate:
+        baseline = None
+        bp = Path(args.baseline)
+        if bp.exists():
+            try:
+                baseline = json.loads(bp.read_text(encoding="utf-8"))
+            except Exception as e:
+                print(f"⚠️  基线读取失败 {bp}: {e}（full 退化比对将跳过）")
+        res = evaluate_gate(summary, mode=gate_mode, baseline=baseline)
+        print(f"\n=== 质量闸门 [{gate_mode}] ===")
+        print(format_gate_report(res))
+        if not res.passed:
+            sys.exit(2)
 
 
 def _save(output, tag, feature_state, results, colloquial, summary=None):

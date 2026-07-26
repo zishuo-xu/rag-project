@@ -211,6 +211,11 @@ uv run python run_e2e_eval.py --dataset data/eval_multiturn.json --only F12     
 # 6. F12 重写层评估（零 LLM，秒级，可进 CI）
 uv run python run_rewrite_eval.py
 #    → data/eval_rewrite_heuristic.json (触发率/改写率/gold 关键词命中率)
+
+# 7. 质量卡点（eval-as-gate，需 LLM API）：真实链路退化即 exit 非零
+uv run python run_e2e_eval.py --smoke --gate            # push 前：smoke 鲁棒集卡点
+uv run python run_e2e_eval.py --mode full --gate        # 发版前：叠加端到端基线退化
+uv run python run_e2e_eval.py --mode full --update-baseline  # 确认未退化后刷新基线
 ```
 
 **切片评估实测结论（2026-07-25，详见[验证报告](./docs/superpowers/reports/2026-07-25-eval-closure-report.md)）**：
@@ -226,6 +231,25 @@ uv run python run_rewrite_eval.py
 > 评估口径说明：检索质量以**与 LLM 解耦的 CMRC 评估**为准（命中率 100%）；
 > RAGAS 四维受生成/评判模型影响，跨模型对比时需注明口径。详见
 > [docs/superpowers/reports/2026-07-22-task11-validation-report.md](./docs/superpowers/reports/2026-07-22-task11-validation-report.md)。
+
+### 质量卡点（eval-as-gate）
+
+`pytest` 全 mock 了 LLM/embedding，只能保证代码不崩，**测不到真实检索/生成质量**。
+`app/evaluation/gate.py` 对 `run_e2e_eval` 的汇总做"退化即 `exit 2`"判定，补这道真实链路闸门：
+
+- **smoke**（`--smoke --gate`，每次 push 跑，约 1–2 分钟）：卡检索命中率 / 答案入 top 上下文率 /
+  延迟上限 / 链路健康度——这些取决于检索+embedding，对生成措辞抖动不敏感，适合小样本。
+- **full**（`--mode full --gate`，发版前手动跑）：在 smoke 之上叠加端到端 F1 / 命中率的
+  **相对基线退化**判定（`data/eval_gate_baseline.json`，用容差吸收 LLM 非确定性抖动，避免误报）。
+- **启用 pre-push 自动卡点**（默认不启用）：`git config core.hooksPath .githooks`；
+  脚本会先检查 LLM key，无 key 友好跳过、不阻断无 key 协作者。
+
+> ⚠️ **能力边界（诚实）**：smoke **有意不卡**端到端 F1——小样本+生成抖动会把真实信号淹没，
+> 卡死只会变成误报工厂、被 `--no-verify` 绕过。生成 prompt 改坏的缓慢退化要靠 **full 在发版前拦**。
+> gate 是回归的早期预警+发版闸门，不是"质量不退的银弹"；与 mock 单测**互补**。
+> ⚠️ **更新基线陷阱**：`--update-baseline` 前必须人工确认本次质量未退化，否则等于废掉卡点。
+> 后续接 CI：在 `.github/workflows` 加 `uv run python run_e2e_eval.py --smoke --gate`，
+> 配 `OPENAI_API_KEY` secret 并用 `if: secrets.OPENAI_API_KEY != ''` 让无 key 时自动 skip。
 
 ## 运行测试
 
