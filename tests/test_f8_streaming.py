@@ -11,8 +11,6 @@
 """
 from unittest.mock import MagicMock
 
-from langchain_core.documents import Document
-
 from app.generation.streaming import speculative_faithful_stream
 from app.generation.faithfulness import FaithfulnessResult
 
@@ -24,17 +22,13 @@ def _stream(tokens):
     return fn
 
 
-def _docs():
-    return [Document(page_content="上下文", metadata={"source": "t.md"})]
-
-
 def _collect(**kwargs):
     return list(speculative_faithful_stream(**kwargs))
 
 
 def test_tokens_streamed_in_order():
     events = _collect(
-        stream_fn=_stream(["你", "好", "世界"]), question="q", documents=_docs(),
+        stream_fn=_stream(["你", "好", "世界"]), question="q", context="上下文",
         chat_history=None, checker=None, regen_fn=lambda: "",
     )
     tokens = [e["data"] for e in events if e["type"] == "token"]
@@ -45,7 +39,7 @@ def test_tokens_streamed_in_order():
 
 def test_no_checker_passthrough():
     events = _collect(
-        stream_fn=_stream(["答", "案"]), question="q", documents=_docs(),
+        stream_fn=_stream(["答", "案"]), question="q", context="上下文",
         chat_history=None, checker=None, regen_fn=lambda: "x",
     )
     final = [e for e in events if e["type"] == "final"][0]["data"]
@@ -58,7 +52,7 @@ def test_faithful_no_correction():
     checker = MagicMock()
     checker.check.return_value = FaithfulnessResult(faithful=True, score=0.9)
     events = _collect(
-        stream_fn=_stream(["好", "答案"]), question="q", documents=_docs(),
+        stream_fn=_stream(["好", "答案"]), question="q", context="上下文",
         chat_history=None, checker=checker, regen_fn=lambda: "不应调用",
     )
     final = [e for e in events if e["type"] == "final"][0]["data"]
@@ -74,7 +68,7 @@ def test_unfaithful_triggers_correction():
         FaithfulnessResult(faithful=True, score=0.9),
     ]
     events = _collect(
-        stream_fn=_stream(["幻觉", "答案"]), question="q", documents=_docs(),
+        stream_fn=_stream(["幻觉", "答案"]), question="q", context="上下文",
         chat_history=None, checker=checker, regen_fn=lambda: "严格答案", max_regen=1,
     )
     corrections = [e["data"] for e in events if e["type"] == "correction"]
@@ -93,7 +87,7 @@ def test_regen_bounded_by_max():
         regen_calls["n"] += 1
         return f"重生成{regen_calls['n']}"
     events = _collect(
-        stream_fn=_stream(["答案"]), question="q", documents=_docs(),
+        stream_fn=_stream(["答案"]), question="q", context="上下文",
         chat_history=None, checker=checker, regen_fn=regen, max_regen=1,
     )
     assert regen_calls["n"] == 1  # 被 max_regen 兜住
@@ -110,7 +104,7 @@ def test_token_before_correction_ordering():
         FaithfulnessResult(faithful=True, score=0.9),
     ]
     events = _collect(
-        stream_fn=_stream(["a", "b", "c"]), question="q", documents=_docs(),
+        stream_fn=_stream(["a", "b", "c"]), question="q", context="上下文",
         chat_history=None, checker=checker, regen_fn=lambda: "fix", max_regen=1,
     )
     types = [e["type"] for e in events]
@@ -136,7 +130,7 @@ def test_deadline_exhausted_skips_regen():
         return "严格答案"
 
     events = _collect(
-        stream_fn=_stream(["答案"]), question="q", documents=_docs(),
+        stream_fn=_stream(["答案"]), question="q", context="上下文",
         chat_history=None, checker=checker, regen_fn=regen, max_regen=1,
         deadline=deadline,
     )

@@ -15,8 +15,6 @@ check+regen 循环与 chain F3 阻塞路径同源（faithfulness.regen_until_fai
 import logging
 from typing import Callable, Generator, List, Optional
 
-from langchain_core.documents import Document
-
 from app.generation.faithfulness import regen_until_faithful
 
 logger = logging.getLogger(__name__)
@@ -26,7 +24,7 @@ def speculative_faithful_stream(
     *,
     stream_fn: Callable[[], Generator[str, None, None]],
     question: str,
-    documents: List[Document],
+    context: str,                  # 生成器实际使用的格式化上下文（裁判单一事实源）
     chat_history: Optional[List],
     checker,                       # FaithfulnessChecker 或 None
     regen_fn: Callable[[], str],   # 严格重生成（strict=True）
@@ -55,7 +53,7 @@ def speculative_faithful_stream(
     # 流末忠实度检查 + 有界严格重生成（与 chain F3 共用循环体）
     corrections: List[str] = []
     answer, faithful, fb_score, regenerated = regen_until_faithful(
-        checker, question, documents, full_answer,
+        checker, question, context, full_answer,
         produce_fn=regen_fn, max_regen=max_regen, deadline=deadline,
         on_regen=corrections.append,
     )

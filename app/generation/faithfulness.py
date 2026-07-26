@@ -9,8 +9,6 @@ import logging
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
-from langchain_core.documents import Document
-
 from config import get_settings, build_chat_llm
 from app.utils import extract_json
 from app.generation.prompts import FAITHFULNESS_CHECK_PROMPT
@@ -30,7 +28,7 @@ class FaithfulnessResult:
 def regen_until_faithful(
     checker: "FaithfulnessChecker",
     question: str,
-    documents: List[Document],
+    context: str,
     answer: str,
     produce_fn: Callable[[], str],
     max_regen: int = 1,
@@ -43,6 +41,8 @@ def regen_until_faithful(
     时延预算熔断：deadline 超预算时跳过后续重生成（每次重生成 = 2 次串行 LLM）。
 
     Args:
+        context: 生成器实际使用的格式化上下文（单一事实源；裁判与生成同据，
+            消除旧版裁判自行截断上下文导致的假阳性重生成）
         produce_fn: 严格重生成函数（strict prompt），返回新答案
         deadline: 延迟治理 Deadline（可选）；F8 流式路径同样受预算约束
         on_regen: 每次重生成后的回调（F8 用于发 correction 事件）
@@ -50,7 +50,7 @@ def regen_until_faithful(
     Returns:
         (最终答案, faithful, score, 是否触发过重生成)
     """
-    fb = checker.check(question, documents, answer)
+    fb = checker.check(question, context, answer)
     regenerated = False
     regen_left = max_regen
     while fb.faithful is False and regen_left > 0:
@@ -63,7 +63,7 @@ def regen_until_faithful(
         regen_left -= 1
         if on_regen:
             on_regen(answer)
-        fb = checker.check(question, documents, answer)
+        fb = checker.check(question, context, answer)
     return answer, fb.faithful, fb.score, regenerated
 
 
@@ -85,13 +85,15 @@ class FaithfulnessChecker:
         self.llm = llm or build_chat_llm(max_tokens=512, timeout=30, retries=2)
 
     def check(
-        self, question: str, context_docs: List[Document], answer: str
+        self, question: str, context: str, answer: str
     ) -> FaithfulnessResult:
-        """校验答案忠实度。任何异常都返回 faithful=None 放行，不抛出。"""
+        """校验答案忠实度。context 为生成器实际使用的格式化上下文（单一事实源）。
+
+        任何异常都返回 faithful=None 放行，不抛出。
+        """
         if not answer or not answer.strip():
             return FaithfulnessResult(faithful=True, score=1.0, reason="空答案无需校验")
 
-        context = self._format_context(context_docs)
         try:
             prompt = FAITHFULNESS_CHECK_PROMPT.format(
                 question=question, context=context, answer=answer,
@@ -116,14 +118,3 @@ class FaithfulnessChecker:
         except Exception as e:
             logger.warning(f"忠实度检查失败，放行: {e}")
             return FaithfulnessResult(faithful=None, reason=f"检查异常: {e}")
-
-    @staticmethod
-    def _format_context(
-        documents: List[Document], max_docs: int = 5, max_chars: int = 400
-    ) -> str:
-        """拼接前若干篇文档的截断内容作为事实来源"""
-        parts = [
-            f"[文档{i}] {doc.page_content[:max_chars]}"
-            for i, doc in enumerate(documents[:max_docs], 1)
-        ]
-        return "\n".join(parts)

@@ -375,8 +375,12 @@ class RAGChain:
         answer = self.generate(question, documents, chat_history)
         if not self.faithfulness_checker:
             return answer, None, 0.0, False
+        # 单一事实源：裁判复用生成器实际使用的格式化上下文（compress_context 确定性，
+        # 与 generate() 内部压缩结果一致）。消除旧版裁判「前 5 篇×400 字截断」与生成器
+        # 全量压缩上下文的不对称——依据落在第 6 篇 / 400 字后时旧版会漏判触发假阳性重生成。
+        context = self._format_context(self.compress_context(question, documents))
         return regen_until_faithful(
-            self.faithfulness_checker, question, documents, answer,
+            self.faithfulness_checker, question, context, answer,
             produce_fn=lambda: self.generate(
                 question, documents, chat_history, strict=True
             ),
@@ -495,7 +499,8 @@ class RAGChain:
             for event in speculative_faithful_stream(
                 stream_fn=lambda: self.generate_stream(question, docs, chat_history),
                 question=question,
-                documents=docs,
+                # 裁判单一事实源：与生成器（generate_stream 内部压缩）同据，去截断不对称
+                context=self._format_context(self.compress_context(question, docs)),
                 chat_history=chat_history,
                 checker=self.faithfulness_checker,
                 regen_fn=lambda: self.generate(question, docs, chat_history, strict=True),

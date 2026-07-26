@@ -29,7 +29,7 @@ def test_full_supported():
         llm=_mock_llm('{"score": 1.0, "unsupported": [], "reason": "全部支撑"}'),
         threshold=0.7,
     )
-    r = checker.check("问题", [_doc("上下文")], "答案")
+    r = checker.check("问题", "上下文", "答案")
     assert r.faithful is True
     assert r.score == 1.0
 
@@ -39,7 +39,7 @@ def test_unsupported_below_threshold():
         llm=_mock_llm('{"score": 0.3, "unsupported": ["编造的细节"], "reason": "含幻觉"}'),
         threshold=0.7,
     )
-    r = checker.check("问题", [_doc("上下文")], "答案含编造")
+    r = checker.check("问题", "上下文", "答案含编造")
     assert r.faithful is False
     assert r.score == 0.3
     assert "编造的细节" in r.unsupported
@@ -49,19 +49,19 @@ def test_llm_exception_returns_none_passthrough():
     llm = MagicMock()
     llm.invoke.side_effect = RuntimeError("timeout")
     checker = FaithfulnessChecker(llm=llm, threshold=0.7)
-    r = checker.check("问题", [_doc("上下文")], "答案")
+    r = checker.check("问题", "上下文", "答案")
     assert r.faithful is None  # 未知 → 放行，不阻断
 
 
 def test_unparseable_returns_none():
     checker = FaithfulnessChecker(llm=_mock_llm("这不是JSON"), threshold=0.7)
-    r = checker.check("问题", [_doc("上下文")], "答案")
+    r = checker.check("问题", "上下文", "答案")
     assert r.faithful is None
 
 
 def test_empty_answer_faithful():
     checker = FaithfulnessChecker(llm=_mock_llm("{}"), threshold=0.7)
-    r = checker.check("问题", [_doc("上下文")], "")
+    r = checker.check("问题", "上下文", "")
     assert r.faithful is True
 
 
@@ -70,7 +70,7 @@ def test_score_clamped_to_unit_interval():
         llm=_mock_llm('{"score": 1.5, "unsupported": [], "reason": ""}'),
         threshold=0.7,
     )
-    r = checker.check("问题", [_doc("上下文")], "答案")
+    r = checker.check("问题", "上下文", "答案")
     assert r.score == 1.0
 
 
@@ -134,3 +134,24 @@ def test_generate_faithful_checker_disabled():
     assert faithful is None
     assert regen is False
     chain.generate.assert_called_once()
+
+
+def test_checker_sees_generator_context_not_truncated():
+    """单一事实源：裁判收到生成器实际使用的压缩上下文（全量），非旧版前 5 篇×400 字截断。
+
+    第 6 篇文档的依据必须进入裁判上下文——旧版 FaithfulnessChecker._format_context
+    的 max_docs=5 会丢弃它，答案依据被裁判漏判 → 假阳性重生成。
+    """
+    chain = _bare_chain()
+    chain.generate.return_value = "答案"
+    captured = {}
+
+    def _capture(q, ctx, a):
+        captured["ctx"] = ctx
+        return FaithfulnessResult(faithful=True, score=0.9)
+
+    chain.faithfulness_checker.check.side_effect = _capture
+    # 6 篇文档，第 6 篇含答案关键依据
+    docs = [_doc(f"doc{i}") for i in range(5)] + [_doc("第六篇含关键依据")]
+    chain._generate_faithful("关键依据", docs, None)
+    assert "第六篇含关键依据" in captured["ctx"]
