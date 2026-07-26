@@ -205,3 +205,82 @@ def test_decompose_path_uses_graph_channel():
     asked = {c.args[0] for c in calls}
     # graph 实体匹配应针对子问题而非原问题
     assert asked <= {"范廷颂担任什么职务？", "该教区在哪里？"}
+
+
+# ============ 路径语义治理：强/弱边区分 + 诚实标注 ============
+
+def test_find_path_prefers_strong_over_weak_bridge(retriever, builder):
+    """并存强路径与弱桥接时，优先返回纯实义路径，weak_only=False。"""
+    g = builder.graph
+    g.add_edge("A", "X", relation="使用")
+    g.add_edge("X", "B", relation="实现")
+    g.add_edge("A", "C", relation="属于")
+    g.add_edge("C", "B", relation="属于")
+
+    res = retriever.find_path("A", "B")
+    assert res["found"] is True
+    assert res["weak_only"] is False
+    rels = {h["relation"] for h in res["path"]}
+    assert rels == {"使用", "实现"}  # 选了强路径，没走 属于 桥
+
+
+def test_find_path_weak_only_when_no_strong_path(retriever, builder):
+    """只能靠上位概念边连通时，found=True 但 weak_only=True，每跳 weak。"""
+    g = builder.graph
+    g.add_edge("A", "C", relation="属于")
+    g.add_edge("C", "B", relation="属于")
+
+    res = retriever.find_path("A", "B")
+    assert res["found"] is True
+    assert res["weak_only"] is True
+    assert res["path_length"] == 2
+    assert all(h["weak"] for h in res["path"])
+
+
+def test_find_path_hop_weak_flag_mixed(retriever, builder):
+    """混合路径逐跳 weak 标记正确（实义跳 False / 分类跳 True）。"""
+    g = builder.graph
+    g.add_edge("A", "X", relation="使用")
+    g.add_edge("X", "B", relation="属于")
+
+    res = retriever.find_path("A", "B")
+    assert res["found"] is True
+    assert res["path"][0]["weak"] is False
+    assert res["path"][1]["weak"] is True
+    assert res["weak_only"] is True  # 多跳且含弱边
+
+
+def test_find_path_direct_weak_edge_not_flagged_weak_only(retriever, builder):
+    """直连分类边是抽取器的事实陈述：单跳 weak=True 但整条 weak_only=False。"""
+    g = builder.graph
+    g.add_edge("A", "B", relation="属于")
+
+    res = retriever.find_path("A", "B")
+    assert res["found"] is True
+    assert res["path_length"] == 1
+    assert res["path"][0]["weak"] is True
+    assert res["weak_only"] is False  # 关键不变量：直连不贬低
+
+
+def test_find_path_not_connected(retriever, builder):
+    """不连通实体对：found=False，path 为空。"""
+    g = builder.graph
+    g.add_edge("A", "X", relation="使用")
+    g.add_edge("B", "Y", relation="使用")
+
+    res = retriever.find_path("A", "B")
+    assert res["found"] is False
+    assert res["path"] == []
+    assert res["weak_only"] is False
+
+
+def test_find_path_fuzzy_match_ignores_space_case(retriever, builder):
+    """归一化匹配回归：节点名带空格/大小写，查询无空格小写仍命中，返回真实节点名。"""
+    g = builder.graph
+    g.add_edge("MySQL", "B+ 树", relation="使用")
+
+    res = retriever.find_path("mysql", "b+树")
+    assert res["found"] is True
+    assert res["weak_only"] is False  # 直连强边
+    assert res["path"][0]["from"] == "MySQL"
+    assert res["path"][0]["to"] == "B+ 树"

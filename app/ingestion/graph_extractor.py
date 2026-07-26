@@ -540,15 +540,18 @@ class KnowledgeGraphBuilder:
             匹配到的节点名列表
         """
         query_lower = query.lower()
+        # 归一化：去空白 + 小写，避免 "b+树" 与图节点 "B+ 树" 因空格/大小写失配
+        query_norm = re.sub(r"\s+", "", query_lower)
         matched = []
 
         for node in self.graph.nodes():
             node_lower = node.lower()
-            # 完全匹配
-            if node_lower == query_lower:
+            node_norm = re.sub(r"\s+", "", node_lower)
+            # 完全匹配（归一化后）
+            if node_norm == query_norm:
                 matched.insert(0, node)
-            # 包含匹配
-            elif query_lower in node_lower or node_lower in query_lower:
+            # 包含匹配（归一化后）
+            elif query_norm in node_norm or node_norm in query_norm:
                 matched.append(node)
 
         return matched[:top_k]

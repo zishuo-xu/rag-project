@@ -57,6 +57,28 @@ def set_concurrency_gate(gate: asyncio.Semaphore | None):
     _concurrency_gate = gate
 
 
+def _as_list(x) -> list:
+    """SSE 序列化守卫：仅接受真实 list，避免半填充/Mock 对象污染 JSON。"""
+    return x if isinstance(x, list) else []
+
+
+def _as_str(x) -> str:
+    """SSE 序列化守卫：仅接受真实 str。"""
+    return x if isinstance(x, str) else ""
+
+
+def _previews(docs, n: int = 3, maxlen: int = 90) -> list:
+    """取前 n 条文档的片段预览（压平空白、截断），供前端『过程明细』展示。"""
+    if not isinstance(docs, list):
+        return []
+    out = []
+    for d in docs[:n]:
+        t = " ".join((getattr(d, "page_content", "") or "").split())
+        if t:
+            out.append(t[:maxlen])
+    return out
+
+
 async def _acquire_gate(gate: asyncio.Semaphore) -> bool:
     """获取闸门许可，超时返回 False"""
     settings = get_settings()
@@ -169,11 +191,21 @@ async def _stream_response(
                 yield {
                     "event": "retrieval",
                     "data": json.dumps({
-                        "queries_used": retrieval.queries_used,
+                        "queries_used": _as_list(getattr(retrieval, "queries_used", [])),
                         "dense_count": len(retrieval.dense_results),
                         "sparse_count": len(retrieval.sparse_results),
+                        "graph_count": len(retrieval.graph_results),
                         "fused_count": len(retrieval.fused_results),
                         "final_count": len(retrieval.documents),
+                        # 过程明细：各路召回片段预览 + 多跳子问题 + 路由类型
+                        # 预览上限 50 兜底（前端默认显 3 条 + 折叠展开其余）
+                        "dense_previews": _previews(retrieval.dense_results, n=50),
+                        "sparse_previews": _previews(retrieval.sparse_results, n=50),
+                        "graph_previews": _previews(retrieval.graph_results, n=50),
+                        "decomposed_subqueries": _as_list(
+                            getattr(retrieval, "decomposed_subqueries", [])
+                        ),
+                        "query_type": _as_str(getattr(retrieval, "query_type", "")),
                         "retrieval_time_ms": retrieval.retrieval_time_ms,
                         "crag_grade": retrieval.crag_grade,
                         "summary_count": len(retrieval.summary_results),
@@ -632,20 +664,22 @@ async def find_graph_path(source: str, target: str):
 
     builder = get_graph_builder()
     if builder.graph.number_of_nodes() == 0:
-        return {"path": [], "message": "知识图谱为空，请先构建"}
+        return {
+            "source": source,
+            "target": target,
+            "found": False,
+            "path": [],
+            "path_length": 0,
+            "weak_only": False,
+            "message": "知识图谱为空，请先构建",
+        }
 
     # 复用全局 RAGChain 的图检索器（避免每次新建 LLM 实例）
     chain = get_rag_chain()
     retriever = chain.graph_retriever or GraphRetriever(graph_builder=builder)
-    path = retriever.find_path(source, target)
+    result = retriever.find_path(source, target)
 
-    return {
-        "source": source,
-        "target": target,
-        "path": path,
-        "path_length": len(path),
-        "found": len(path) > 0,
-    }
+    return {**result, "source": source, "target": target}
 
 
 @router.get("/api/graph/visual")

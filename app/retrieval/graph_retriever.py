@@ -13,6 +13,7 @@
 """
 
 import logging
+import re
 from typing import List, Optional
 
 from langchain_core.documents import Document
@@ -23,6 +24,30 @@ from config import get_settings, build_chat_llm
 from app.ingestion.graph_extractor import get_graph_builder, KnowledgeGraphBuilder
 
 logger = logging.getLogger(__name__)
+
+# ── 路径语义治理：上位概念/分类学边词表（读侧实时判定，不写边属性）──
+# 这些 relation 表达的是 taxonomy 归属（A 属于/是/示例 B），单条是事实陈述，
+# 但串联成多跳路径时会把本无实质关联的实体"桥接"起来（图连通 ≠ 语义强相关）。
+# 词表存归一化（去空白+小写）形式；另对 "属于*" 变体（属于级别/属于策略…）做前缀兜底。
+_WEAK_RELATIONS = frozenset({
+    "属于", "是一种", "是", "归类为", "类型为", "分类为",
+    "示例", "例如", "包括于", "包含于", "隶属于", "是一种类型",
+    "分为", "按级别划分",
+})
+
+
+def _norm_rel(rel: str) -> str:
+    """relation 归一化：去空白 + 小写，与 _fuzzy_match_nodes 口径一致。"""
+    return re.sub(r"\s+", "", (rel or "").lower())
+
+
+def is_weak_relation(rel: str) -> bool:
+    """判定一条 relation 是否为上位概念/分类学边（弱语义边）。
+
+    读侧实时判定，词表可调、零迁移；用于路径搜索区分强/弱边与前端诚实标注。
+    """
+    n = _norm_rel(rel)
+    return n in _WEAK_RELATIONS or n.startswith("属于")
 
 # 实体抽取 Prompt（通用措辞，适配传记/影视/百科等语料，2026-07-26 去技术域）
 ENTITY_EXTRACT_PROMPT = ChatPromptTemplate.from_template(
@@ -303,50 +328,76 @@ class GraphRetriever:
 
         return "\n".join(lines)
 
-    def find_path(self, entity_a: str, entity_b: str) -> List[dict]:
-        """
-        查找两个实体之间的关系路径。
+    def find_path(self, entity_a: str, entity_b: str) -> dict:
+        """查找两个实体之间的关系路径，并区分语义强/弱。
 
-        Args:
-            entity_a: 起始实体
-            entity_b: 目标实体
+        返回 dict::
 
-        Returns:
-            路径上的关系列表
+            {
+              "found": bool,
+              "path": [{"from", "relation", "to", "weak"}, ...],
+              "path_length": int,
+              "weak_only": bool,  # 多跳且含上位概念边 → 仅 taxonomy 桥接，语义弱
+            }
+
+        路径选择：优先返回"剔除弱边后的纯实义最短路径"；若两实体只能靠含弱边
+        的路径连通，则退回全图最短路径。weak_only 仅在 path_length>1 且路径含弱边
+        时为真——直连边（哪怕分类边）视为抽取器的事实陈述，不贬低。
         """
         import networkx as nx
 
-        # 模糊匹配
+        empty = {"found": False, "path": [], "path_length": 0, "weak_only": False}
+
+        # 模糊匹配（归一化口径，top_k=1 取最佳匹配节点）
         nodes_a = self.graph_builder._fuzzy_match_nodes(entity_a, top_k=1)
         nodes_b = self.graph_builder._fuzzy_match_nodes(entity_b, top_k=1)
-
         if not nodes_a or not nodes_b:
-            return []
+            return empty
 
-        source = nodes_a[0]
-        target = nodes_b[0]
+        source, target = nodes_a[0], nodes_b[0]
+        graph = self.graph_builder.graph
 
-        try:
-            # 在无向版本中找最短路径
-            undirected = self.graph_builder.graph.to_undirected()
-            path = nx.shortest_path(undirected, source, target)
+        # 全图无向 + 仅强边无向子图
+        undirected = graph.to_undirected()
+        strong = nx.Graph()
+        strong.add_nodes_from(graph.nodes())
+        for u, v, data in graph.edges(data=True):
+            if not is_weak_relation(data.get("relation", "")):
+                strong.add_edge(u, v)
 
-            # 提取路径上的关系
-            path_relations = []
-            for i in range(len(path) - 1):
-                edge_data = self.graph_builder.graph.get_edge_data(path[i], path[i + 1])
-                if edge_data is None:
-                    # 可能是反向边
-                    edge_data = self.graph_builder.graph.get_edge_data(path[i + 1], path[i])
-                relation = edge_data.get("relation", "相关") if edge_data else "相关"
-                path_relations.append({
-                    "from": path[i],
-                    "relation": relation,
-                    "to": path[i + 1],
-                })
+        def _try_path(g):
+            try:
+                return nx.shortest_path(g, source, target)
+            except (nx.NetworkXNoPath, nx.NodeNotFound):
+                return None
 
-            return path_relations
-        except nx.NetworkXNoPath:
-            return []
-        except nx.NodeNotFound:
-            return []
+        strong_path = _try_path(strong)
+        any_path = _try_path(undirected)
+        chosen = strong_path or any_path
+        if not chosen:
+            return empty
+
+        # 逐跳提取关系（原图为 DiGraph，需正向/反向兜底取边属性）
+        hops = []
+        for i in range(len(chosen) - 1):
+            edge_data = graph.get_edge_data(chosen[i], chosen[i + 1])
+            if edge_data is None:
+                edge_data = graph.get_edge_data(chosen[i + 1], chosen[i])
+            relation = edge_data.get("relation", "相关") if edge_data else "相关"
+            hops.append({
+                "from": chosen[i],
+                "relation": relation,
+                "to": chosen[i + 1],
+                "weak": is_weak_relation(relation),
+            })
+
+        # 多跳（跳数>1）且含弱边 → 仅靠 taxonomy 桥接，语义关联较弱。
+        # 注意 chosen 是节点序列，跳数 = len(hops)；直连（1 跳）即便分类边也不贬低。
+        weak_only = len(hops) > 1 and any(h["weak"] for h in hops)
+
+        return {
+            "found": True,
+            "path": hops,
+            "path_length": len(hops),
+            "weak_only": weak_only,
+        }

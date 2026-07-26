@@ -10,6 +10,25 @@ API_BASE_URL = "http://localhost:8000"
 # Trace 阶段配色（按出现顺序循环取用）
 STAGE_COLORS = ["#38BDF8", "#F59E0B", "#A78BFA", "#34D399", "#F472B6", "#FACC15", "#818CF8"]
 
+# Trace 阶段名中文展示（span name 是稳定的技术标识符，本地化只在展示层做；
+# 未列出的阶段回退原名，保证新增 span 不崩溃、不丢显示）
+STAGE_ZH = {
+    "cache_hit": "缓存命中",
+    "gate_transform": "门控与改写",
+    "query_routing": "查询路由",
+    "multi_recall": "多路召回",
+    "rrf_fusion": "RRF 融合",
+    "rerank": "重排精排",
+    "crag_evaluation": "CRAG 评估",
+    "generation": "答案生成",
+}
+
+
+def _zh(stage_name: str) -> str:
+    """span name → 中文展示名；未知阶段回退原名。"""
+    return STAGE_ZH.get(stage_name, stage_name)
+
+
 # 页面配置
 st.set_page_config(
     page_title="RAG 智能问答系统",
@@ -254,6 +273,43 @@ st.markdown("""
     .stage-item.done { color: #34D399; }
     .stage-item.done .dot { background: #34D399; }
     .stage-sep { color: #334155; padding: 0 8px; font-size: 0.8rem; }
+    .stage-sep.done-sep { color: #34D399; }
+
+    /* 进度条两行结构：阶段名 + 真实产出微标 */
+    .stage-text { display: flex; flex-direction: column; line-height: 1.15; }
+    .stage-label { white-space: nowrap; }
+    .stage-out {
+        font-size: 0.6rem; color: #475569; min-height: 0.72rem;
+        white-space: nowrap; letter-spacing: 0.2px;
+    }
+    .stage-item.done .stage-out { color: #5EEAD4; }
+    .stage-item.streaming { color: #FBBF24; }
+    .stage-item.streaming .stage-out { color: #FBBF24; }
+    .stage-item.streaming .dot {
+        background: #F59E0B;
+        animation: pulseGlow 1s ease infinite;
+        box-shadow: 0 0 8px rgba(245,158,11,0.5);
+    }
+
+    /* 检索进行中：前三格错峰呼吸波，表达『链路在推进』而非卡死 */
+    .stage-item.searching { color: #F59E0B; }
+    .stage-item.searching .dot {
+        background: #F59E0B;
+        animation: pulseGlow 1.1s ease-in-out infinite;
+    }
+    .stage-item.searching.s0 .dot { animation-delay: 0s; }
+    .stage-item.searching.s1 .dot { animation-delay: 0.18s; }
+    .stage-item.searching.s2 .dot { animation-delay: 0.36s; }
+
+    /* 检索进行中：track 顶部流光，强化『正在工作』的活感 */
+    .stage-track { position: relative; }
+    .searching-track::before {
+        content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+        background: linear-gradient(90deg, transparent, #F59E0B, #38BDF8, transparent);
+        background-size: 200% 100%;
+        animation: shimmer 1.6s linear infinite;
+        border-radius: 12px 12px 0 0;
+    }
 
     /* 检索仪表盘卡片 */
     .retrieval-dash {
@@ -311,6 +367,64 @@ st.markdown("""
     }
     .typing-dots span:nth-child(2) { animation-delay: 0.15s; }
     .typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    /* 过程明细面板：改写 + 各路召回片段（实时透明） */
+    .proc-detail {
+        margin: 6px 0 10px; padding: 10px 12px;
+        background: rgba(15,23,42,0.55); border: 1px solid #1e293b;
+        border-radius: 10px; font-size: 0.8rem;
+    }
+    .proc-detail summary {
+        cursor: pointer; color: #94A3B8; font-weight: 600;
+        list-style: none; user-select: none;
+    }
+    .proc-detail summary::-webkit-details-marker { display: none; }
+    .proc-detail summary::before { content: '▸ '; color: #475569; }
+    .proc-detail[open] summary::before { content: '▾ '; color: #FBBF24; }
+    .proc-head {
+        display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center;
+        margin: 8px 0 2px; font-size: 0.72rem; color: #64748B;
+    }
+    .proc-head .crag { font-weight: 600; }
+    .proc-sec { margin-top: 9px; }
+    .proc-sec > .proc-title {
+        color: #cbd5e1; font-weight: 600; font-size: 0.76rem; margin-bottom: 5px;
+    }
+    .proc-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .proc-chip {
+        background: rgba(56,189,248,0.10); border: 1px solid rgba(56,189,248,0.30);
+        color: #7dd3fc; border-radius: 12px; padding: 2px 9px; font-size: 0.72rem;
+        max-width: 100%; word-break: break-word;
+    }
+    .proc-chip.sub {
+        background: rgba(167,139,250,0.10); border-color: rgba(167,139,250,0.30);
+        color: #c4b5fd;
+    }
+    .proc-channels { display: flex; flex-direction: column; gap: 7px; }
+    .proc-chan { border-left: 2px solid #334155; padding: 2px 0 2px 9px; }
+    .proc-chan.dense { border-left-color: #38BDF8; }
+    .proc-chan.sparse { border-left-color: #34D399; }
+    .proc-chan.graph { border-left-color: #c4b5fd; }
+    .proc-chan .ch-head { color: #94A3B8; font-size: 0.72rem; margin-bottom: 3px; }
+    .proc-chan .ch-head b { color: #FBBF24; }
+    .proc-prev {
+        color: #94a3b8; font-size: 0.72rem; line-height: 1.4;
+        background: rgba(2,6,23,0.5); border-radius: 5px;
+        padding: 3px 7px; margin: 2px 0; border: 1px solid #1e293b;
+    }
+    .proc-prev::before { content: '“'; color: #475569; margin-right: 2px; }
+    .proc-empty { color: #475569; font-size: 0.72rem; font-style: italic; }
+
+    /* 每路『展开其余 N 条召回』内嵌折叠 */
+    .proc-more { margin-top: 3px; }
+    .proc-more summary {
+        cursor: pointer; color: #64748B; font-size: 0.7rem;
+        list-style: none; user-select: none; padding: 2px 0;
+    }
+    .proc-more summary::-webkit-details-marker { display: none; }
+    .proc-more summary::before { content: '▸ '; color: #475569; }
+    .proc-more[open] summary::before { content: '▾ '; color: #94A3B8; }
+    .proc-more summary:hover { color: #94A3B8; }
 
     /* 欢迎卡片动效增强 */
     .welcome-card { animation: fadeInUp 0.5s ease both; position: relative; overflow: hidden; }
@@ -374,78 +488,198 @@ def check_health():
         return None
 
 
-def render_stage_track(current_stage: int, placeholder):
-    """渲染管道阶段进度指示器（0=查询改写 1=多路召回 2=融合重排 3=流式生成 4=完成）"""
-    stages = ["查询改写", "多路召回", "融合重排", "流式生成"]
-    html = '<div class="stage-track">'
-    for i, name in enumerate(stages):
-        if i < current_stage:
-            cls = "done"
-        elif i == current_stage:
-            cls = "active"
-        else:
-            cls = ""
-        html += f'<span class="stage-item {cls}"><span class="dot"></span>{name}</span>'
-        if i < len(stages) - 1:
-            html += '<span class="stage-sep">›</span>'
-    html += '</div>'
-    placeholder.markdown(html, unsafe_allow_html=True)
+# 对话进度条的四步产品叙事（独立于 trace span name，固定中文文案）
+STAGE_LABELS = ["查询改写", "多路召回", "融合重排", "流式生成"]
 
 
-def render_retrieval_dashboard(detail: dict):
-    """渲染可视化检索仪表盘（替代原始 JSON）"""
-    if not detail:
-        return
-    nodes = [
-        (detail.get("dense_count", 0), "向量召回"),
-        (detail.get("sparse_count", 0), "BM25 召回"),
-        (detail.get("graph_count", 0), "图谱召回"),
-        (detail.get("fused_count", 0), "RRF 融合"),
-        (detail.get("final_count", 0), "Rerank 精排"),
-    ]
-    flow_html = '<div class="rd-flow">'
-    for i, (n, label) in enumerate(nodes):
-        if i > 0:
-            flow_html += '<span class="rd-arrow">→</span>'
-        flow_html += f'<div class="rd-node"><div class="n">{n}</div><div class="l">{label}</div></div>'
-    flow_html += '</div>'
+def _stage_out(idx: int, state: str, detail: dict, answer_len: int) -> str:
+    """每格完成后的真实产出微标（数据全来自 retrieval 事件，零伪造）。"""
+    if state == "streaming" and idx == 3:
+        return "生成中"
+    if state != "done":
+        return ""
+    d = detail or {}
+    if idx == 0:
+        n = len(d.get("queries_used") or [])
+        return f"{n} 查询" if n else ""
+    if idx == 1:
+        recall = (d.get("dense_count", 0) + d.get("sparse_count", 0)
+                  + d.get("graph_count", 0))
+        return f"{recall} 命中"
+    if idx == 2:
+        fused = d.get("fused_count", 0)
+        final = d.get("final_count", 0)
+        return f"{fused}→{final}" if (fused or final) else ""
+    if idx == 3:
+        return f"{answer_len} 字" if answer_len else ""
+    return ""
 
-    # 改写后的查询变体
-    queries = detail.get("queries_used", [])
-    meta_html = '<div class="rd-meta">'
-    meta_html += f'<span>⏱ 检索耗时 <b style="color:#FBBF24">{detail.get("retrieval_time_ms", 0):.0f}ms</b></span>'
 
-    # CRAG 评级标签
-    crag_grade = detail.get("crag_grade", "")
-    if crag_grade:
-        grade_colors = {
-            "correct": "#34D399", "recovered": "#38BDF8",
-            "ambiguous": "#FBBF24", "incorrect": "#F87171",
+def render_track(mode: str, detail: dict = None, answer_len: int = 0, placeholder=None):
+    """渲染对话管道进度条，体现『检索推进 → 产出确认 → 流式生成 → 完成』全过程。
+
+    mode:
+      searching — 检索进行中（前三格流动波 + 顶部流光，等待 retrieval 事件）
+      retrieved — 检索完成（前三格确认并回填真实产出数字）
+      streaming — 首 token 到达（生成格脉冲）
+      done      — 全部完成（四格绿 + 产出 + 勾）
+      cache     — 语义缓存命中（跳过全链路）
+    """
+    if mode == "cache":
+        html = (
+            '<div class="stage-track cache-track">'
+            '<span class="stage-item done"><span class="dot"></span>'
+            '<span class="stage-text"><span class="stage-label">⚡ 缓存命中</span>'
+            '<span class="stage-out">跳过全链路</span></span></span>'
+            '</div>'
+        )
+    else:
+        state_map = {
+            "searching": ["searching", "searching", "searching", "idle"],
+            "retrieved": ["done", "done", "done", "idle"],
+            "streaming": ["done", "done", "done", "streaming"],
+            "done": ["done", "done", "done", "done"],
         }
-        grade_labels = {
-            "correct": "✅ 质量良好", "recovered": "🔄 已补救",
-            "ambiguous": "⚠️ 部分相关", "incorrect": "❌ 不相关",
-        }
-        color = grade_colors.get(crag_grade, "#94A3B8")
-        label = grade_labels.get(crag_grade, crag_grade)
-        action = detail.get("crag_action", "")
-        title = f'{label}' + (f' ({action})' if action else '')
-        meta_html += f'<span style="color:{color};font-weight:600">CRAG: {title}</span>'
+        states = state_map[mode]
+        track_cls = "stage-track searching-track" if mode == "searching" else "stage-track"
+        parts = [f'<div class="{track_cls}">']
+        for i, (label, state) in enumerate(zip(STAGE_LABELS, states)):
+            stagger = f" s{i}" if state == "searching" else ""
+            out = _stage_out(i, state, detail, answer_len)
+            parts.append(
+                f'<span class="stage-item {state}{stagger}">'
+                f'<span class="dot"></span>'
+                f'<span class="stage-text">'
+                f'<span class="stage-label">{label}</span>'
+                f'<span class="stage-out">{out}</span>'
+                f'</span></span>'
+            )
+            if i < len(STAGE_LABELS) - 1:
+                sep_cls = "stage-sep done-sep" if state == "done" else "stage-sep"
+                parts.append(f'<span class="{sep_cls}">›</span>')
+        if mode == "done":
+            parts.append('<span class="stage-sep done-sep">✓</span>')
+        parts.append('</div>')
+        html = "".join(parts)
 
-    for q in queries[:3]:
-        q_escaped = q[:40].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-        meta_html += f'<span class="q-tag">🔍 {q_escaped}</span>'
-    meta_html += '</div>'
+    if placeholder is not None:
+        placeholder.markdown(html, unsafe_allow_html=True)
+    else:
+        st.markdown(html, unsafe_allow_html=True)
 
-    # 耗时条（相对 5s 满刻度）
-    t_ms = detail.get("retrieval_time_ms", 0)
-    pct = min(t_ms / 5000 * 100, 100)
-    time_html = f'<div class="rd-time-bar"><div class="rd-time-fill" style="width:{pct:.0f}%"></div></div>'
 
-    st.markdown(
-        f'<div class="retrieval-dash">{flow_html}{meta_html}{time_html}</div>',
-        unsafe_allow_html=True,
+def _esc(text: str) -> str:
+    """HTML 转义（用于过程明细里的查询/片段文本）。"""
+    return (text or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def render_process_detail(detail: dict, placeholder=None):
+    """渲染『过程明细』面板：改写成了什么 + 各路召回了什么片段。
+
+    数据全来自后端 retrieval 事件（queries_used / 各路 *_previews /
+    decomposed_subqueries / query_type），实时与历史消息复用同一函数。
+    传入 placeholder 时写入该占位（实时流幂等刷新），否则直接 st.markdown。
+    """
+    # 无真实检索信号（如缓存命中只带 sources_count）则不渲染
+    has_signal = bool(detail.get("queries_used")) or (
+        detail.get("dense_count") or detail.get("sparse_count") or detail.get("graph_count")
     )
+    if not detail or not has_signal:
+        if placeholder is not None:
+            placeholder.empty()
+        return
+
+    def _chips(items, cls="proc-chip", maxlen=60):
+        if not items:
+            return '<span class="proc-empty">（无）</span>'
+        return '<div class="proc-chips">' + "".join(
+            f'<span class="{cls}">{_esc(str(x)[:maxlen])}</span>' for x in items
+        ) + '</div>'
+
+    # 头部：耗时 + CRAG 评级 + 路由类型
+    grade_colors = {
+        "correct": "#34D399", "recovered": "#38BDF8",
+        "ambiguous": "#FBBF24", "incorrect": "#F87171",
+    }
+    grade_labels = {
+        "correct": "✅ 质量良好", "recovered": "🔄 已补救",
+        "ambiguous": "⚠️ 部分相关", "incorrect": "❌ 不相关",
+    }
+    head = ['<div class="proc-head">']
+    head.append(
+        f'<span>⏱ 检索 <b style="color:#FBBF24">'
+        f'{detail.get("retrieval_time_ms", 0):.0f}ms</b></span>'
+    )
+    crag = detail.get("crag_grade", "")
+    if crag:
+        color = grade_colors.get(crag, "#94A3B8")
+        label = grade_labels.get(crag, crag)
+        action = detail.get("crag_action", "")
+        head.append(
+            f'<span class="crag" style="color:{color}">CRAG {label}'
+            + (f'（{_esc(action)}）' if action else '') + '</span>'
+        )
+    qtype = detail.get("query_type", "")
+    if qtype:
+        head.append(f'<span>路由 <b style="color:#7dd3fc">{_esc(qtype)}</b></span>')
+    head.append('</div>')
+
+    # ① 改写：改写后的全部查询 + 多跳子问题
+    queries = detail.get("queries_used", []) or []
+    subqs = detail.get("decomposed_subqueries", []) or []
+    sec_query = ['<div class="proc-sec"><div class="proc-title">① 查询改写</div>']
+    sec_query.append(_chips(queries, "proc-chip", 80))
+    if subqs:
+        sec_query.append(
+            '<div style="margin-top:5px;color:#94A3B8;font-size:0.72rem">'
+            '↳ 多跳分解子问题</div>'
+        )
+        sec_query.append(_chips(subqs, "proc-chip sub", 80))
+    sec_query.append('</div>')
+
+    # ② 多路召回：每路计数 + 真实片段预览（仅展示有命中的路）
+    channels = [
+        ("dense", "向量召回", detail.get("dense_count", 0), detail.get("dense_previews", [])),
+        ("sparse", "BM25 召回", detail.get("sparse_count", 0), detail.get("sparse_previews", [])),
+        ("graph", "图谱召回", detail.get("graph_count", 0), detail.get("graph_previews", [])),
+    ]
+    sec_recall = ['<div class="proc-sec"><div class="proc-title">② 多路召回</div>'
+                  '<div class="proc-channels">']
+    any_chan = False
+    for key, label, count, previews in channels:
+        if count <= 0:
+            continue
+        any_chan = True
+        sec_recall.append(f'<div class="proc-chan {key}">')
+        sec_recall.append(
+            f'<div class="ch-head">{label} · <b>{count}</b> 命中</div>'
+        )
+        if previews:
+            for p in previews[:3]:
+                sec_recall.append(f'<div class="proc-prev">{_esc(p)}</div>')
+            rest = previews[3:]
+            if rest:
+                sec_recall.append(
+                    f'<details class="proc-more"><summary>'
+                    f'展开其余 {len(rest)} 条召回</summary>'
+                )
+                for p in rest:
+                    sec_recall.append(f'<div class="proc-prev">{_esc(p)}</div>')
+                sec_recall.append('</details>')
+        sec_recall.append('</div>')
+    if not any_chan:
+        sec_recall.append('<span class="proc-empty">本次未触发多路召回</span>')
+    sec_recall.append('</div></div>')
+
+    html = (
+        '<details class="proc-detail" open><summary>🔎 过程明细 · 改写与召回</summary>'
+        + "".join(head) + "".join(sec_query) + "".join(sec_recall)
+        + '</details>'
+    )
+    if placeholder is not None:
+        placeholder.markdown(html, unsafe_allow_html=True)
+    else:
+        st.markdown(html, unsafe_allow_html=True)
 
 
 def render_stats_strip(health_data: dict):
@@ -698,13 +932,15 @@ def run_chat_turn(prompt: str):
             
                 # 管道阶段指示器 + 打字动画
                 stage_placeholder = st.empty()
-                render_stage_track(0, stage_placeholder)
+                render_track("searching", placeholder=stage_placeholder)
                 placeholder = st.empty()
                 placeholder.markdown(
                     '<div class="typing-dots"><span></span><span></span><span></span></div>',
                     unsafe_allow_html=True,
                 )
-            
+                # 过程明细占位（检索事件到达时实时填充，位于答案下方）
+                proc_placeholder = st.empty()
+
                 tokens_started = False
                 for line in response.iter_lines():
                     if not line:
@@ -732,12 +968,14 @@ def run_chat_turn(prompt: str):
                         elif event_type == "token":
                             if not tokens_started:
                                 tokens_started = True
-                                render_stage_track(3, stage_placeholder)
+                                render_track("streaming", retrieval_detail, placeholder=stage_placeholder)
                             full_answer += sse_data
                             placeholder.markdown(full_answer + "▌")
                         elif event_type == "retrieval":
                             retrieval_detail = json.loads(sse_data)
-                            render_stage_track(2, stage_placeholder)
+                            render_track("retrieved", retrieval_detail, placeholder=stage_placeholder)
+                            # 检索完成即刻展示『改写了什么 + 召回了什么』
+                            render_process_detail(retrieval_detail, proc_placeholder)
                         elif event_type == "done":
                             done_data = json.loads(sse_data)
                             sources = done_data.get("sources", [])
@@ -747,22 +985,12 @@ def run_chat_turn(prompt: str):
                 if not cache_hit:
                     placeholder.markdown(full_answer)
                     # 阶段全部完成
-                    stage_placeholder.markdown(
-                        '<div class="stage-track">'
-                        + "".join(
-                            f'<span class="stage-item done"><span class="dot"></span>{s}</span>'
-                            + ('<span class="stage-sep">\u203a</span>' if i < 3 else "")
-                            for i, s in enumerate(["查询改写", "多路召回", "融合重排", "流式生成"])
-                        )
-                        + '<span class="stage-sep" style="color:#34D399">\u2713</span>'
-                        + '</div>',
-                        unsafe_allow_html=True,
-                    )
+                    render_track("done", retrieval_detail, len(full_answer), stage_placeholder)
 
-                # 检索仪表盘（可视化）
+                # 过程明细已在 retrieval 事件实时渲染（proc_placeholder）；
+                # 这里仅把含预览字段的 detail 存入 session，供历史消息复现。
                 detail_display = {**retrieval_detail, "sources_count": len(sources)}
                 st.session_state.retrieval_details.append(detail_display)
-                render_retrieval_dashboard(detail_display)
 
                 if sources:
                     render_sources(sources)
@@ -944,7 +1172,7 @@ with tab_chat:
                 if detail_idx < len(st.session_state.retrieval_details):
                     detail = st.session_state.retrieval_details[detail_idx]
                     if detail:
-                        render_retrieval_dashboard(detail)
+                        render_process_detail(detail)
                 if message.get("sources"):
                     render_sources(message["sources"])
                 detail_idx += 1
@@ -1036,7 +1264,7 @@ with tab_trace:
                 sc[1].metric("平均总耗时", f"{tstats['avg_total_ms']}ms")
                 stage_avg = tstats.get("stage_avg", {})
                 slowest = max(stage_avg.items(), key=lambda x: x[1]) if stage_avg else ("-", 0)
-                sc[2].metric("最慢阶段", f"{slowest[0]}", f"{slowest[1]}ms")
+                sc[2].metric("最慢阶段", _zh(slowest[0]), f"{slowest[1]}ms")
 
                 # 各阶段平均耗时条形图（阶段配色）
                 stage_color_map = {
@@ -1045,7 +1273,7 @@ with tab_trace:
                 }
                 legend_html = '<div class="legend-row">' + "".join(
                     f'<span class="legend-item">'
-                    f'<span class="legend-dot" style="background:{color}"></span>{name}</span>'
+                    f'<span class="legend-dot" style="background:{color}"></span>{_zh(name)}</span>'
                     for name, color in stage_color_map.items()
                 ) + '</div>'
 
@@ -1055,7 +1283,7 @@ with tab_trace:
                     pct = val / max_val * 100
                     st.markdown(
                         f'<div class="vec-row">'
-                        f'<span class="vec-label" style="min-width:110px">{name}</span>'
+                        f'<span class="vec-label" style="min-width:110px">{_zh(name)}</span>'
                         f'<div class="vec-bar-bg"><div class="vec-bar" '
                         f'style="width:{pct:.0f}%;background:{stage_color_map[name]}"></div></div>'
                         f'<span class="vec-val">{val}ms</span></div>',
@@ -1088,7 +1316,7 @@ with tab_trace:
                         legend_items = "".join(
                             f'<span class="legend-item">'
                             f'<span class="legend-dot" style="background:{stage_color_map[s["name"]]}"></span>'
-                            f'{s["name"]}</span>'
+                            f'{_zh(s["name"])}</span>'
                             for s in t["spans"]
                         )
                         st.markdown(
@@ -1104,7 +1332,7 @@ with tab_trace:
                             st.markdown(
                                 f'<div style="display:flex;align-items:center;gap:6px;margin:3px 0">'
                                 f'<span style="font-size:0.7rem;color:#94A3B8;min-width:100px;'
-                                f'text-align:right">{span["name"]}</span>'
+                                f'text-align:right">{_zh(span["name"])}</span>'
                                 f'<div style="flex:1;height:16px;background:#1E293B;'
                                 f'border-radius:4px;position:relative;overflow:hidden">'
                                 f'<div style="position:absolute;left:{left_pct:.0f}%;'
@@ -1418,16 +1646,38 @@ with tab_graph:
             if resp.status_code == 200:
                 pdata = resp.json()
                 if pdata.get("found"):
-                    st.success(f"✅ 找到路径（{pdata['path_length']} 跳）")
-                    path_html = f'<div style="padding:12px;background:#1E293B;border-radius:10px;border:1px solid #334155">'
+                    weak_only = pdata.get("weak_only", False)
+                    if weak_only:
+                        st.warning(
+                            f"⚠️ 找到连通路径（{pdata['path_length']} 跳）· "
+                            f"仅经上位概念桥接，语义关联较弱"
+                        )
+                    else:
+                        st.success(f"✅ 找到路径（{pdata['path_length']} 跳）")
+                    path_html = '<div style="padding:12px;background:#1E293B;border-radius:10px;border:1px solid #334155">'
                     path_html += f'<span style="color:#F59E0B;font-weight:700">{path_source}</span>'
                     for step in pdata["path"]:
-                        path_html += (
-                            f' <span style="color:#64748B">—[{step["relation"]}]→</span> '
-                            f'<span style="color:#38BDF8;font-weight:600">{step["to"]}</span>'
-                        )
+                        rel = step["relation"]
+                        to = step["to"]
+                        if step.get("weak"):
+                            # 上位概念边：淡灰虚箭头 + 〔上位〕标 + 降饱和节点
+                            path_html += (
+                                f' <span style="color:#94A3B8">⇢[{rel}·上位]⇢</span> '
+                                f'<span style="color:#64748B;font-weight:600">{to}</span>'
+                            )
+                        else:
+                            # 实义边：绿色实箭头 + 高亮节点
+                            path_html += (
+                                f' <span style="color:#34D399">—[{rel}]→</span> '
+                                f'<span style="color:#38BDF8;font-weight:600">{to}</span>'
+                            )
                     path_html += '</div>'
                     st.markdown(path_html, unsafe_allow_html=True)
+                    if weak_only:
+                        st.caption(
+                            "💡 该路径靠『属于 / 示例 / 分为』等分类边连通，"
+                            "两实体未必有直接实质关系——图连通 ≠ 语义强相关。"
+                        )
                 else:
                     st.warning(f"未找到 {path_source} 到 {path_target} 的路径")
         except requests.ConnectionError:
