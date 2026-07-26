@@ -219,15 +219,41 @@ class RAGChain:
             trace_id=trace_id,
         )
 
+    @staticmethod
+    def _tokenize_for_match(text: str) -> List[str]:
+        """词级分词，用于 query↔句子重合匹配（jieba，对齐 sparse/metrics 过滤口径）。
+
+        中文保留 ≥2 字词、英文/数字保留完整 token；过滤单字噪声（的/了/在 等）。
+        """
+        import jieba
+        import re as _re
+        out = []
+        for t in jieba.lcut(text.lower()):
+            t = t.strip()
+            if not t:
+                continue
+            if _re.fullmatch(r'[a-zA-Z0-9]+(?:\.[0-9]+)?', t):
+                out.append(t)
+            elif len(t) >= 2 and any('\u4e00' <= c <= '\u9fff' for c in t):
+                out.append(t)
+        return out
+
     def compress_context(
         self,
         question: str,
         documents: List[Document],
-        max_sentences_per_doc: int = 3,
+        max_sentences_per_doc: int = 6,
     ) -> List[Document]:
-        """上下文压缩：关键词重叠抽句（零LLM调用）"""
+        """上下文压缩：词级重合抽句（零LLM调用）。
+
+        用 jieba 词级分词计算 query 与每个句子的词重合度，**保留所有与问题相关的
+        句子**（重合>0，按原文顺序拼接）；无相关句时整篇保留兜底。早期版本用「整段
+        中文 token + 硬留 top-3」，token 粒度过粗抓不到子串/词重合（如「双月十六日」），
+        会把答案句误删——实测 11/11 拒答样本的答案句曾被旧版丢弃，是端到端正确率偏低
+        （语义 0.61）的生成侧主因。词级分词 + 相关句必留修复该自伤。
+        """
         import re as _re
-        q_tokens = set(_re.findall(r'[一-鿿]{2,}|[a-zA-Z0-9]+', question.lower()))
+        q_tokens = set(self._tokenize_for_match(question))
         if not q_tokens:
             return documents
 
@@ -236,25 +262,31 @@ class RAGChain:
             sentences = _re.split(r'(?<=[。！？.!?\n])', doc.page_content)
             sentences = [s.strip() for s in sentences if s.strip()]
 
-            if len(sentences) <= max_sentences_per_doc:
+            if len(sentences) <= 1:
                 compressed.append(doc)
                 continue
 
-            scored = []
-            for sent in sentences:
-                s_tokens = set(_re.findall(r'[一-鿿]{2,}|[a-zA-Z0-9]+', sent.lower()))
-                scored.append((len(q_tokens & s_tokens), sent))
-
-            scored.sort(key=lambda x: -x[0])
-            top_sentences = set(s for _, s in scored[:max_sentences_per_doc])
-            kept = [s for s in sentences if s in top_sentences]
-
-            if kept:
-                compressed.append(Document(
-                    page_content="".join(kept), metadata=doc.metadata.copy(),
-                ))
-            else:
+            # 每个句子与 query 的词重合度
+            scored = [
+                (len(q_tokens & set(self._tokenize_for_match(sent))), sent)
+                for sent in sentences
+            ]
+            relevant = [(sc, s) for sc, s in scored if sc > 0]
+            if not relevant:
+                # 无相关句：整篇保留兜底（宁可不压缩，也不盲删潜在答案）
                 compressed.append(doc)
+                continue
+
+            # 相关句超上限时按重合度取 top-N（其余全留）；kept 维持原文顺序
+            if len(relevant) > max_sentences_per_doc:
+                keep_set = {s for _, s in sorted(relevant, key=lambda x: -x[0])[:max_sentences_per_doc]}
+            else:
+                keep_set = {s for _, s in relevant}
+            kept = [s for s in sentences if s in keep_set]
+
+            compressed.append(Document(
+                page_content="".join(kept), metadata=doc.metadata.copy(),
+            ))
 
         return compressed
 
@@ -294,6 +326,7 @@ class RAGChain:
             yield FALLBACK_RESPONSE
             return
 
+        documents = self.compress_context(question, documents)
         context = self._format_context(documents)
         template = RAG_CHAT_PROMPT if chat_history else RAG_SIMPLE_PROMPT
         payload = {"context": context, "question": question}

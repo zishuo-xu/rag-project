@@ -353,9 +353,12 @@ cache.py（语义响应缓存）与 caches.py（embedding/rerank 缓存）已合
 > 软化拒答（仅当文档确实完全没有才说明无法回答）」四条约束，直击端到端 F1 偏低的生成侧两类损失
 > （冗长稀释 + 过度拒答）；防幻觉硬约束与 F3 忠实度自检保留不动。契约由 `tests/test_generation_prompts.py`
 > 锁定，指标解读与数据卫生见 README「生成质量」小节。
-> **残差天花板**：重构后残余的「过度拒答」（11/30、`answer_in_top_context_rate=1.0`）经两轮正交 prompt
-> 实验（详略自适应 / 先查后拒守卫）证实**无法由 prompt 撬动**——属 deepseek-v4-flash 的抽取能力天花板，
-> 非检索 / 非 prompt 问题；生成侧 prompt 杠杆已用尽，再提正确率需换更强模型或增设上下文聚焦预抽取阶段。
+> **残差归因更正（compress_context 自伤，已修）**：上版曾把残存的 11/30 过度拒答（`answer_in_top_context_rate=1.0`、
+> `avg_correctness` 卡 0.61）定性为「deepseek-v4-flash 抽取能力天花板」，**已推翻**——根因是上下文压缩
+> `compress_context` 旧版粗粒度整段 token + 硬留 top-3 句，把答案句（与 query 仅有词/子串重合）误删，模型
+> 看不到答案才拒答（11/11 gold 句曾被丢弃）。修为 jieba 词级分词 + 相关句必留/整篇兜底，并统一 generate/
+> generate_stream 两路径。A/B：`avg_correctness` 0.61→0.9533、`avg_f1` 0.521→0.704、忠实度 0.833→0.9333、
+> 拒答 11→0。契约见 `tests/test_compress_context.py`；剩余失分才属模型能力边界。
 
 ---
 
