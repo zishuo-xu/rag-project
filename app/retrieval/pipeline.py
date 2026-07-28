@@ -505,6 +505,10 @@ class RetrievalPipeline:
             and self.query_transformer is not None
             and use_query_transform
         )
+        # 精简（2026-07-28，性能效果均衡）：仅 multi_hop 改写扩召回，
+        # 简单/事实型不改写省 LLM（原 query + 5 路 + rerank 够）。效果损：召回面
+        # 略缩，但多路 + rerank 兜底，基线验证 hit。
+        effective_strategy = "multi_query" if result.query_type == "multi_hop" else "none"
         if trace_id:
             tracer.start_span(trace_id, "gate_transform")
         need_retrieval, gate_reason = True, "门控未启用"
@@ -521,13 +525,13 @@ class RetrievalPipeline:
             with ThreadPoolExecutor(max_workers=2) as executor:
                 gate_future = executor.submit(self.gate, question)
                 transform_future = executor.submit(
-                    self.transform, question, query_strategy
+                    self.transform, question, effective_strategy
                 )
                 need_retrieval, gate_reason = gate_future.result()
                 queries = transform_future.result()
         else:
             need_retrieval, gate_reason = self.gate(question)
-            queries = self.transform(question, query_strategy, use_query_transform)
+            queries = self.transform(question, effective_strategy, use_query_transform)
         result.queries_used = queries
         if trace_id:
             tracer.end_span(trace_id, "gate_transform", {
@@ -573,7 +577,7 @@ class RetrievalPipeline:
         if not decomposed:
             # multi_hop 跳过了投机改写但分解未触发 → 延迟补跑，不丢召回质量
             if not queries:
-                queries = self.transform(question, query_strategy, use_query_transform)
+                queries = self.transform(question, effective_strategy, use_query_transform)
                 result.queries_used = queries
             # ③ 多路召回
             if trace_id:
