@@ -10,6 +10,7 @@
 | [docs/architecture.md](./docs/architecture.md) | 架构设计文档（数据流、模块设计、技术选型理由） |
 | [docs/api.md](./docs/api.md) | API 接口详细文档（请求/响应示例） |
 | [docs/interview_guide.md](./docs/interview_guide.md) | 面试与学习指南（技术深度解析、高频Q&A、扩展路线） |
+| [docs/superpowers/reports/](./docs/superpowers/reports/) | 逐轮迭代验证报告（诚实记录，含负面/无效结果；最新：[2026-07-29 零 LLM 均衡化](./docs/superpowers/reports/2026-07-29-zero-llm-balance-report.md)） |
 | [API Swagger UI](http://localhost:8000/docs) | 启动服务后的交互式 API 文档 |
 
 ## 核心叙事（面试 30 秒）

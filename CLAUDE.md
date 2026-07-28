@@ -36,10 +36,11 @@ uv run pytest tests/test_pipeline.py      # single file
 uv run pytest tests/test_pipeline.py::test_name   # single test
 uv run pytest -k autocut                  # by keyword
 
-# Evaluation (each writes data/*.json)
+# Evaluation (each writes data/*.json) — layered: zero-LLM (seconds) → 50-q slice (~4min) → full 300-q (~20min)
 uv run python run_eval.py                 # RAGAS 4-dim quality (needs LLM)
 uv run python run_retrieval_eval.py       # CMRC retrieval hit/coverage (zero LLM)
-uv run python run_e2e_eval.py --mode full        # 3-layer e2e: retrieval+faithfulness+zh F1/EM
+uv run python run_e2e_eval.py --dataset data/eval_slice_fast.json --gate --baseline data/eval_slice_baseline.json   # daily A/B (50 q)
+uv run python run_e2e_eval.py --mode full        # 3-layer e2e: retrieval+faithfulness+zh F1/EM (300 q, release/baseline)
 uv run python run_e2e_eval.py --mode baseline    # A/B: F1-F4 all off (RAG1.0 baseline)
 uv run python run_e2e_eval.py --only F3          # single-feature attribution
 uv run python run_e2e_eval.py --smoke --gate     # quality gate (used by pre-push hook)
