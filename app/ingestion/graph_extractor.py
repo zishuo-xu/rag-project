@@ -71,7 +71,7 @@ class KnowledgeGraphBuilder:
     # 并发 LLM 调用数上限
     MAX_CONCURRENCY = 5
     # 合并相邻分块的最大数量
-    MERGE_CHUNK_SIZE = 2
+    MERGE_CHUNK_SIZE = 4
 
     def __init__(self, llm=None):
         settings = get_settings()
@@ -96,6 +96,71 @@ class KnowledgeGraphBuilder:
         if self.persist_path.exists():
             self._load()
 
+    def build_fast(self, documents: List[Document], top_keywords: int = 8) -> dict:
+        """
+        快速构建知识图谱（零 LLM 调用，秒级）。
+
+        策略：jieba TF-IDF 抽关键词作实体 + 同 chunk 共现 + 相邻 chunk 上下文关联。
+        边带 chunk_id 溯源（对齐图 schema 的溯源字段）。
+
+        2026-07-28 回退自 091b64a 的 build_fast：LLM 类型化三元组虽质量高，
+        但重建成本(5564 块≈2782 次×23s≈3.6h)与可复现性(别人付同样成本)与
+        L3「可复现」冲突，改零 LLM 共现图，1 秒重建、clone 即可复现。
+        质量降(关系仅共现，无类型化)，但 Graph 检索(实体多跳)仍可用，权衡如实记录。
+        """
+        import jieba.analyse
+
+        total_triples = 0
+        processed = 0
+        prev_keywords: List[str] = []
+        prev_source = ""
+
+        for doc in documents:
+            text = doc.page_content
+            source = doc.metadata.get("source", "unknown")
+            chunk_id = doc.metadata.get("chunk_id", source)
+
+            # jieba TF-IDF 关键词抽取（零 LLM）
+            keywords = jieba.analyse.extract_tags(text, topK=top_keywords)
+            keywords = [kw for kw in keywords if len(kw) >= 2]
+            if not keywords:
+                processed += 1
+                continue
+
+            # 1. 同 chunk 内关键词 → 共现关系
+            for i, head in enumerate(keywords):
+                self.graph.add_node(head, type="entity", source=source, chunk_id=chunk_id)
+                for tail in keywords[i + 1:i + 3]:  # 每个实体最多连 2 个
+                    self.graph.add_node(tail, type="entity", source=source, chunk_id=chunk_id)
+                    if not self.graph.has_edge(head, tail):
+                        self.graph.add_edge(head, tail, relation="共现",
+                                           source=source, chunk_id=chunk_id)
+                        total_triples += 1
+
+            # 2. 同文档相邻 chunk → 上下文关联
+            if source == prev_source and prev_keywords:
+                for kw in keywords[:3]:
+                    for pk in prev_keywords[:3]:
+                        if kw != pk and not self.graph.has_edge(pk, kw):
+                            self.graph.add_edge(pk, kw, relation="上下文关联",
+                                               source=source, chunk_id=chunk_id)
+                            total_triples += 1
+
+            prev_keywords = keywords
+            prev_source = source
+            processed += 1
+
+        self._save()
+        stats = {
+            "processed_docs": processed,
+            "total_triples": total_triples,
+            "num_nodes": self.graph.number_of_nodes(),
+            "num_edges": self.graph.number_of_edges(),
+            "method": "fast (jieba TF-IDF, zero LLM)",
+        }
+        logger.info(f"快速图谱构建完成: {stats}")
+        return stats
+
     def extract_triples(self, text: str) -> List[dict]:
         """
         使用 LLM 从文本中抽取类型化三元组。
@@ -109,7 +174,7 @@ class KnowledgeGraphBuilder:
         chain = EXTRACTION_PROMPT | self.llm | StrOutputParser()
 
         try:
-            result = chain.invoke({"text": text[:2000]})  # 限制长度
+            result = chain.invoke({"text": text[:4000]})  # 限制长度（MERGE=4 时 4 块~2048 字符，4000 下不截断）
             triples = self._parse_triples(result)
             logger.debug(f"抽取到 {len(triples)} 个三元组")
             return triples
