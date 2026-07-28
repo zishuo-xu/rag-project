@@ -28,7 +28,7 @@ def keyword_coverage(question: str, ground_truth: str, documents) -> float:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default="data/eval_dataset_cmrc_expanded.json")
+    parser.add_argument("--dataset", default="data/eval_dataset_cmrc_full.json")
     parser.add_argument("--output", default="data/eval_report_cmrc.json")
     args = parser.parse_args()
 
