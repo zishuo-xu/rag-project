@@ -3,9 +3,13 @@
 import asyncio
 import json
 import logging
+import os
 import tempfile
 from pathlib import Path
 from typing import AsyncGenerator
+
+# 上传文件大小上限（防一次性大 body 打满内存/磁盘）
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from langchain_core.messages import HumanMessage, AIMessage
@@ -19,6 +23,7 @@ from app.api.schemas import (
 from config import get_settings
 from app.ingestion.service import ingest_file, rebuild_enhanced_indexes
 from app.generation.chain import RAGChain, RAGResponse
+from app.observability.metrics import get_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -80,15 +85,41 @@ def _previews(docs, n: int = 3, maxlen: int = 90) -> list:
 
 
 async def _acquire_gate(gate: asyncio.Semaphore) -> bool:
-    """获取闸门许可，超时返回 False"""
+    """获取闸门许可，超时返回 False。
+
+    不用 `asyncio.wait_for(gate.acquire(), ...)`：Python 3.11 下超时取消与
+    acquire 完成存在窄竞态，permit 可能被消费却抛 TimeoutError（gh-86296，
+    3.12 修复），permit 永久泄漏使闸门容量逐步归零。改用显式 task + 超时后
+    结果复查：任何被消费的 permit 必然以 True 返回（由调用方释放）。
+    """
     settings = get_settings()
+    task = asyncio.ensure_future(gate.acquire())
+    await asyncio.wait({task}, timeout=settings.request_queue_timeout)
+    if task.done():
+        return bool(task.result())
+    task.cancel()
     try:
-        await asyncio.wait_for(
-            gate.acquire(), timeout=settings.request_queue_timeout
-        )
-        return True
-    except asyncio.TimeoutError:
+        await task
+    except asyncio.CancelledError:
         return False
+    # 取消落在 acquire 完成的瞬间（窄竞态）：permit 已到手，按已获取处理
+    return bool(task.result())
+
+
+def _close_stream_generator(event_iter) -> None:
+    """客户端断连清理：关闭同步生成器，GeneratorExit 让残留管道提前结束。
+
+    不关闭的后果：断连后生成器在线程里把整条管道跑完（检索 + 生成 + 裁判，
+    最长 ~60s），白烧一次完整 LLM 配额；并发断连可耗尽共享线程池。
+    """
+    try:
+        event_iter.close()
+    except ValueError:
+        # 有 token 正在该线程里生成（executing 态不可 close）：线程不可中断，
+        # 但完成当前步后生成器挂起、不再被续接，GC 时收尾（有界，非全程跑完）
+        pass
+    except Exception as e:
+        logger.warning(f"关闭流生成器失败: {e}")
 
 
 # ============ Chat 端点 ============
@@ -116,6 +147,7 @@ async def chat(request: ChatRequest):
     gate = get_concurrency_gate()
     if gate is not None:
         if not await _acquire_gate(gate):
+            get_metrics().inc("errors_total", code="503")
             raise HTTPException(
                 status_code=503, detail="服务繁忙，请求排队超时，请稍后重试"
             )
@@ -144,10 +176,11 @@ async def _stream_response(
     request: ChatRequest,
     chat_history: list,
 ) -> AsyncGenerator[dict, None]:
-    """SSE 流式响应生成器（闸门在流结束后释放）"""
+    """SSE 流式响应生成器（闸门在流结束后释放；断连关闭生成器终止残留管道）"""
     gate = get_concurrency_gate()
     if gate is not None:
         if not await _acquire_gate(gate):
+            get_metrics().inc("errors_total", code="503")
             yield {
                 "event": "error",
                 "data": json.dumps(
@@ -157,6 +190,7 @@ async def _stream_response(
             }
             return
 
+    event_iter = None
     try:
         event_iter = chain.invoke_stream(
             question=request.question,
@@ -252,6 +286,11 @@ async def _stream_response(
     finally:
         if gate is not None:
             gate.release()
+        # 断连/正常结束都关闭生成器（正常结束时为 no-op）。
+        # to_thread 等待在途 token 步完成后再 close，避免 executing 态竞态；
+        # 在独立线程等待，不阻塞事件循环上的其他请求。
+        if event_iter is not None:
+            await asyncio.to_thread(_close_stream_generator, event_iter)
 
 
 # ============ Documents 端点 ============
@@ -283,15 +322,24 @@ async def upload_document(
             detail=f"不支持的文件格式: {suffix}，支持: .pdf, .txt, .md"
         )
 
+    tmp_path = None
     try:
-        # 写入临时文件
+        # 写入临时文件（大小上限防一次性大 body 打满内存/磁盘）
+        content = await file.read()
+        if len(content) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"文件过大（{len(content)} 字节），上限 {MAX_UPLOAD_BYTES // 1024 // 1024}MB",
+            )
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
             tmp.write(content)
             tmp_path = tmp.name
 
-        # 加载 → 分块 → 索引 → 增强索引 → BM25 增量（服务层统一编排）
-        docs, chunks = ingest_file(chain, tmp_path, chunk_strategy)
+        # 加载 → 分块 → 索引 → 增强索引 → BM25 增量（服务层统一编排）。
+        # 同步重活移出事件循环（否则一次上传冻住全站，含健康探针）
+        docs, chunks = await asyncio.to_thread(
+            ingest_file, chain, tmp_path, chunk_strategy
+        )
 
         return UploadResponse(
             message=f"文档 '{file.filename}' 上传并索引成功",
@@ -300,9 +348,18 @@ async def upload_document(
             doc_id=docs[0].metadata.get("doc_id", "") if docs else "",
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"文档上传失败: {e}")
         raise HTTPException(status_code=500, detail=f"文档处理失败: {str(e)}")
+    finally:
+        # 临时文件必须清理（原实现 delete=False 后从不 unlink，/tmp 缓慢膨胀）
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
 
 
 @router.post("/api/documents/reindex")
@@ -312,7 +369,8 @@ async def reindex_f6a():
     上下文增强需对每块调用一次 LLM，文档多时较慢，属一次性管理操作。
     """
     chain = get_rag_chain()
-    num_docs, num_ctx = rebuild_enhanced_indexes(chain)
+    # 每块一次 LLM 的管理操作，同步跑可达分钟级——移出事件循环
+    num_docs, num_ctx = await asyncio.to_thread(rebuild_enhanced_indexes, chain)
     return {
         "message": "F6a 索引重建完成",
         "num_documents": num_docs,
@@ -325,9 +383,8 @@ async def list_documents():
     """获取已索引的文档列表"""
     chain = get_rag_chain()
 
-    try:
+    def _list_sync():
         all_chunks = chain.indexer.get_all_chunks()
-
         # 按 doc_id 分组统计
         doc_stats = {}
         for chunk in all_chunks:
@@ -336,17 +393,18 @@ async def list_documents():
             if doc_id not in doc_stats:
                 doc_stats[doc_id] = {"source": source, "count": 0}
             doc_stats[doc_id]["count"] += 1
-
-        documents = [
+        return [
             DocumentInfo(doc_id=doc_id, source=info["source"], num_chunks=info["count"])
             for doc_id, info in doc_stats.items()
         ]
 
+    try:
+        documents = await asyncio.to_thread(_list_sync)
         return DocumentListResponse(documents=documents, total=len(documents))
-
     except Exception as e:
-        logger.error(f"获取文档列表失败: {e}")
-        return DocumentListResponse(documents=[], total=0)
+        # 诚实失败：索引损坏时返回 500，而非伪装成「没有文档」的 200
+        logger.error(f"获取文档列表失败（索引可能损坏）: {e}")
+        raise HTTPException(status_code=500, detail=f"获取文档列表失败: {e}")
 
 
 @router.get("/api/documents/{doc_id}/chunks")
@@ -358,7 +416,7 @@ async def get_document_chunks(doc_id: str):
     """
     chain = get_rag_chain()
 
-    try:
+    def _chunks_sync():
         all_chunks = chain.indexer.get_all_chunks()
         doc_chunks = [
             c for c in all_chunks if c.metadata.get("doc_id") == doc_id
@@ -410,6 +468,8 @@ async def get_document_chunks(doc_id: str):
             "chunks": chunks_info,
         }
 
+    try:
+        return await asyncio.to_thread(_chunks_sync)
     except Exception as e:
         logger.error(f"获取索引详情失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -432,27 +492,33 @@ async def retrieval_compare(request: ChatRequest):
     question = request.question
     top_k = request.top_k or settings.retrieval_top_k
 
-    # 1. Dense Only
-    t0 = _time.time()
-    dense_docs = chain.dense_retriever.retrieve(question, top_k=top_k)
-    dense_ms = (_time.time() - t0) * 1000
+    def _compare_sync():
+        # 1. Dense Only
+        t0 = _time.time()
+        dense_docs = chain.dense_retriever.retrieve(question, top_k=top_k)
+        dense_ms = (_time.time() - t0) * 1000
 
-    # 2. Sparse Only (BM25)
-    t0 = _time.time()
-    sparse_docs = chain.sparse_retriever.retrieve(question, top_k=top_k)
-    sparse_ms = (_time.time() - t0) * 1000
+        # 2. Sparse Only (BM25)
+        t0 = _time.time()
+        sparse_docs = chain.sparse_retriever.retrieve(question, top_k=top_k)
+        sparse_ms = (_time.time() - t0) * 1000
 
-    # 3. Hybrid RRF (no rerank) —— 复用管道融合原语
-    t0 = _time.time()
-    fused_docs = chain.pipeline.fuse(
-        {"dense": dense_docs, "sparse": sparse_docs}
-    )[:top_k]
-    rrf_ms = (_time.time() - t0) * 1000
+        # 3. Hybrid RRF (no rerank) —— 复用管道融合原语
+        t0 = _time.time()
+        fused_docs = chain.pipeline.fuse(
+            {"dense": dense_docs, "sparse": sparse_docs}
+        )[:top_k]
+        rrf_ms = (_time.time() - t0) * 1000
 
-    # 4. Hybrid + Rerank —— 复用管道重排原语
-    t0 = _time.time()
-    reranked_docs = chain.pipeline.rerank(question, fused_docs, top_k)
-    rerank_ms = (_time.time() - t0) * 1000
+        # 4. Hybrid + Rerank —— 复用管道重排原语（cross-encoder CPU 重算 ~3s，
+        # 原本完全绕过并发闸门直钉事件循环，现整体移出）
+        t0 = _time.time()
+        reranked_docs = chain.pipeline.rerank(question, fused_docs, top_k)
+        rerank_ms = (_time.time() - t0) * 1000
+        return dense_docs, dense_ms, sparse_docs, sparse_ms, fused_docs, rrf_ms, reranked_docs, rerank_ms
+
+    (dense_docs, dense_ms, sparse_docs, sparse_ms,
+     fused_docs, rrf_ms, reranked_docs, rerank_ms) = await asyncio.to_thread(_compare_sync)
 
     def _fmt(docs):
         return [
@@ -540,7 +606,9 @@ async def evaluate(request: EvalRequest):
     try:
         from app.evaluation.metrics import evaluate_rag
 
-        report = evaluate_rag(
+        # 多轮 LLM 评估，同步可达分钟级——移出事件循环
+        report = await asyncio.to_thread(
+            evaluate_rag,
             questions=request.questions,
             ground_truths=request.ground_truths or None,
         )
@@ -557,6 +625,9 @@ async def evaluate(request: EvalRequest):
 
 # 图谱构建后台任务引用
 _graph_build_task: asyncio.Task | None = None
+# 「是否正在构建」检查与任务启动之间的 check-then-act 竞态保护
+# （无锁时两个并发 POST 可同时通过检查，触发双重构建白烧 LLM）
+_graph_build_lock = asyncio.Lock()
 
 
 @router.post("/api/graph/build")
@@ -572,27 +643,28 @@ async def build_knowledge_graph():
 
     builder = get_graph_builder()
 
-    # 如果正在构建，返回当前进度
-    if builder.is_building:
-        return {
-            "message": "图谱正在构建中",
-            "status": "building",
-            "progress": builder.get_build_progress(),
-        }
+    async with _graph_build_lock:
+        # 如果正在构建，返回当前进度（锁内复查，杜绝双重构建）
+        if builder.is_building:
+            return {
+                "message": "图谱正在构建中",
+                "status": "building",
+                "progress": builder.get_build_progress(),
+            }
 
-    chain = get_rag_chain()
-    all_chunks = chain.indexer.get_all_chunks()
-    if not all_chunks:
-        raise HTTPException(status_code=400, detail="无已索引文档，请先上传文档")
+        chain = get_rag_chain()
+        all_chunks = await asyncio.to_thread(chain.indexer.get_all_chunks)
+        if not all_chunks:
+            raise HTTPException(status_code=400, detail="无已索引文档，请先上传文档")
 
-    # 启动后台任务（不阻塞事件循环）
-    async def _run_build():
-        try:
-            await builder.build_from_documents_async(all_chunks, incremental=True)
-        except Exception as e:
-            logger.error(f"知识图谱后台构建失败: {e}")
+        # 启动后台任务（不阻塞事件循环）
+        async def _run_build():
+            try:
+                await builder.build_from_documents_async(all_chunks, incremental=True)
+            except Exception as e:
+                logger.error(f"知识图谱后台构建失败: {e}")
 
-    _graph_build_task = asyncio.create_task(_run_build())
+        _graph_build_task = asyncio.create_task(_run_build())
 
     return {
         "message": "图谱构建已启动",
@@ -645,7 +717,10 @@ async def query_graph(request: ChatRequest):
         raise HTTPException(status_code=400, detail="Graph RAG 未启用")
 
     try:
-        result = chain.graph_retriever.retrieve_with_context(request.question)
+        # 实体匹配 + 子图扩展为同步计算，移出事件循环
+        result = await asyncio.to_thread(
+            chain.graph_retriever.retrieve_with_context, request.question
+        )
         return result
     except Exception as e:
         logger.error(f"图检索失败: {e}")
@@ -677,7 +752,8 @@ async def find_graph_path(source: str, target: str):
     # 复用全局 RAGChain 的图检索器（避免每次新建 LLM 实例）
     chain = get_rag_chain()
     retriever = chain.graph_retriever or GraphRetriever(graph_builder=builder)
-    result = retriever.find_path(source, target)
+    # networkx 最短路径为同步计算，移出事件循环
+    result = await asyncio.to_thread(retriever.find_path, source, target)
 
     return {**result, "source": source, "target": target}
 
@@ -741,16 +817,29 @@ async def clear_graph():
 
 @router.get("/api/health", response_model=HealthResponse)
 async def health_check():
-    """健康检查"""
+    """健康检查。
+
+    高频探针端点：只取元数据统计文档数（不再全量构造 Document 对象），
+    且同步操作移出事件循环；探测失败报 degraded 而非伪装 ok——
+    索引损坏时探针必须报警，这正是健康检查存在的意义。
+    """
     chain = get_rag_chain()
+
+    def _probe():
+        data = chain.indexer.detail_store.get(include=["metadatas"])
+        metas = data.get("metadatas") or []
+        return len({m.get("doc_id") for m in metas if m})
+
     try:
-        all_chunks = chain.indexer.get_all_chunks()
-        num_docs = len(set(c.metadata.get("doc_id") for c in all_chunks))
-    except Exception:
+        num_docs = await asyncio.to_thread(_probe)
+        status = "ok"
+    except Exception as e:
+        logger.error(f"健康探测失败（索引可能损坏）: {e}")
         num_docs = 0
+        status = "degraded"
 
     return HealthResponse(
-        status="ok",
+        status=status,
         version="0.1.0",
         indexed_documents=num_docs,
     )
@@ -852,4 +941,7 @@ def _build_chat_response(response: RAGResponse) -> ChatResponse:
         short_answer=response.short_answer,
         self_consistency_used=response.self_consistency_used,
         rewritten_query=response.rewritten_query,
+        faithful=response.faithful,
+        faithfulness_score=response.faithfulness_score,
+        regenerated=response.regenerated,
     )

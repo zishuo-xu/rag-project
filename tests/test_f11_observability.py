@@ -2,18 +2,16 @@
 
 覆盖：
 1. MetricsRegistry：计数器累加/标签区分、直方图统计与百分位、Prometheus/JSON 导出、reset
-2. security.verify_api_key：关闭/正确/错误
+2. security.verify_api_key：关闭/正确/错误/缺 key
 3. RateLimiter：关闭/窗口内放行/超限拒绝/跨窗口重置/清理
-4. enforce_security：豁免路径/鉴权失败/限流失败（mock Request）
+4. check_request（生产中间件 main.py SecurityMiddleware 共用的判定实现）：
+   探针豁免/文档豁免随鉴权开关联动/鉴权失败 401/限流 429/正确 key 放行
 """
 from unittest.mock import MagicMock
 
-import pytest
-from fastapi import HTTPException
-
 from app.observability.metrics import MetricsRegistry
 from app.api.security import (
-    verify_api_key, RateLimiter, is_exempt, enforce_security,
+    verify_api_key, RateLimiter, is_exempt, check_request,
 )
 
 
@@ -134,7 +132,7 @@ def test_rate_limit_per_client_isolated():
     assert rl.allow("c1", now) is False
 
 
-# ============ enforce_security ============
+# ============ check_request（生产中间件判定） ============
 
 def _request(path, api_key=None, host="1.2.3.4"):
     req = MagicMock()
@@ -144,34 +142,61 @@ def _request(path, api_key=None, host="1.2.3.4"):
     return req
 
 
-def test_exempt_path_skips(monkeypatch):
+def _settings(api_key="", rate_limit_rpm=0):
+    return MagicMock(api_key=api_key, rate_limit_rpm=rate_limit_rpm)
+
+
+def test_probe_path_always_exempt(monkeypatch):
+    """探针/监控端点即使开启鉴权也放行（否则健康检查被 401）。"""
     monkeypatch.setattr("app.api.security.get_settings",
-                        lambda: MagicMock(api_key="secret", rate_limit_rpm=0))
-    # 豁免路径即使无 key 也放行
-    enforce_security(_request("/api/health"))  # 不抛异常
+                        lambda: _settings(api_key="secret"))
+    assert check_request(_request("/api/health")) is None
+    assert check_request(_request("/api/metrics")) is None
 
 
-def test_is_exempt():
-    assert is_exempt("/api/health") is True
-    assert is_exempt("/api/metrics") is True
-    assert is_exempt("/api/chat") is False
-
-
-def test_enforce_auth_failure(monkeypatch):
+def test_docs_exempt_only_when_auth_off(monkeypatch):
+    """API 文档：鉴权关闭时豁免，开启后即关门（不泄露 API 表面）。"""
     monkeypatch.setattr("app.api.security.get_settings",
-                        lambda: MagicMock(api_key="secret", rate_limit_rpm=0))
-    with pytest.raises(HTTPException) as e:
-        enforce_security(_request("/api/chat", api_key="wrong"))
-    assert e.value.status_code == 401
-
-
-def test_enforce_rate_limit_failure(monkeypatch):
+                        lambda: _settings(api_key=""))
+    assert is_exempt("/docs") is True
+    assert is_exempt("/openapi.json") is True
     monkeypatch.setattr("app.api.security.get_settings",
-                        lambda: MagicMock(api_key="", rate_limit_rpm=1))
+                        lambda: _settings(api_key="secret"))
+    assert is_exempt("/docs") is False
+    assert is_exempt("/openapi.json") is False
+    assert is_exempt("/api/chat") is False  # 任何情况下业务端点不豁免
+
+
+def test_check_auth_failure_returns_401(monkeypatch):
+    monkeypatch.setattr("app.api.security.get_settings",
+                        lambda: _settings(api_key="secret"))
+    resp = check_request(_request("/api/chat", api_key="wrong"))
+    assert resp is not None and resp.status_code == 401
+    # 缺 key 头同样 401
+    resp2 = check_request(_request("/api/chat"))
+    assert resp2 is not None and resp2.status_code == 401
+
+
+def test_check_correct_key_passes(monkeypatch):
+    monkeypatch.setattr("app.api.security.get_settings",
+                        lambda: _settings(api_key="secret", rate_limit_rpm=0))
+    assert check_request(_request("/api/chat", api_key="secret")) is None
+
+
+def test_check_rate_limit_returns_429(monkeypatch):
+    monkeypatch.setattr("app.api.security.get_settings",
+                        lambda: _settings(api_key="", rate_limit_rpm=1))
     limiter = RateLimiter(rpm=1)  # 共享同一实例，计数才累积
     monkeypatch.setattr("app.api.security.get_rate_limiter", lambda: limiter)
     req = _request("/api/chat", host="9.9.9.9")
-    enforce_security(req)  # 第一次放行
-    with pytest.raises(HTTPException) as e:
-        enforce_security(req)  # 第二次超限
-    assert e.value.status_code == 429
+    assert check_request(req) is None  # 第一次放行
+    resp = check_request(req)          # 第二次超限
+    assert resp is not None and resp.status_code == 429
+
+
+def test_verify_api_key_missing_provided():
+    """配置了 key 但未提供 → 拒绝（而非 compare_digest 对 None 崩溃）。"""
+    assert verify_api_key(None, expected="secret") is False
+    assert verify_api_key("", expected="secret") is False
+    assert verify_api_key("secret", expected="secret") is True
+    assert verify_api_key("anything", expected="") is True  # 未配置 → 关闭鉴权

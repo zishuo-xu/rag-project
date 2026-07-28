@@ -207,9 +207,13 @@ class RAGChain:
             return 0
 
     def retrieve(
-        self, question: str, top_k: int | None = None, trace_id: str | None = None
+        self, question: str, top_k: int | None = None, trace_id: str | None = None,
+        query_embedding=None,
     ) -> RetrievalResult:
-        """执行完整检索流程（委托给 RetrievalPipeline）"""
+        """执行完整检索流程（委托给 RetrievalPipeline）。
+
+        query_embedding：已算好的查询向量（F9 复用缓存检查点编码，省重复编码）。
+        """
         return self.pipeline.run(
             question,
             top_k=top_k,
@@ -217,6 +221,7 @@ class RAGChain:
             use_query_transform=self.use_query_transform,
             use_rerank=self.use_rerank,
             trace_id=trace_id,
+            precomputed_query_embedding=query_embedding,
         )
 
     @staticmethod
@@ -296,12 +301,18 @@ class RAGChain:
         documents: List[Document],
         chat_history: List | None = None,
         strict: bool = False,
+        pre_compressed: bool = False,
     ) -> str:
-        """基于检索结果生成回答。strict=True 时用更严格的 prompt（F3 重生成）。"""
+        """基于检索结果生成回答。strict=True 时用更严格的 prompt（F3 重生成）。
+
+        pre_compressed=True 表示 documents 已由调用方压缩（F3 单一事实源场景：
+        生成与裁判共用一次压缩结果，避免重复计算与两处压缩必须一致的隐性耦合）。
+        """
         if not documents:
             return FALLBACK_RESPONSE
 
-        documents = self.compress_context(question, documents)
+        if not pre_compressed:
+            documents = self.compress_context(question, documents)
         context = self._format_context(documents)
 
         if chat_history:
@@ -320,13 +331,15 @@ class RAGChain:
         question: str,
         documents: List[Document],
         chat_history: List | None = None,
+        pre_compressed: bool = False,
     ) -> Generator[str, None, None]:
-        """流式生成回答"""
+        """流式生成回答（pre_compressed 语义同 generate）。"""
         if not documents:
             yield FALLBACK_RESPONSE
             return
 
-        documents = self.compress_context(question, documents)
+        if not pre_compressed:
+            documents = self.compress_context(question, documents)
         context = self._format_context(documents)
         template = RAG_CHAT_PROMPT if chat_history else RAG_SIMPLE_PROMPT
         payload = {"context": context, "question": question}
@@ -372,17 +385,23 @@ class RAGChain:
         Returns:
             (answer, faithful, faithfulness_score, regenerated)
         """
-        answer = self.generate(question, documents, chat_history)
         if not self.faithfulness_checker:
+            answer = self.generate(question, documents, chat_history)
             return answer, None, 0.0, False
-        # 单一事实源：裁判复用生成器实际使用的格式化上下文（compress_context 确定性，
-        # 与 generate() 内部压缩结果一致）。消除旧版裁判「前 5 篇×400 字截断」与生成器
-        # 全量压缩上下文的不对称——依据落在第 6 篇 / 400 字后时旧版会漏判触发假阳性重生成。
-        context = self._format_context(self.compress_context(question, documents))
+        # 单一事实源：压缩一次，生成与裁判共用同一压缩结果（pre_compressed）。
+        # 旧版生成器内部压缩、裁判另行压缩——算两遍且两处必须保持一致（隐性耦合）；
+        # 更早的版本裁判「前 5 篇×400 字截断」与生成器全量压缩不对称，依据落在
+        # 第 6 篇 / 400 字后时漏判触发假阳性重生成。压缩一次共用，两处隐患同消。
+        docs_compressed = self.compress_context(question, documents)
+        context = self._format_context(docs_compressed)
+        answer = self.generate(
+            question, docs_compressed, chat_history, pre_compressed=True
+        )
         return regen_until_faithful(
             self.faithfulness_checker, question, context, answer,
             produce_fn=lambda: self.generate(
-                question, documents, chat_history, strict=True
+                question, docs_compressed, chat_history,
+                strict=True, pre_compressed=True,
             ),
             max_regen=self._settings.faithfulness_max_regen,
             deadline=deadline,
@@ -401,44 +420,49 @@ class RAGChain:
         start_time = time.time()
         metrics.inc("requests_total", endpoint="chat", mode="invoke")
 
-        cached, q_embedding = self._check_cache(
-            question, chat_history, trace_id, start_time
-        )
-        if cached:
-            metrics.inc("cache_hits_total", level="semantic")
-            metrics.observe("request_latency_ms", cached.total_time_ms)
-            return cached
-
-        rewritten_query, retrieval_result = self._rewrite_and_retrieve(
-            question, chat_history, top_k, trace_id
-        )
-
-        tracer.start_span(trace_id, "generation")
-        if retrieval_result.gate_skipped:
-            outcome = _GenOutcome(answer=self.generate_direct(question, chat_history))
-        elif self.faithfulness_checker and retrieval_result.documents:
-            outcome = _GenOutcome(*self._generate_faithful(
-                question, retrieval_result.documents, chat_history,
-                deadline=retrieval_result.deadline,
-            ))
-        else:
-            # 无文档（召回为空）或自检关闭：直接生成，不做忠实度校验
-            outcome = _GenOutcome(
-                answer=self.generate(question, retrieval_result.documents, chat_history)
+        try:
+            cached, q_embedding = self._check_cache(
+                question, chat_history, trace_id, start_time
             )
-        tracer.end_span(trace_id, "generation", {
-            "answer_chars": len(outcome.answer),
-            "num_sources": len(retrieval_result.documents),
-            "gate_skipped": retrieval_result.gate_skipped,
-            "faithful": outcome.faithful,
-            "faithfulness_score": outcome.fb_score,
-            "regenerated": outcome.regenerated,
-        })
+            if cached:
+                metrics.inc("cache_hits_total", level="semantic")
+                metrics.observe("request_latency_ms", cached.total_time_ms)
+                return cached
 
-        return self._finalize(
-            question, chat_history, q_embedding, outcome,
-            retrieval_result, rewritten_query, trace_id, start_time,
-        )
+            rewritten_query, retrieval_result = self._rewrite_and_retrieve(
+                question, chat_history, top_k, trace_id, q_embedding=q_embedding
+            )
+
+            tracer.start_span(trace_id, "generation")
+            if retrieval_result.gate_skipped:
+                outcome = _GenOutcome(answer=self.generate_direct(question, chat_history))
+            elif self.faithfulness_checker and retrieval_result.documents:
+                outcome = _GenOutcome(*self._generate_faithful(
+                    question, retrieval_result.documents, chat_history,
+                    deadline=retrieval_result.deadline,
+                ))
+            else:
+                # 无文档（召回为空）或自检关闭：直接生成，不做忠实度校验
+                outcome = _GenOutcome(
+                    answer=self.generate(question, retrieval_result.documents, chat_history)
+                )
+            tracer.end_span(trace_id, "generation", {
+                "answer_chars": len(outcome.answer),
+                "num_sources": len(retrieval_result.documents),
+                "gate_skipped": retrieval_result.gate_skipped,
+                "faithful": outcome.faithful,
+                "faithfulness_score": outcome.fb_score,
+                "regenerated": outcome.regenerated,
+            })
+
+            return self._finalize(
+                question, chat_history, q_embedding, outcome,
+                retrieval_result, rewritten_query, trace_id, start_time,
+            )
+        finally:
+            # 幂等兜底：正常路径 _finalize 已归档，此处 no-op；异常路径保证 trace
+            # 一定归档（否则失败请求永久泄漏 tracer 内存，且最该留痕的失败无 trace）
+            tracer.end_trace(trace_id)
 
     def invoke_stream(
         self,
@@ -463,88 +487,98 @@ class RAGChain:
         start_time = time.time()
         metrics.inc("requests_total", endpoint="chat", mode="stream")
 
-        cached, q_embedding = self._check_cache(
-            question, chat_history, trace_id, start_time
-        )
-        if cached:
-            metrics.inc("cache_hits_total", level="semantic")
-            metrics.observe("request_latency_ms", cached.total_time_ms)
-            yield {"type": "cache_hit", "data": cached}
-            yield {"type": "done", "data": cached}
-            return
-
-        # SSE 顺序约束：retrieving 事件必须先于检索发出，故检索步骤在事件之间调用
-        yield {"type": "retrieving", "data": "正在检索相关文档..."}
-        rewritten_query, retrieval_result = self._rewrite_and_retrieve(
-            question, chat_history, top_k, trace_id
-        )
-        yield {"type": "retrieval", "data": retrieval_result}
-
-        tracer.start_span(trace_id, "generation")
-        full_answer = ""
-        faithful, fb_score, regenerated = None, 0.0, False
-        use_speculative = (
-            self._settings.use_speculative_streaming
-            and self.faithfulness_checker
-            and retrieval_result.documents
-            and not retrieval_result.gate_skipped
-        )
-        if retrieval_result.gate_skipped:
-            for token in self.generate_direct_stream(question, chat_history):
-                full_answer += token
-                yield {"type": "token", "data": token}
-        elif use_speculative:
-            # F8 投机流式：先逐 token 吐字（快 TTFT），流末自检，不忠实追加 correction
-            docs = retrieval_result.documents
-            for event in speculative_faithful_stream(
-                stream_fn=lambda: self.generate_stream(question, docs, chat_history),
-                question=question,
-                # 裁判单一事实源：与生成器（generate_stream 内部压缩）同据，去截断不对称
-                context=self._format_context(self.compress_context(question, docs)),
-                chat_history=chat_history,
-                checker=self.faithfulness_checker,
-                regen_fn=lambda: self.generate(question, docs, chat_history, strict=True),
-                max_regen=self._settings.faithfulness_max_regen,
-                deadline=retrieval_result.deadline,  # 修复：流式路径同受时延预算约束
-            ):
-                if event["type"] == "token":
-                    full_answer += event["data"]
-                    yield {"type": "token", "data": event["data"]}
-                elif event["type"] == "correction":
-                    full_answer = event["data"]  # 最终答案以重生成结果为准
-                    yield {"type": "correction", "data": event["data"]}
-                elif event["type"] == "final":
-                    d = event["data"]
-                    full_answer = d["answer"]
-                    faithful, fb_score, regenerated = d["faithful"], d["score"], d["regenerated"]
-        elif self.faithfulness_checker and retrieval_result.documents:
-            # 投机流式关闭：回退旧的阻塞式（先非流式生成+自检，再整体输出）
-            full_answer, faithful, fb_score, regenerated = self._generate_faithful(
-                question, retrieval_result.documents, chat_history,
-                deadline=retrieval_result.deadline,
+        try:
+            cached, q_embedding = self._check_cache(
+                question, chat_history, trace_id, start_time
             )
-            yield {"type": "token", "data": full_answer}
-        else:
-            for token in self.generate_stream(
-                question, retrieval_result.documents, chat_history
-            ):
-                full_answer += token
-                yield {"type": "token", "data": token}
-        tracer.end_span(trace_id, "generation", {
-            "answer_chars": len(full_answer),
-            "num_sources": len(retrieval_result.documents),
-            "gate_skipped": retrieval_result.gate_skipped,
-            "faithful": faithful,
-            "faithfulness_score": fb_score,
-            "regenerated": regenerated,
-            "speculative": use_speculative,
-        })
+            if cached:
+                metrics.inc("cache_hits_total", level="semantic")
+                metrics.observe("request_latency_ms", cached.total_time_ms)
+                yield {"type": "cache_hit", "data": cached}
+                yield {"type": "done", "data": cached}
+                return
 
-        outcome = _GenOutcome(full_answer, faithful, fb_score, regenerated)
-        yield {"type": "done", "data": self._finalize(
-            question, chat_history, q_embedding, outcome,
-            retrieval_result, rewritten_query, trace_id, start_time,
-        )}
+            # SSE 顺序约束：retrieving 事件必须先于检索发出，故检索步骤在事件之间调用
+            yield {"type": "retrieving", "data": "正在检索相关文档..."}
+            rewritten_query, retrieval_result = self._rewrite_and_retrieve(
+                question, chat_history, top_k, trace_id, q_embedding=q_embedding
+            )
+            yield {"type": "retrieval", "data": retrieval_result}
+
+            tracer.start_span(trace_id, "generation")
+            full_answer = ""
+            faithful, fb_score, regenerated = None, 0.0, False
+            use_speculative = (
+                self._settings.use_speculative_streaming
+                and self.faithfulness_checker
+                and retrieval_result.documents
+                and not retrieval_result.gate_skipped
+            )
+            if retrieval_result.gate_skipped:
+                for token in self.generate_direct_stream(question, chat_history):
+                    full_answer += token
+                    yield {"type": "token", "data": token}
+            elif use_speculative:
+                # F8 投机流式：先逐 token 吐字（快 TTFT），流末自检，不忠实追加 correction
+                # 单一事实源：压缩一次，生成流与裁判共用（去重复计算 + 去两处必须一致的隐性耦合）
+                docs = retrieval_result.documents
+                docs_compressed = self.compress_context(question, docs)
+                for event in speculative_faithful_stream(
+                    stream_fn=lambda: self.generate_stream(
+                        question, docs_compressed, chat_history, pre_compressed=True
+                    ),
+                    question=question,
+                    context=self._format_context(docs_compressed),
+                    chat_history=chat_history,
+                    checker=self.faithfulness_checker,
+                    regen_fn=lambda: self.generate(
+                        question, docs_compressed, chat_history,
+                        strict=True, pre_compressed=True,
+                    ),
+                    max_regen=self._settings.faithfulness_max_regen,
+                    deadline=retrieval_result.deadline,  # 修复：流式路径同受时延预算约束
+                ):
+                    if event["type"] == "token":
+                        full_answer += event["data"]
+                        yield {"type": "token", "data": event["data"]}
+                    elif event["type"] == "correction":
+                        full_answer = event["data"]  # 最终答案以重生成结果为准
+                        yield {"type": "correction", "data": event["data"]}
+                    elif event["type"] == "final":
+                        d = event["data"]
+                        full_answer = d["answer"]
+                        faithful, fb_score, regenerated = d["faithful"], d["score"], d["regenerated"]
+            elif self.faithfulness_checker and retrieval_result.documents:
+                # 投机流式关闭：回退旧的阻塞式（先非流式生成+自检，再整体输出）
+                full_answer, faithful, fb_score, regenerated = self._generate_faithful(
+                    question, retrieval_result.documents, chat_history,
+                    deadline=retrieval_result.deadline,
+                )
+                yield {"type": "token", "data": full_answer}
+            else:
+                for token in self.generate_stream(
+                    question, retrieval_result.documents, chat_history
+                ):
+                    full_answer += token
+                    yield {"type": "token", "data": token}
+            tracer.end_span(trace_id, "generation", {
+                "answer_chars": len(full_answer),
+                "num_sources": len(retrieval_result.documents),
+                "gate_skipped": retrieval_result.gate_skipped,
+                "faithful": faithful,
+                "faithfulness_score": fb_score,
+                "regenerated": regenerated,
+                "speculative": use_speculative,
+            })
+
+            outcome = _GenOutcome(full_answer, faithful, fb_score, regenerated)
+            yield {"type": "done", "data": self._finalize(
+                question, chat_history, q_embedding, outcome,
+                retrieval_result, rewritten_query, trace_id, start_time,
+            )}
+        finally:
+            # 幂等兜底：异常/提前关闭路径保证 trace 归档（不泄漏 tracer 内存）
+            tracer.end_trace(trace_id)
 
     # ---- RAG 3.0 增强辅助方法（F7/F9/F10/F12，异常均优雅降级） ----
 
@@ -572,14 +606,21 @@ class RAGChain:
         chat_history: List | None,
         top_k: int | None,
         trace_id: str,
+        q_embedding=None,
     ) -> tuple[str, RetrievalResult]:
         """检索步骤（invoke / invoke_stream 共用）：F12 重写 → 完整检索管道。
+
+        q_embedding：缓存检查点算好的原问题向量。仅在未发生 F12 重写时复用
+        （重写后检索文本变了，向量不再对应），保证 dense 检索向量与查询严格同源。
 
         Returns:
             (重写后的查询或 "", 检索结果)
         """
         retrieval_q, rewritten_query = self._rewrite_query(question, chat_history)
-        retrieval_result = self.retrieve(retrieval_q, top_k=top_k, trace_id=trace_id)
+        reuse = q_embedding if rewritten_query == "" else None
+        retrieval_result = self.retrieve(
+            retrieval_q, top_k=top_k, trace_id=trace_id, query_embedding=reuse
+        )
         return rewritten_query, retrieval_result
 
     def _build_citations(

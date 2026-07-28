@@ -58,7 +58,15 @@ def regen_until_faithful(
             logger.info("忠实度不足但时延预算耗尽，跳过严格重生成")
             break
         logger.info(f"忠实度不足(score={fb.score:.2f})，触发严格重生成")
-        answer = produce_fn()
+        try:
+            answer = produce_fn()
+        except Exception as e:
+            # 重生成失败（LLM 抖动）不 500：返回原答案并标「未校验」。
+            # 手上已有一个可用答案，让请求带着诚实标记降级，好过整条请求失败
+            # （流式路径下更甚：token 已吐出，抛异常会让流没有 done 事件直接死掉）。
+            logger.warning(f"严格重生成失败，返回原答案并标未校验: {e}")
+            fb = FaithfulnessResult(faithful=None, reason=f"重生成失败: {e}")
+            break
         regenerated = True
         regen_left -= 1
         if on_regen:
@@ -81,8 +89,10 @@ class FaithfulnessChecker:
         self.threshold = (
             threshold if threshold is not None else settings.faithfulness_threshold
         )
-        # 沿用项目模式：LLM 带 timeout/retry，关闭思考模式
-        self.llm = llm or build_chat_llm(max_tokens=512, timeout=30, retries=2)
+        # 沿用项目模式：LLM 带 timeout/retry，关闭思考模式。
+        # retries=1 与主生成对齐（原 retries=2 下裁判最坏 3×30s=90s，是延迟治理
+        # 漏网的最后一个超时/重试叠加点；裁判失败本来就放行，少一次重试行为连续）。
+        self.llm = llm or build_chat_llm(max_tokens=512, timeout=30, retries=1)
 
     def check(
         self, question: str, context: str, answer: str

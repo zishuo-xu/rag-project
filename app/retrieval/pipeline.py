@@ -117,9 +117,15 @@ class RetrievalPipeline:
         channels=ALL_CHANNELS,
         trace_id: str | None = None,
         fast_graph: bool = False,
+        precomputed_query_embedding=None,
     ) -> dict:
         """
         并行执行各召回路，结果按 channel 聚合。
+
+        Args:
+            precomputed_query_embedding: 调用方已算好的原问题向量（F9：语义缓存
+                检查点的编码与 dense 召回编码同文本同模型，复用它省掉默认单查询
+                路径的一次重复编码；调用方须保证 queries[0] 即该向量对应的文本）。
 
         Returns:
             {channel: [Document, ...]}，channels 中每个 key 都存在
@@ -130,11 +136,21 @@ class RetrievalPipeline:
 
         # 批量预计算 query embedding，分发给 dense 各查询变体（每变体省 1 次编码）
         query_embeddings: list = [None] * len(queries)
-        if "dense" in channels and len(queries) > 1:
-            try:
-                query_embeddings = self.indexer.embeddings.embed_documents(queries)
-            except Exception as e:
-                logger.debug(f"批量 embedding 失败，回退到逐个计算: {e}")
+        if "dense" in channels:
+            if precomputed_query_embedding is not None and queries:
+                query_embeddings[0] = precomputed_query_embedding
+                if len(queries) > 1:
+                    try:
+                        query_embeddings[1:] = self.indexer.embeddings.embed_documents(
+                            queries[1:]
+                        )
+                    except Exception as e:
+                        logger.debug(f"批量 embedding 失败，回退到逐个计算: {e}")
+            elif len(queries) > 1:
+                try:
+                    query_embeddings = self.indexer.embeddings.embed_documents(queries)
+                except Exception as e:
+                    logger.debug(f"批量 embedding 失败，回退到逐个计算: {e}")
 
         def _dense(q, emb):
             return self.dense_retriever.retrieve(q, top_k=top_n, embedding=emb)
@@ -432,6 +448,7 @@ class RetrievalPipeline:
         use_query_transform: bool = True,
         use_rerank: bool = True,
         trace_id: str | None = None,
+        precomputed_query_embedding=None,
     ) -> RetrievalResult:
         settings = self._settings
         top_k = top_k or settings.retrieval_top_k
@@ -586,10 +603,13 @@ class RetrievalPipeline:
             if not queries:
                 queries = self.transform(question, effective_strategy, use_query_transform)
                 result.queries_used = queries
-            # ③ 多路召回
+            # ③ 多路召回（F9：复用缓存检查点的查询编码，省一次重复 embedding）
             if trace_id:
                 tracer.start_span(trace_id, "multi_recall")
-            recall_results = self.recall(question, queries, trace_id=trace_id)
+            recall_results = self.recall(
+                question, queries, trace_id=trace_id,
+                precomputed_query_embedding=precomputed_query_embedding,
+            )
             result.dense_results = recall_results["dense"]
             result.sparse_results = recall_results["sparse"]
             result.graph_results = recall_results.get("graph", [])

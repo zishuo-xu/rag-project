@@ -21,7 +21,7 @@ class Reranker:
     Cross-Encoder 能捕获 query 和 document 之间的细粒度交互，
     精度更高但速度较慢，适合对少量候选做精排。
 
-    使用模型: cross-encoder/ms-marco-MiniLM-L-6-v2
+    使用模型: BAAI/bge-reranker-base（config.rerank_model 可覆盖）
     """
 
     def __init__(self, model_name: str | None = None):

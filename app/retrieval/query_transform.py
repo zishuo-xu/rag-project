@@ -1,6 +1,7 @@
 """查询改写 - Multi-Query 与 HyDE 策略"""
 
 import logging
+import threading
 import time
 from typing import List
 
@@ -99,6 +100,7 @@ class QueryTransformer:
         )
         # #7: 查询改写结果缓存 {question: (timestamp, queries)}
         self._transform_cache: dict[str, tuple[float, List[str]]] = {}
+        self._cache_lock = threading.Lock()  # 缓存并发读写保护（见 transform）
         self._cache_ttl = 3600  # 1小时缓存
 
     def multi_query(self, question: str, num_queries: int = 3) -> List[str]:
@@ -237,17 +239,20 @@ class QueryTransformer:
         if strategy == "none":
             return [question]
 
-        # #7: 检查缓存
+        # #7: 检查缓存（读写全程持锁：多线程并发过期删键/清理迭代会 KeyError /
+        # RuntimeError，异常沿 future.result() 无捕获直传可致 chat 500）
         cache_key = f"{strategy}:{question}"
-        if cache_key in self._transform_cache:
-            ts, cached_queries = self._transform_cache[cache_key]
-            if time.time() - ts < self._cache_ttl:
-                logger.debug(f"查询改写缓存命中: {question[:30]}...")
-                return cached_queries
-            else:
-                del self._transform_cache[cache_key]
+        with self._cache_lock:
+            entry = self._transform_cache.get(cache_key)
+            if entry is not None:
+                ts, cached_queries = entry
+                if time.time() - ts < self._cache_ttl:
+                    logger.debug(f"查询改写缓存命中: {question[:30]}...")
+                    return cached_queries
+                else:
+                    del self._transform_cache[cache_key]
 
-        # 执行改写
+        # 执行改写（锁外：LLM 调用不持锁）
         if strategy == "multi_query":
             queries = self.multi_query(question)
         elif strategy == "hyde":
@@ -256,12 +261,13 @@ class QueryTransformer:
             queries = [question]
 
         # 写入缓存（限制缓存大小）
-        if len(self._transform_cache) > 500:
-            # 简单清理：删除最旧的一半
-            sorted_keys = sorted(self._transform_cache.keys(),
-                               key=lambda k: self._transform_cache[k][0])
-            for k in sorted_keys[:len(sorted_keys) // 2]:
-                del self._transform_cache[k]
-        self._transform_cache[cache_key] = (time.time(), queries)
+        with self._cache_lock:
+            if len(self._transform_cache) > 500:
+                # 简单清理：删除最旧的一半
+                sorted_keys = sorted(self._transform_cache.keys(),
+                                   key=lambda k: self._transform_cache[k][0])
+                for k in sorted_keys[:len(sorted_keys) // 2]:
+                    del self._transform_cache[k]
+            self._transform_cache[cache_key] = (time.time(), queries)
 
         return queries

@@ -66,6 +66,10 @@ class ChatResponse(BaseModel):
     short_answer: str = Field(default="", description="F10 抽取的核心短答案")
     self_consistency_used: bool = Field(default=False, description="F10 是否触发自一致性")
     rewritten_query: str = Field(default="", description="F12 历史感知重写后的查询")
+    # F3 忠实度遥测（原仅流式 done 事件携带，非流式响应不出进程——HTTP 边界断裂修复）
+    faithful: bool | None = Field(default=None, description="F3 忠实度：True 忠实/False 含幻觉/None 未检查")
+    faithfulness_score: float = Field(default=0.0, description="F3 被支撑论断占比")
+    regenerated: bool = Field(default=False, description="F3 是否触发严格重生成")
 
 
 # ============ Document 相关 ============

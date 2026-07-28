@@ -1,39 +1,52 @@
-"""F11 生产加固 - API Key 鉴权 + 限流（令牌桶/固定窗口）
+"""F11 生产加固 - API Key 鉴权 + 限流（固定窗口）
 
-- API Key 鉴权：api_key 配置为空则关闭；非空校验 X-API-Key 头。
-  健康检查/指标端点豁免（供探针与监控）。
+- API Key 鉴权：api_key 配置为空则关闭；非空校验 X-API-Key 头（常时比对）。
+  探针/监控端点恒豁免；API 文档仅在鉴权关闭时豁免（关门后不泄露 API 表面）。
 - 限流：按客户端固定窗口（每分钟）计数，超 rate_limit_rpm 返回 429；
   rate_limit_rpm=0 关闭。O(1) 判定，自动清理过期窗口。
+- 接线：生产中间件在 main.py（SecurityMiddleware 调用本模块函数）。
+
+已知限制：client_id 取 request.client.host，反代部署下所有客户端共享代理 IP
+一桶；按真实用户限流需部署侧传 X-Forwarded-For 并在此显式信任（未实现，登记）。
 
 时延：均为内存 O(1) 操作，开销可忽略。
 """
 
+import hmac
 import logging
 import threading
 import time
 from typing import Dict, Optional
 
-from fastapi import HTTPException, Request
-
 from config import get_settings
 
 logger = logging.getLogger(__name__)
 
-# 鉴权豁免路径（探针/监控）
-_EXEMPT_PREFIXES = ("/api/health", "/api/metrics", "/docs", "/openapi.json", "/redoc")
+# 探针/监控端点：恒豁免（健康检查与指标采集不受鉴权影响）
+_PROBE_PREFIXES = ("/api/health", "/api/metrics")
+# API 文档端点：仅鉴权关闭时豁免（开启鉴权即关门，不再无认证暴露 API schema）
+_DOCS_PREFIXES = ("/docs", "/openapi.json", "/redoc")
 
 
 def is_exempt(path: str) -> bool:
-    return any(path.startswith(p) for p in _EXEMPT_PREFIXES)
+    if any(path.startswith(p) for p in _PROBE_PREFIXES):
+        return True
+    if any(path.startswith(p) for p in _DOCS_PREFIXES):
+        return not get_settings().api_key
+    return False
 
 
 def verify_api_key(provided: Optional[str], expected: Optional[str] = None) -> bool:
-    """校验 API Key。expected 为空表示关闭鉴权（放行）。"""
+    """校验 API Key。expected 为空表示关闭鉴权（放行）。常时比对防计时侧信道。"""
     if expected is None:
         expected = get_settings().api_key
     if not expected:  # 未配置 → 关闭鉴权
         return True
-    return provided == expected
+    if not provided:
+        return False
+    return hmac.compare_digest(
+        provided.encode("utf-8"), expected.encode("utf-8")
+    )
 
 
 class RateLimiter:
@@ -81,14 +94,28 @@ def get_rate_limiter() -> RateLimiter:
     return _limiter
 
 
-def enforce_security(request: Request) -> None:
-    """FastAPI 依赖：先鉴权后限流。失败抛 HTTPException。豁免路径直接放行。"""
+def check_request(request) -> Optional["JSONResponse"]:
+    """生产中间件检查（main.py SecurityMiddleware 与测试共用这一份实现）。
+
+    豁免路径 / 鉴权失败 / 限流超限分别返回 None / 401 / 429 响应。
+    早期这里存在两份实现（本模块的依赖注入版 + main.py 内联版）且已漂移，
+    生产走内联版、测试测依赖版——合并为单一事实源。
+    """
+    from starlette.responses import JSONResponse
+
+    from app.observability.metrics import get_metrics
+
     if is_exempt(request.url.path):
-        return
-    # 鉴权
+        return None
     if not verify_api_key(request.headers.get("X-API-Key")):
-        raise HTTPException(status_code=401, detail="无效或缺失的 API Key")
-    # 限流
+        get_metrics().inc("errors_total", code="401")
+        return JSONResponse(
+            status_code=401, content={"detail": "无效或缺失的 API Key"}
+        )
     client = request.client.host if request.client else "unknown"
     if not get_rate_limiter().allow(client):
-        raise HTTPException(status_code=429, detail="请求过于频繁，请稍后重试")
+        get_metrics().inc("errors_total", code="429")
+        return JSONResponse(
+            status_code=429, content={"detail": "请求过于频繁，请稍后重试"}
+        )
+    return None

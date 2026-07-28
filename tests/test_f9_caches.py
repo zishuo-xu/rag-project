@@ -75,7 +75,10 @@ def test_lru_min_size_one():
 
 def _mock_embeddings():
     emb = MagicMock()
-    emb.embed_query.side_effect = lambda t: [float(len(t)), 1.0]
+    _vec = lambda t: [float(len(t)), 1.0]
+    emb.embed_query.side_effect = _vec
+    # 批处理路径：未命中部分一次批量编码（与单条同口径）
+    emb.embed_documents.side_effect = lambda texts: [_vec(t) for t in texts]
     return emb
 
 
@@ -103,7 +106,87 @@ def test_embedding_cache_batch_preserves_order():
     assert out[0] == [1.0, 1.0]
     assert out[1] == [2.0, 1.0]
     assert out[2] == [1.0, 1.0]
-    assert emb.embed_query.call_count == 2  # "x" 复用
+    # 批处理语义：未命中走一次 embed_documents（非逐条 embed_query 循环）
+    assert emb.embed_documents.call_count == 1
+    assert emb.embed_query.call_count == 0
+    # 第二次全命中：不再触发底层编码
+    out2 = cache.embed_documents(["x", "yy"])
+    assert out2 == [[1.0, 1.0], [2.0, 1.0]]
+    assert emb.embed_documents.call_count == 1
+
+
+# ============ SemanticCache（L3，原零测试 + 无锁竞态修复） ============
+
+def _vec(x):
+    import numpy as np
+    return np.array([float(x), 0.0])
+
+
+def _semantic_cache(**kw):
+    from app.retrieval.caching import SemanticCache
+    defaults = dict(threshold=0.9, max_size=4, ttl=3600)
+    defaults.update(kw)
+    return SemanticCache(**defaults)
+
+
+def test_semantic_cache_put_get_hit():
+    sc = _semantic_cache()
+    sc.put("什么是RAG", _vec(1.0), "答案A", [])
+    hit = sc.get(_vec(1.0))  # 完全相同 → 相似度 1.0
+    assert hit is not None
+    assert hit.answer == "答案A"
+
+
+def test_semantic_cache_below_threshold_miss():
+    sc = _semantic_cache(threshold=0.99)
+    sc.put("问题一", _vec(1.0), "答案A", [])
+    assert sc.get(_vec(0.0)) is None  # 正交向量，相似度 0
+
+
+def test_semantic_cache_ttl_expiry():
+    import time
+    sc = _semantic_cache(ttl=1)
+    sc.put("问题", _vec(1.0), "答案", [])
+    entry = sc._cache[0]
+    entry.timestamp = time.time() - 2  # 伪造过期
+    assert sc.get(_vec(1.0)) is None
+
+
+def test_semantic_cache_eviction_keeps_newest():
+    import time
+    sc = _semantic_cache(max_size=3)
+    for i in range(5):
+        sc.put(f"q{i}", _vec(float(i)), f"a{i}", [])
+        time.sleep(0.002)  # 保证 timestamp 有序
+    assert sc.size == 3
+    # 最旧的 q0/q1 被淘汰，q4 还在
+    assert sc.get(_vec(4.0)) is not None
+
+
+def test_semantic_cache_zero_vector_guard():
+    import numpy as np
+    sc = _semantic_cache()
+    sc.put("问题", _vec(1.0), "答案", [])
+    assert sc.get(np.array([0.0, 0.0])) is None  # 零向量不崩、不误命中
+
+
+def test_semantic_cache_concurrent_no_race():
+    """并发读写不抛 RuntimeError（修复前淘汰期 sort+重绑与遍历竞态）。"""
+    import threading
+    sc = _semantic_cache(max_size=8)
+    errors = []
+    def worker(wid):
+        try:
+            for i in range(50):
+                sc.put(f"w{wid}-q{i}", _vec(float((wid * 50 + i) % 16 + 1)), "a", [])
+                sc.get(_vec(float(i % 16 + 1)))
+        except Exception as e:
+            errors.append(e)
+    threads = [threading.Thread(target=worker, args=(w,)) for w in range(6)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert errors == []
+    assert sc.size <= 8
 
 
 # ============ RerankCache ============

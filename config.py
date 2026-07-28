@@ -28,7 +28,9 @@ class Settings(BaseSettings):
 
     # Embedding
     embedding_provider: str = "local"  # "local" | "openai"
-    embedding_model: str = "all-MiniLM-L6-v2"
+    # 默认即中文模型（与 .env.example/README/CLAUDE.md 声明一致；
+    # 原默认 all-MiniLM-L6-v2 是英文模型，不复制 .env 直跑者静默劣化）
+    embedding_model: str = "BAAI/bge-small-zh-v1.5"
 
     # ChromaDB
     chroma_persist_dir: str = "./data/chroma_db"
@@ -39,7 +41,7 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     retrieval_rrf_k: int = 60
     rerank_top_n: int = 20
-    rerank_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    rerank_model: str = "BAAI/bge-reranker-base"
 
     # Chunking
     chunk_size: int = 512

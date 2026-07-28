@@ -149,25 +149,30 @@
 |---|---|---|---|
 | **延迟治理** | 查询级 `Deadline` 预算,可选阶段超预算熔断 | `latency_budget_ms[25000]`、`answer_max_tokens[1024]` | `budget_skipped`(实测几乎不触发——防离群尾不压均值) |
 | **并发闸门** | `asyncio.Semaphore` 限流,排队超时 503 | `max_concurrent_requests[4]`、`request_queue_timeout[30]` | 压测:`run_concurrency_bench.py` |
-| **可观测性** | 进程内计数器/直方图 + span tracing | 常开 | `/api/metrics`;遥测字段见 §4 |
+| **可观测性** | 进程内计数器/直方图 + span tracing | 常开 | `/api/metrics`(请求级:时延/缓存/忠实度分布/4xx-5xx 错误计数)、`/api/traces`(逐阶段瀑布);遥测字段见 §4 |
 | **评估门** | eval-as-gate,退化即非零退出 | `--gate [--gate-mode smoke\|full]` | pre-push hook(opt-in) |
 
 ## 4. 遥测字段速查
 
 每次请求的 `RetrievalResult` / `RAGResponse` 携带(扩展新信号请加字段,勿 ad-hoc 打日志):
 
-| 字段 | 含义 |
-|---|---|
-| `crag_grade` | CRAG 分级(correct/ambiguous/incorrect/recovered) |
-| `query_type` | F4 路由判定类型 |
-| `pre_autocut_count` | F1 截断前候选数 |
-| `iterations_used` / `iterative_stop_reason` | F2 迭代次数与终止原因 |
-| `faithfulness` / `regenerated` | F3 忠实度得分 / 是否触发重生成 |
-| `num_citations` / `source_hit` | F7 引用数 / 源块命中 |
-| `agent_steps` / `agent_stop_reason` | F13 决策轨迹 / 停止原因 |
-| `budget_skipped` | 被延迟预算熔断的阶段列表 |
-| `rewritten` / `rewritten_query` | F12 重写触发与结果 |
-| `decomposed_subqueries` / `decomposition_chain` | F6b 分解子问题与链式标志 |
+| 字段 | 所在 | 含义 |
+|---|---|---|
+| `crag_grade` | RetrievalResult | CRAG 分级(correct/ambiguous/incorrect/recovered) |
+| `query_type` | RetrievalResult | F4 路由判定类型 |
+| `pre_autocut_count` | RetrievalResult | F1 截断前候选数 |
+| `iterations_used` / `iterative_stop_reason` | RetrievalResult | F2 迭代次数与终止原因 |
+| `agent_steps` / `agent_stop_reason` | RetrievalResult | F13 决策轨迹 / 停止原因 |
+| `budget_skipped` | RetrievalResult | 被延迟预算熔断的阶段列表 |
+| `decomposed_subqueries` / `decomposition_chain` | RetrievalResult | F6b 分解子问题与链式标志 |
+| `faithful` / `faithfulness_score` / `regenerated` | RAGResponse(API 两种模式均返回) | F3 忠实判定 / 支撑占比 / 是否重生成 |
+| `citations` | RAGResponse | F7 引用列表 |
+| `short_answer` / `self_consistency_used` | RAGResponse | F10 短答案 / 自洽触发 |
+| `rewritten_query` | RAGResponse | F12 重写结果(空串=未触发) |
+
+**评测派生量**(仅存在于评测输出,非 dataclass 字段,勿 grep 代码):
+`num_citations`(= len(citations))、`source_hit`(gold 是否落入 sources)、
+`rewritten`(= rewritten_query 非空)、`agent_actions`(agent_steps 的 action 序列)。
 
 ## 5. 特性组合与模式
 

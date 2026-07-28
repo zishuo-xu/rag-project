@@ -97,11 +97,19 @@ class Tracer:
             trace.spans.append(span)
 
     def end_trace(self, trace_id: str, answer_preview: str = ""):
-        """结束追踪，归档"""
+        """结束追踪，归档。幂等：重复调用（如 _finalize 与兜底 finally）为 no-op。
+
+        同时清理该 trace 遗留的 span 起始键（start_span 后未 end_span 即异常的
+        阶段），否则失败请求会永久泄漏 `_span_starts` 条目。
+        """
         now = time.time()
         with self._lock:
             trace = self._active.pop(trace_id, None)
             origin = self._span_starts.pop(trace_id, None)
+            # 清理 "{trace_id}:{span}" 遗留键（异常路径未 end_span 的阶段）
+            leftover = [k for k in self._span_starts if k.startswith(f"{trace_id}:")]
+            for k in leftover:
+                self._span_starts.pop(k, None)
             if trace is None:
                 return
             trace.total_ms = (now - (origin or now)) * 1000

@@ -746,12 +746,20 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 
 1. **RAGChain 缺 composition root**：组件在 `__init__` 内联组装，settings 注入不全
    （部分模块内部自取 `get_settings()`）。收敛需大改构造签名，暂缓。
-2. **分解路径 merge 语义与主路径不一致**：F6b 子问题走 RRF 合并且**无 rerank**，
-   与主路径（RRF + rerank）不同。统一会改变 multi_hop 检索结果、触发评估指标漂移，记债不动。
+2. **分解路径是「二等检索路径」**（2026-07-29 重新核述，修正原「无 rerank」表述——
+   外层 ⑤ rerank 对分解结果同样执行，真实缺陷更深）：
+   ① 召回深度砍半有余：`_retrieve_subquery` top_n=8 vs 主路径 rerank_top_n=20；
+   ② 召回缺两路：子问题仅走 dense/sparse/graph，parent_child + summary 对多跳完全失效；
+   ③ 内部 merge 自相矛盾：并行分支用 RRF，链式分支用顺序拼接去重。
+   而 multi_hop 恰是最难的多事实查询。统一会改变 multi_hop 检索结果、触发评估漂移，记债不动。
 3. **routes.py 未按领域拆分**：chat / documents / graph / eval 端点共处一文件（~800 行），
    HTTP 关切已与服务层分离，物理拆文件收益有限，暂缓。
 4. **评估 judge 未入工厂**：`app/evaluation/metrics.py` 用原生 `openai.OpenAI` 客户端
-   （timeout=120，离线评估专用），与 `build_chat_llm`（ChatOpenAI）不同 SDK，有意不统一。
+   （timeout=120，离线评估专用），与 `build_chat_llm`（ChatOpenAI）不同 SDK，有意不统一；
+   但 model/key/url 已统一走 `active_llm_config()`（2026-07-29 修复：原直取 openai_model，
+   qwen 口径下评估会测与线上不同的模型）。
+5. **限流按 client.host 分桶**：反代部署下所有客户端共享代理 IP 一桶，按真实用户
+   限流需信任 X-Forwarded-For（未实现，security.py 已注明）。
 
 ---
 

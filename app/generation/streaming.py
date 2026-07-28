@@ -50,13 +50,19 @@ def speculative_faithful_stream(
         }}
         return
 
-    # 流末忠实度检查 + 有界严格重生成（与 chain F3 共用循环体）
+    # 流末忠实度检查 + 有界严格重生成（与 chain F3 共用循环体）。
+    # 任何异常都不让流死掉：token 已吐出，必须发出 final 事件，
+    # 否则前端永远停在「生成中」——失败时标「未校验」降级。
     corrections: List[str] = []
-    answer, faithful, fb_score, regenerated = regen_until_faithful(
-        checker, question, context, full_answer,
-        produce_fn=regen_fn, max_regen=max_regen, deadline=deadline,
-        on_regen=corrections.append,
-    )
+    try:
+        answer, faithful, fb_score, regenerated = regen_until_faithful(
+            checker, question, context, full_answer,
+            produce_fn=regen_fn, max_regen=max_regen, deadline=deadline,
+            on_regen=corrections.append,
+        )
+    except Exception as e:
+        logger.warning(f"流末忠实度自检异常，放行并标未校验: {e}")
+        answer, faithful, fb_score, regenerated = full_answer, None, 0.0, False
     for correction in corrections:
         yield {"type": "correction", "data": correction}
 

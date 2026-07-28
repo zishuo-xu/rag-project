@@ -97,8 +97,27 @@ class EmbeddingCache:
         return vec
 
     def embed_documents(self, texts: List[str]):
-        """批量编码：逐条走缓存（保持输入顺序），重复文本复用。"""
-        return [self.embed_query(t) for t in texts]
+        """批量编码：命中的走缓存，未命中的一次批量编码（保持输入顺序）。
+
+        早期版本逐条 embed_query 循环——全 miss 时比底层批编码慢 3-10x
+        （sentence-transformers 批处理优势），接主路径前必须先修这个退化。
+        """
+        vectors: List[Any] = [None] * len(texts)
+        miss_idx: List[int] = []
+        miss_texts: List[str] = []
+        for i, t in enumerate(texts):
+            cached = self.cache.get(t)
+            if cached is not None:
+                vectors[i] = cached
+            else:
+                miss_idx.append(i)
+                miss_texts.append(t)
+        if miss_texts:
+            encoded = self.embeddings.embed_documents(miss_texts)
+            for i, t, vec in zip(miss_idx, miss_texts, encoded):
+                self.cache.put(t, vec)
+                vectors[i] = vec
+        return vectors
 
 
 # ==================== L2 Rerank 缓存 ====================
@@ -170,6 +189,9 @@ class SemanticCache:
         self.max_size = max_size or settings.cache_max_size
         self.ttl = ttl or settings.cache_ttl
         self._cache: List[CachedAnswer] = []
+        # 调用跑在 asyncio.to_thread 线程池（多请求并发 get/put），
+        # 无锁时淘汰期的 sort+重绑会与遍历竞态（RuntimeError / 静默缓存失效）
+        self._lock = threading.RLock()
         logger.info(
             f"SemanticCache 初始化: threshold={self.threshold}, "
             f"max_size={self.max_size}, ttl={self.ttl}s"
@@ -185,33 +207,34 @@ class SemanticCache:
         Returns:
             命中则返回 CachedAnswer，否则 None
         """
-        if not self._cache:
+        with self._lock:
+            if not self._cache:
+                return None
+
+            now = time.time()
+            best_score = -1.0
+            best_entry: Optional[CachedAnswer] = None
+
+            # 遍历缓存计算相似度（缓存规模小，O(n) 可接受）
+            for entry in self._cache:
+                # TTL 检查
+                if now - entry.timestamp > self.ttl:
+                    continue
+                score = self._cosine_similarity(query_embedding, entry.embedding)
+                if score > best_score:
+                    best_score = score
+                    best_entry = entry
+
+            if best_entry and best_score >= self.threshold:
+                best_entry.hit_count += 1
+                best_entry.timestamp = now  # LRU 更新
+                logger.info(
+                    f"缓存命中: '{best_entry.question[:30]}...' "
+                    f"(similarity={best_score:.4f}, hits={best_entry.hit_count})"
+                )
+                return best_entry
+
             return None
-
-        now = time.time()
-        best_score = -1.0
-        best_entry: Optional[CachedAnswer] = None
-
-        # 遍历缓存计算相似度（缓存规模小，O(n) 可接受）
-        for entry in self._cache:
-            # TTL 检查
-            if now - entry.timestamp > self.ttl:
-                continue
-            score = self._cosine_similarity(query_embedding, entry.embedding)
-            if score > best_score:
-                best_score = score
-                best_entry = entry
-
-        if best_entry and best_score >= self.threshold:
-            best_entry.hit_count += 1
-            best_entry.timestamp = now  # LRU 更新
-            logger.info(
-                f"缓存命中: '{best_entry.question[:30]}...' "
-                f"(similarity={best_score:.4f}, hits={best_entry.hit_count})"
-            )
-            return best_entry
-
-        return None
 
     def put(
         self,
@@ -235,24 +258,28 @@ class SemanticCache:
             sources=sources,
             embedding=embedding,
         )
-        self._cache.append(entry)
+        with self._lock:
+            self._cache.append(entry)
 
-        # 超容量淘汰：按 timestamp 排序，移除最旧的
-        if len(self._cache) > self.max_size:
-            self._cache.sort(key=lambda x: x.timestamp, reverse=True)
-            self._cache = self._cache[:self.max_size]
-            logger.debug(f"缓存淘汰: 保留 {self.max_size} 条")
+            # 超容量淘汰：按 timestamp 排序，移除最旧的（原地修改，不重绑列表，
+            # 与锁配合消除遍历方看到半排序状态的可能）
+            if len(self._cache) > self.max_size:
+                self._cache.sort(key=lambda x: x.timestamp, reverse=True)
+                del self._cache[self.max_size:]
+                logger.debug(f"缓存淘汰: 保留 {self.max_size} 条")
 
-        logger.debug(f"缓存写入: '{question[:30]}...' (size={len(self._cache)})")
+            logger.debug(f"缓存写入: '{question[:30]}...' (size={len(self._cache)})")
 
     def clear(self):
         """清空缓存"""
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
         logger.info("语义缓存已清空")
 
     @property
     def size(self) -> int:
-        return len(self._cache)
+        with self._lock:
+            return len(self._cache)
 
     @staticmethod
     def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:

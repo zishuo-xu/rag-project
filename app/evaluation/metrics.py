@@ -11,7 +11,7 @@ from typing import List, Optional
 import numpy as np
 from openai import OpenAI
 
-from config import get_settings, get_llm_extra_body
+from config import get_settings, get_llm_extra_body, active_llm_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,17 +22,21 @@ def _get_judge_llm() -> OpenAI:
     设置 timeout + max_retries，避免单次 judge 调用挂起拖垮整轮评估
     （OpenAI 客户端默认超时 600s，过长）。
     """
-    settings = get_settings()
+    # 评估 judge 沿用原生 OpenAI 客户端（同步，与链路的 langchain 异步路径有意分离），
+    # 但 model/key/url 必须走 active_llm_config——否则 qwen 口径下评估测的是与线上
+    # 不同的模型（openai_model 默认值），甚至只配 qwen key 时评估环境静默崩溃。
+    model, api_key, base_url = active_llm_config()
     return OpenAI(
-        api_key=settings.openai_api_key,
-        base_url=settings.openai_base_url,
+        api_key=api_key,
+        base_url=base_url,
         timeout=120.0,
         max_retries=2,
     )
 
 
 def _get_judge_model() -> str:
-    return get_settings().openai_model
+    model, _, _ = active_llm_config()
+    return model
 
 
 def _llm_judge(prompt: str) -> str:

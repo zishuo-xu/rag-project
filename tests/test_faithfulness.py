@@ -155,3 +155,39 @@ def test_checker_sees_generator_context_not_truncated():
     docs = [_doc(f"doc{i}") for i in range(5)] + [_doc("第六篇含关键依据")]
     chain._generate_faithful("关键依据", docs, None)
     assert "第六篇含关键依据" in captured["ctx"]
+
+
+# ---- regen_until_faithful 降级语义（2026-07-29 修复：重生成失败不得 500） ----
+
+def test_generate_faithful_regen_failure_degrades_not_500():
+    """重生成抛异常（LLM 抖动）→ 返回原答案 + faithful=None，绝不外抛。
+
+    流式路径下更关键：token 已吐出，异常穿透会让流没有 done 事件直接死掉，
+    前端永远停在「生成中」。
+    """
+    chain = _bare_chain()
+    chain.generate.side_effect = ["初答", RuntimeError("LLM 端点超时")]
+    chain.faithfulness_checker.check.return_value = FaithfulnessResult(
+        faithful=False, score=0.2
+    )
+    ans, faithful, score, regen = chain._generate_faithful("q", [_doc("c")], None)
+    assert ans == "初答"         # 手上可用的答案不丢
+    assert faithful is None      # 诚实标「未校验」，不谎报已校验
+    assert regen is False        # 重生成未成功，不算触发过
+
+
+def test_regen_until_faithful_deadline_skips_regen():
+    """时延预算耗尽 → 跳过重生成（可选质量增量让位延迟红线）。"""
+    from app.generation.faithfulness import regen_until_faithful
+
+    checker = MagicMock()
+    checker.check.return_value = FaithfulnessResult(faithful=False, score=0.2)
+    deadline = MagicMock()
+    deadline.check_skip.return_value = True
+    ans, faithful, _, regen = regen_until_faithful(
+        checker, "q", "ctx", "原答案",
+        produce_fn=lambda: "不应被调用", max_regen=1, deadline=deadline,
+    )
+    assert ans == "原答案"
+    assert regen is False
+    assert checker.check.call_count == 1  # 只有初判，未进重生成

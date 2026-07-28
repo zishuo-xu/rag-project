@@ -54,7 +54,14 @@ class CRAGEvaluator:
 
     def __init__(self):
         settings = get_settings()
+        # 配置阈值激活（修复死旋钮：原实现赋值后从未引用，判级用字面量 0.5/0.3，
+        # 用户调 CRAG_RELEVANCE_THRESHOLD 静默无效）。语义：
+        #   correct   = sigmoid(top1) ≥ threshold
+        #   incorrect = sigmoid(top1) < threshold − 0.2（间隔为 ambiguous 带）
+        # 默认 0.5/0.3 与历史字面量完全一致，行为不变。
+        # 耦合警告：阈值按 bge-reranker-base 分数分布校准，换 reranker 必须重校准。
         self.threshold = settings.crag_relevance_threshold
+        self.incorrect_threshold = round(max(0.05, self.threshold - 0.2), 6)
         # 2026-07-28 零 LLM 精简：门控规则化 + 分级用 rerank 分数阈值。
         # 原 LLM 门控/分级 prompt 含检索内容触发内容审查 + qwen thinking 慢，
         # 按性能效果均衡原则精简（效果损：分级从语义判断降为分数阈值，诚实记录）。
@@ -84,8 +91,8 @@ class CRAGEvaluator:
         评估检索结果相关性（零 LLM，用 cross-encoder rerank 分数）。
 
         documents 已按 rerank_score 降序（pipeline rerank 后），取 top1 sigmoid
-        归一化判级。阈值初始经验值（0.5 correct / 0.3 incorrect），基线后看
-        grade 分布再校准。
+        归一化判级。阈值走配置（crag_relevance_threshold，默认 0.5 correct /
+        0.3 incorrect），按 bge-reranker-base 分数分布校准。
         """
         import math
 
@@ -100,9 +107,9 @@ class CRAGEvaluator:
 
         top1 = float(scores[0])
         p = 1.0 / (1.0 + math.exp(-top1))  # sigmoid → (0,1)
-        if p >= 0.5:
+        if p >= self.threshold:
             grade = "correct"
-        elif p < 0.3:
+        elif p < self.incorrect_threshold:
             grade = "incorrect"
         else:
             grade = "ambiguous"

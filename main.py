@@ -33,7 +33,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import get_settings
+from config import get_settings, active_llm_config
 from app.api.routes import router, set_rag_chain, set_concurrency_gate
 from app.generation.chain import RAGChain
 
@@ -73,9 +73,13 @@ async def lifespan(app: FastAPI):
     logger.info("正在初始化 RAG 系统...")
     settings = get_settings()
 
-    if not settings.openai_api_key:
+    # 启动门按当前 provider 检查对应 key（原实现只查 openai_api_key：
+    # provider=qwen 且只配 QWEN_API_KEY 时服务会误拒启动）
+    _model, _api_key, _base_url = active_llm_config()
+    if not _api_key:
+        key_name = "QWEN_API_KEY" if settings.llm_provider == "qwen" else "OPENAI_API_KEY"
         raise RuntimeError(
-            "OPENAI_API_KEY 未配置！\n"
+            f"LLM API Key 未配置（当前 provider={settings.llm_provider}，需要 {key_name}）！\n"
             "请执行: cp .env.example .env  然后填入你的 API Key"
         )
 
@@ -120,27 +124,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# F11 生产加固：API Key 鉴权 + 限流（仅在配置开启时注册，默认关闭不影响现有行为）
+# F11 生产加固：API Key 鉴权 + 限流（仅在配置开启时注册，默认关闭不影响现有行为）。
+# 判定逻辑单一事实源在 app/api/security.py 的 check_request（可离线测试）——
+# 早期内联版与本模块依赖版两份实现已漂移，且测试测的是从不接线的那份。
 _settings = get_settings()
 if _settings.api_key or _settings.rate_limit_rpm > 0:
     from starlette.middleware.base import BaseHTTPMiddleware
-    from starlette.responses import JSONResponse
-    from app.api.security import is_exempt, verify_api_key, get_rate_limiter
+    from app.api.security import check_request
 
     class SecurityMiddleware(BaseHTTPMiddleware):
         async def dispatch(self, request, call_next):
-            if not is_exempt(request.url.path):
-                if not verify_api_key(request.headers.get("X-API-Key")):
-                    return JSONResponse(
-                        status_code=401,
-                        content={"detail": "无效或缺失的 API Key"},
-                    )
-                client = request.client.host if request.client else "unknown"
-                if not get_rate_limiter().allow(client):
-                    return JSONResponse(
-                        status_code=429,
-                        content={"detail": "请求过于频繁，请稍后重试"},
-                    )
+            rejection = check_request(request)
+            if rejection is not None:
+                return rejection
             return await call_next(request)
 
     app.add_middleware(SecurityMiddleware)
