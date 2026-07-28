@@ -1,6 +1,6 @@
 # RAG 智能问答系统
 
-一个生产级检索增强生成（RAG）系统，展示 RAG 全链路的工程实践。
+一个**教学样板**——借「生产级」叙事外壳讲 RAG 全链路工程故事。产物是更小但更硬的核：**7 条核心叙事**，诚实报告 + A/B 归因是核心卖点（见下「核心叙事」）。
 
 ## 文档导航
 
@@ -11,6 +11,26 @@
 | [docs/api.md](./docs/api.md) | API 接口详细文档（请求/响应示例） |
 | [docs/interview_guide.md](./docs/interview_guide.md) | 面试与学习指南（技术深度解析、高频Q&A、扩展路线） |
 | [API Swagger UI](http://localhost:8000/docs) | 启动服务后的交互式 API 文档 |
+
+## 核心叙事（面试 30 秒）
+
+> **教学样板**——借「生产级」叙事外壳讲 RAG 全链路工程故事。产物是更小但更硬的核：**7 条核心叙事**，其余降级为素材。诚实报告 + A/B 归因是核心卖点：弱数字不是包袱，是「如实记录」的素材。
+
+**7 条核心叙事**：
+
+| 特性 | 一句话 | 关键证据 |
+|---|---|---|
+| F1 Autocut 自适应截断 | Kneedle 膝点动态截断重排噪声尾巴，替代固定 TopK | 入 LLM 上下文 61.9→6.0 篇/题（膝点截断） |
+| F3+F8 投机流式忠实度 | 先逐 token 流式（快 TTFT），流末忠实度自检，不忠实追加 correction | 忠实度 0.986（重生成率 1.7%） |
+| F7 引用溯源 | 答案切 claim，embedding 余弦关联源块，零在线 LLM | 0.91 条块级引用/题 |
+| F10 answer_extraction | 零 LLM 抽取核心短答案 span | 短答案 F1 0.61、EM 0→0.167（打破恒 0） |
+| Graph RAG | 零 LLM jieba 共现图 + chunk 溯源（回退自 LLM 类型化，权衡可复现） | 21856 节点/106483 边，1 秒重建 |
+| F13 Agentic RAG | 零 LangGraph 手写 ReAct + 零 LLM 证据硬门控（CRAG 判充分即停） | finish 率 33-53%→**93%**（多跳切片，原诚实开放项已修复） |
+| 延迟治理 | Deadline 查询级预算熔断离群尾，默认路径零在线 LLM 增量 | full 均值 42.6→4.5s（−89%） |
+
+**软摘（代码留、不主动讲）**：F10 self_consistency（默认关、无数据撑）、多模型 qwen 切换（provider 切换卖点已由 `build_chat_llm` 收口覆盖）。判据：非高频考点 + 无数据撑 + 制造叙事噪音 → 软摘。
+
+> 上表数字为 **300 题 CMRC 全量基线**（2026-07-29 复刷，deepseek 口径，300/300 零失败；F13 为 15 题多跳切片）。检索命中/覆盖 1.00/1.00、端到端 F1 0.600、EM 0.143。下文完整特性表为深挖参考，面试主线以本表 7 条为准。
 
 ## 系统架构
 
@@ -132,10 +152,11 @@ uv run python run_e2e_eval.py --dataset data/eval_multihop.json --only F13   # �
 ### 1. 安装依赖
 
 ```bash
-# 使用 uv（推荐）
+# 使用 uv（推荐）：依赖由已提交的 uv.lock 锁定版本，配合 .python-version=3.11 保证环境可复现
 uv sync
+uv sync --extra dev    # 需要跑测试时（pytest 在 dev extras 里）
 
-# 或使用 pip
+# 或使用 pip（无 lockfile 保护，宽松解析，仅备选）
 pip install -e .
 ```
 
@@ -153,6 +174,7 @@ cp .env.example .env
 python main.py
 # 服务运行在 http://localhost:8000
 # API 文档: http://localhost:8000/docs
+# 首跑会自动联网下载本地 embedding/rerank 模型（约 1.2GB），之后离线启动
 ```
 
 ### 4. 启动前端界面
@@ -169,6 +191,26 @@ streamlit run frontend/app.py
 3. 系统自动执行：查询改写 → 多路召回 → 融合 → 重排 → 生成
 4. 查看回答及引用来源
 
+## 复现评测数字（复现链）
+
+向量库 `data/chroma_db/` 不入库（gitignore），clone 后需先制备一次索引，才能复现 README 与评测报告中的数字：
+
+```bash
+# 1. 灌全量语料进索引（chroma / summary / parent-child / BM25 + 图谱增量）
+#    语料 data/cmrc_docs/（165 篇 md）与题集 data/eval_dataset_cmrc_full.json（300 题）均已提交；
+#    只有需要重新生成语料/题目时才跑 scripts/build_cmrc_eval.py（需联网拉 CMRC2018）。
+#    注意：L1 摘要 + F6a 上下文增强在索引期用 LLM（一次性，不在线上调用）；
+#    无 LLM key 时降级为 warning 不阻断，但索引为「无增强版」，端到端数字会偏低。
+uv run python scripts/ingest_cmrc_full.py
+
+# 2. 零 LLM 知识图谱（jieba 共现图，秒级重建；仓库已提交 data/knowledge_graph.json，可跳过）
+uv run python scripts/rebuild_graph_fast.py
+
+# 3. 复现数字
+uv run python run_retrieval_eval.py            # 检索命中/覆盖率（零 LLM）
+uv run python run_e2e_eval.py --mode full      # 端到端三层评估（需 LLM API，默认 deepseek 口径）
+```
+
 ## API 接口
 
 | 方法 | 路径 | 说明 |
@@ -181,17 +223,29 @@ streamlit run frontend/app.py
 
 ## 运行评估
 
-提供三个评估脚本，覆盖质量、检索、性能三个维度：
+**评测分层（按等待时间选层）**：
+
+| 层 | 命令 | 耗时（deepseek） | 用途 |
+|---|---|---|---|
+| 零 LLM 检索 | `run_retrieval_eval.py` / `run_rewrite_eval.py` | 秒级 | 改检索层即跑 |
+| 快速切片（50 题） | `run_e2e_eval.py --dataset data/eval_slice_fast.json --gate --baseline data/eval_slice_baseline.json` | ~4 分钟 | 日常迭代 A/B |
+| 多跳 / 多轮切片 | `--dataset data/eval_multihop.json` / `data/eval_multiturn.json` | ~2 分钟 | F6b / F12 / F13 专项 |
+| 全量基线（300 题） | `run_e2e_eval.py --mode full --gate` | ~20 分钟 | 发版前 + 基线重定 |
+
+> 快速切片为步长 6 确定性抽样（跨次同题、可比），检测力弱于全量（容差 ±0.11 vs ±0.05），负结果不下强结论。全量基线为 **deepseek 口径**（2026-07-29 回填）；日常 provider 若为 qwen，跨 provider 不做 gate 退化比对（数字差异含模型差异，不全是代码退化）。
+
+评估脚本覆盖质量、检索、性能三个维度：
 
 ```bash
 # 1. RAGAS 四维质量评估（LLM-as-Judge，需 LLM API）
+#    注意：默认 20 题抽样集 data/eval_dataset.json 未入库，主力评估请用 #4 端到端评估
 uv run python run_eval.py
 #    → data/eval_report.json (faithfulness/relevancy/precision/recall)
 
 # 2. CMRC 检索命中评估（零 LLM，直接衡量检索管道质量）
 uv run python run_retrieval_eval.py
 #    → data/eval_report_cmrc.json (命中率/覆盖率/检索耗时)
-#    当前结果: 命中率 100% (31/31), 覆盖率 100%
+#    当前数字以报告文件为准（300 题全量集口径）
 
 # 3. 并发性能评测（需先启动服务，打真实 /api/chat）
 uv run python main.py &            # 先起服务

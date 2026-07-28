@@ -7,7 +7,7 @@
                                                       # （注意：脚本名虽叫 build_cmrc_eval，
                                                       #  实产出 full 全量集，非旧 31 题版）
   2. uv run python scripts/ingest_cmrc_full.py       # 本脚本：灌 chroma/summary/parent-child/BM25 + 图谱
-  3. uv run python scripts/rebuild_graph_typed.py    # 全量重抽知识图谱（若增量不全或需重置）
+  3. uv run python scripts/rebuild_graph_fast.py     # 零 LLM 共现图重置（秒级；rebuild_graph_typed.py 为 LLM 类型化可选路径）
   4. uv run python run_retrieval_eval.py             # 检索评估（零 LLM）
   5. uv run python run_e2e_eval.py --mode full       # 端到端三层评估
 
@@ -57,7 +57,7 @@ def main():
     print(f"\n✅ 明细索引完成：新增 {after - before} 分块（{before} → {after}），本次共切 {total_chunks} 块")
 
     if args.skip_graph:
-        print("⏭️  跳过图谱（--skip-graph，需单独跑 rebuild_graph_typed.py）")
+        print("⏭️  跳过图谱（--skip-graph，需单独跑 rebuild_graph_fast.py 零 LLM 重建）")
         return
 
     print("\n构建知识图谱（增量，仅新块）…")
