@@ -1,57 +1,54 @@
 {
-  "num_samples": 100,
-  "num_ok": 100,
+  "num_samples": 300,
+  "num_ok": 300,
   "num_failed": 0,
   "retrieval": {
-    "hit_rate": 0.99,
-    "avg_coverage": 0.99,
-    "avg_num_docs": 4.55,
-    "avg_pre_autocut": 60.72
+    "hit_rate": 1.0,
+    "avg_coverage": 1.0,
+    "avg_num_docs": 5.95,
+    "avg_pre_autocut": 61.92
   },
   "generation": {
-    "avg_faithfulness": 0.9899,
-    "regen_rate": 0.03
+    "avg_faithfulness": 0.9858,
+    "regen_rate": 0.0167
   },
   "end_to_end": {
-    "avg_f1": 0.6905,
-    "em_rate": 0.32,
-    "hit_rate": 0.84,
-    "answer_in_top_context_rate": 0.99,
-    "avg_correctness": 0.96
+    "avg_f1": 0.5996,
+    "em_rate": 0.1433,
+    "hit_rate": 0.75,
+    "answer_in_top_context_rate": 1.0
   },
   "answer_quality": {
-    "avg_f1_short": 0.6395,
-    "em_rate_short": 0.27,
-    "hit_rate_short": 0.72
+    "avg_f1_short": 0.6095,
+    "em_rate_short": 0.1667,
+    "hit_rate_short": 0.7067
   },
   "rag3": {
-    "avg_num_citations": 0.83,
+    "avg_num_citations": 0.91,
     "rewrite_rate": 0.0
   },
-  "avg_latency_ms": 7079.086,
+  "avg_latency_ms": 4527.1523,
   "routing_dist": {
-    "conceptual": 23,
-    "factual": 48,
-    "numeric": 26,
-    "multi_hop": 3
+    "factual": 187,
+    "conceptual": 64,
+    "numeric": 36,
+    "multi_hop": 12,
+    "comparative": 1
   },
   "iterative": {
-    "avg_iterations": 0.11,
+    "avg_iterations": 0.0,
     "stop_reasons": {
-      "sufficient": 90,
-      "max_iterations": 5,
-      "converged": 4,
-      "n/a": 1
+      "sufficient": 300
     }
   },
   "decomposition": {
-    "decomposed_rate": 0.03,
+    "decomposed_rate": 0.0367,
     "chain_rate": 0.03
   },
   "agentic": {
     "avg_steps": 0.0,
     "stop_reasons": {
-      "n/a": 100
+      "n/a": 300
     },
     "action_dist": {}
   }
