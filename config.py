@@ -11,11 +11,20 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
-    # OpenAI / DeepSeek
+    # 多模型选择：deepseek（默认，原配置）| qwen（阿里云百炼，更强模型）
+    # 切换只需改 llm_provider；两套 key/base_url/model 并存，互不删除。
+    llm_provider: str = "deepseek"
+
+    # OpenAI / DeepSeek（原模型，保留）
     openai_api_key: str = ""
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
     openai_embedding_model: str = "text-embedding-3-small"
+
+    # Qwen（阿里云百炼 OpenAI 兼容端点）
+    qwen_api_key: str = ""
+    qwen_base_url: str = "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+    qwen_model: str = "qwen3.8-max-preview"
 
     # Embedding
     embedding_provider: str = "local"  # "local" | "openai"
@@ -152,9 +161,25 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def active_llm_config() -> tuple[str, str, str]:
+    """按 llm_provider 返回当前 (model, api_key, base_url)。deepseek=原 openai_* 配置。"""
+    s = get_settings()
+    if s.llm_provider == "qwen":
+        return s.qwen_model, s.qwen_api_key, s.qwen_base_url
+    return s.openai_model, s.openai_api_key, s.openai_base_url
+
+
 def get_llm_extra_body() -> dict | None:
-    """LLM extra_body 参数：关闭思考模式时返回禁用参数，开启时返回 None"""
-    if get_settings().llm_thinking_enabled:
+    """LLM extra_body 参数：按 provider 适配思考模式开关。
+
+    - DeepSeek：关思考返回 {"thinking": {"type": "disabled"}}，开思考返回 None。
+    - Qwen（本预览端点）：enable_thinking 受限为 True，无法关闭；不传该参数，
+      用端点默认（思考开），故 qwen 恒返回 None。
+    """
+    s = get_settings()
+    if s.llm_provider == "qwen":
+        return None
+    if s.llm_thinking_enabled:
         return None
     return {"thinking": {"type": "disabled"}}
 
@@ -169,14 +194,15 @@ def build_chat_llm(
 ) -> ChatOpenAI:
     """Chat LLM 构造唯一入口：model/key/base_url/extra_body 统一收口。
 
+    model/key/base_url 由 active_llm_config() 按 llm_provider 解析（多模型可选）。
     各调用点显式传自己的 timeout/retries/max_tokens（None=不传，沿用
     ChatOpenAI 默认），保留 2026-07-26 延迟治理的逐点参数差异，不做统一默认。
     """
-    settings = get_settings()
+    model, api_key, base_url = active_llm_config()
     kwargs: dict = {
-        "model": settings.openai_model,
-        "api_key": settings.openai_api_key,
-        "base_url": settings.openai_base_url,
+        "model": model,
+        "api_key": api_key,
+        "base_url": base_url,
         "temperature": temperature,
         "streaming": streaming,
         "extra_body": get_llm_extra_body(),
