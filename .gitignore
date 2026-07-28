@@ -19,10 +19,12 @@ data/eval_dataset.json
 # Logs
 *.log
 
-# IDE
+# IDE / AI 工具配置
 .idea/
 .vscode/
 *.swp
+.claude/
+.zcode/
 
 # OS
 .DS_Store
