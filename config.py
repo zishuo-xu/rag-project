@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     graph_enabled: bool = True
     graph_max_hops: int = 2  # 图检索最大跳数
     graph_max_entities: int = 5  # 每次查询最多匹配实体数
+    # 分解路径子问题的图实体抽取仅走零 LLM 快速匹配（不回退 LLM）。
+    # 主路径检索保留 LLM 回退（单查询，回退成本可控、召回更全）。
+    decompose_graph_fast_only: bool = True
     graph_persist_path: str = "./data/knowledge_graph.json"
 
     # Parent-Child 检索
@@ -148,6 +151,9 @@ class Settings(BaseSettings):
     use_agentic: bool = False
     agentic_max_steps: int = 4             # 决策步数硬上限（安全兜底）
     agentic_decision_max_tokens: int = 256  # 每步决策调用 token 预算
+    # 证据充分度硬门控（零 LLM）：累积证据 CRAG 评为 correct 即强制结束循环，
+    # 不依赖 LLM 自觉 finish——修复"信号可见 ≠ 决策控制"导致的 finish 率 <50%。
+    agentic_evidence_gate: bool = True
 
     # LangSmith (Optional)
     langchain_tracing_v2: bool = False

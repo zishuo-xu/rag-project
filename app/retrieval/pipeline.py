@@ -116,6 +116,7 @@ class RetrievalPipeline:
         top_n: int | None = None,
         channels=ALL_CHANNELS,
         trace_id: str | None = None,
+        fast_graph: bool = False,
     ) -> dict:
         """
         并行执行各召回路，结果按 channel 聚合。
@@ -143,7 +144,9 @@ class RetrievalPipeline:
 
         def _graph():
             if self.graph_retriever:
-                return self.graph_retriever.retrieve(question, top_k=3)
+                return self.graph_retriever.retrieve(
+                    question, top_k=3, fast_only=fast_graph
+                )
             return []
 
         def _pc():
@@ -370,9 +373,13 @@ class RetrievalPipeline:
 
         graph 通道以子问题（而非原问题）做实体匹配——多跳分解的价值正在于
         每个子问题独立命中各自的关系链（2026-07-26 接入）。
+        graph 实体抽取仅走零 LLM 快速匹配（decompose_graph_fast_only）：子问题
+        成倍放大 LLM 回退调用，是分解路径延迟主因；快速未命中说明图通道对该
+        子问题无增益，交给 dense/sparse 兜底（2026-07-28 零 LLM 均衡化）。
         """
         recall_results = self.recall(
-            subq, [subq], top_n=top_n, channels=("dense", "sparse", "graph")
+            subq, [subq], top_n=top_n, channels=("dense", "sparse", "graph"),
+            fast_graph=self._settings.decompose_graph_fast_only,
         )
         return self.fuse(recall_results)
 

@@ -418,3 +418,135 @@ def test_pipeline_skips_agent_when_flag_off():
     pipeline.sparse_retriever.retrieve.return_value = []
     pipeline.run("问题")
     agentic.run.assert_not_called()
+
+
+# ============ 硬门控（证据充分度，零 LLM） ============
+
+def _gate_settings(max_steps=4):
+    s = _settings(max_steps=max_steps)
+    s.agentic_evidence_gate = True
+    return s
+
+
+def _scored_pipeline(score=2.0):
+    """返回带真实 rerank_score 证据的 stub 管道（sigmoid(2.0)=0.88 → CRAG correct）。"""
+    p = _pipeline()
+    doc = Document(
+        page_content="范廷颂1963年被任命为主教",
+        metadata={"chunk_id": "c1", "rerank_score": score},
+    )
+    p.recall.return_value = {"dense": [doc], "sparse": []}
+    p.fuse.return_value = [doc]
+    p.rerank.return_value = [doc]
+    p.evaluate.return_value = ("correct", [0], "rerank_sigmoid=0.88")
+    return p
+
+
+def _never_finish_llm(n=4):
+    """每步都返回新查询的 search，从不 finish——模拟 finish 率不达标的 LLM。"""
+    return _llm([
+        '{"action": "search", "args": {"query": "查询%d"}}' % i for i in range(n)
+    ])
+
+
+def _fresh_docs_pipeline(score=None, n=4):
+    """每次 search 返回一篇全新文档（不同 chunk_id，避免 dedup 触发收敛护栏）。"""
+    p = _pipeline()
+    docs = [
+        Document(
+            page_content=f"证据{i}",
+            metadata={"chunk_id": f"c{i}", **({"rerank_score": score} if score is not None else {})},
+        )
+        for i in range(n)
+    ]
+    p.recall.side_effect = [{"dense": [d], "sparse": []} for d in docs]
+    p.fuse.side_effect = [[d] for d in docs]
+    p.rerank.side_effect = [[d] for d in docs]
+    return p
+
+
+def test_hard_gate_forces_finish_when_evidence_correct():
+    """LLM 从不 finish，但证据 CRAG=correct → 硬门控第 1 步即强制结束。"""
+    p = _scored_pipeline()
+    agent = AgenticRetriever(p, llm=_never_finish_llm(), settings=_gate_settings())
+    result = agent.run("范廷颂哪一年成为主教？")
+    assert result.stop_reason == "evidence_sufficient"
+    assert len(result.steps) == 1                    # 无需耗满 max_steps
+    assert result.crag_grade == "correct"
+    assert "硬门控" in result.steps[0].observation
+    assert len(result.documents) == 1
+
+
+def test_hard_gate_not_fire_on_ambiguous():
+    """CRAG=ambiguous（证据不足）→ 门控不触发，循环照常走到 max_steps。"""
+    p = _fresh_docs_pipeline(score=2.0)
+    p.evaluate.return_value = ("ambiguous", [0], "rerank_sigmoid=0.40")
+    agent = AgenticRetriever(p, llm=_never_finish_llm(), settings=_gate_settings())
+    result = agent.run("问题")
+    assert result.stop_reason == "max_steps"
+    assert len(result.steps) == 4
+    assert result.crag_grade == "ambiguous"
+
+
+def test_hard_gate_skipped_without_rerank_scores():
+    """证据无真实 rerank 分数（如 decompose 纯 RRF 结果）→ 门控不启用，不误调 evaluate。"""
+    p = _fresh_docs_pipeline(score=None)
+    agent = AgenticRetriever(p, llm=_never_finish_llm(), settings=_gate_settings())
+    result = agent.run("问题")
+    p.evaluate.assert_not_called()
+    assert result.stop_reason == "max_steps"
+
+
+def test_hard_gate_disabled_by_switch():
+    """agentic_evidence_gate=False → 完全旁路，行为回到纯 LLM 决策。"""
+    p = _fresh_docs_pipeline(score=2.0)
+    s = _gate_settings()
+    s.agentic_evidence_gate = False
+    agent = AgenticRetriever(p, llm=_never_finish_llm(), settings=s)
+    result = agent.run("问题")
+    p.evaluate.assert_not_called()
+    assert result.stop_reason == "max_steps"
+
+
+def test_hard_gate_fires_after_decompose():
+    """decompose 返回带分数证据且 CRAG=correct → 门控同样接管停止权。"""
+    p = _scored_pipeline()
+    decomp = SimpleNamespace(sub_questions=["子问题1", "子问题2"], chain=False)
+    p.query_transformer.decompose.return_value = decomp
+    scored_docs = [
+        Document(page_content="证据A", metadata={"chunk_id": "a", "rerank_score": 2.0}),
+        Document(page_content="证据B", metadata={"chunk_id": "b", "rerank_score": 1.5}),
+    ]
+    p._decompose_retrieve.return_value = scored_docs
+    agent = AgenticRetriever(p, llm=_llm([
+        '{"action": "decompose", "args": {}}',
+        '{"action": "search", "args": {"query": "多余的一步"}}',
+    ]), settings=_gate_settings())
+    result = agent.run("多跳问题")
+    assert result.stop_reason == "evidence_sufficient"
+    assert len(result.steps) == 1                    # 第 2 步 search 不会执行
+    assert result.decomposed_subqueries == ["子问题1", "子问题2"]
+
+
+def test_hard_gate_evaluates_scored_docs_in_descending_order():
+    """累积证据乱序到达 → 门控按 rerank_score 降序送入 evaluate（CRAG 取 top1 判级）。"""
+    p = _pipeline()
+    low = Document(page_content="弱证据", metadata={"chunk_id": "lo", "rerank_score": -1.0})
+    high = Document(page_content="强证据", metadata={"chunk_id": "hi", "rerank_score": 3.0})
+    p.recall.side_effect = [
+        {"dense": [low], "sparse": []},
+        {"dense": [high], "sparse": []},
+    ]
+    p.fuse.side_effect = [[low], [high]]
+    p.rerank.side_effect = [[low], [high]]
+    # 第 1 步证据不足（不触发门控），第 2 步充分（触发）
+    p.evaluate.side_effect = [
+        ("ambiguous", [0], "rerank_sigmoid=0.27"),
+        ("correct", [0, 1], "rerank_sigmoid=0.95"),
+    ]
+    agent = AgenticRetriever(p, llm=_never_finish_llm(), settings=_gate_settings())
+    result = agent.run("问题")
+    assert result.stop_reason == "evidence_sufficient"
+    # 第 2 步触发门控：送入 evaluate 的首篇应为最高分文档（降序）
+    docs_arg = p.evaluate.call_args[0][1]
+    assert docs_arg[0].metadata["chunk_id"] == "hi"

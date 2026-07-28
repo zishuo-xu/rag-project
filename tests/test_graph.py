@@ -179,6 +179,16 @@ def test_retrieve_documents_carry_graph_chunk_id(retriever, builder):
     assert rel_doc.metadata["source"] == "knowledge_graph"
 
 
+def test_extract_entities_fast_only_skips_llm(retriever, monkeypatch):
+    """fast_only=True：快速匹配未命中即返回空，不回退 LLM；默认路径保留回退。"""
+    monkeypatch.setattr(
+        retriever, "_llm_extract_entities", lambda q: ["不应被调用的实体"]
+    )
+    no_match = "xyz 一个图里没有的句子"
+    assert retriever.extract_entities(no_match, fast_only=True) == []
+    assert retriever.extract_entities(no_match) == ["不应被调用的实体"]
+
+
 # ============ 分解路径接入 graph 通道 ============
 
 def test_decompose_path_uses_graph_channel():
@@ -205,6 +215,40 @@ def test_decompose_path_uses_graph_channel():
     asked = {c.args[0] for c in calls}
     # graph 实体匹配应针对子问题而非原问题
     assert asked <= {"范廷颂担任什么职务？", "该教区在哪里？"}
+    # 零 LLM 均衡化：子问题图检索强制 fast_only（不回退 LLM 实体抽取）
+    s.decompose_graph_fast_only = True
+    assert all(c.kwargs.get("fast_only") for c in calls)
+
+
+def test_decompose_graph_fast_only_switch_off():
+    """decompose_graph_fast_only=False → 子问题图检索保留 LLM 回退。"""
+    from app.retrieval.router import QueryRouter
+    from test_pipeline import _make_pipeline
+
+    pipe, mocks = _make_pipeline()
+    s = mocks["settings"]
+    s.use_query_router = True
+    s.use_decomposition = True
+    s.use_crag_gate = False
+    s.latency_budget_ms = 0
+    s.decompose_graph_fast_only = False
+    pipe.query_router = QueryRouter(settings=s)
+    mocks["query_transformer"].decompose.return_value = SimpleNamespace(
+        sub_questions=["范廷颂担任什么职务？", "该教区在哪里？"], chain=False
+    )
+    pipe.run("范廷颂担任总主教的那个教区在哪里？")
+    calls = mocks["graph_retriever"].retrieve.call_args_list
+    assert calls and all(not c.kwargs.get("fast_only") for c in calls)
+
+
+def test_main_path_graph_recall_keeps_llm_fallback():
+    """主路径 recall 默认 fast_graph=False（LLM 实体回退保留，仅分解路径零 LLM）。"""
+    from test_pipeline import _make_pipeline
+
+    pipe, mocks = _make_pipeline()
+    pipe.recall("问题", ["问题"], top_n=5, channels=("graph",))
+    calls = mocks["graph_retriever"].retrieve.call_args_list
+    assert calls and calls[0].kwargs.get("fast_only") is False
 
 
 # ============ 路径语义治理：强/弱边区分 + 诚实标注 ============

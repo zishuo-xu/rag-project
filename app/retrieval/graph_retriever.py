@@ -8,7 +8,8 @@
 
 设计决策：
     - 图检索作为向量检索的补充（而非替代），提供关系推理能力
-    - 使用 LLM 从查询中抽取实体（比 NER 更灵活）
+    - 实体抽取：零 LLM 快速匹配（图节点关键词）优先，未命中回退 LLM 抽取；
+      分解路径子问题走 fast_only（不回退），避免子问题数量放大 LLM 调用
     - 格式化输出为自然语言三元组列表，方便 LLM 理解
 """
 
@@ -75,7 +76,7 @@ class GraphRetriever:
         self.max_hops = settings.graph_max_hops
         self.max_entities = settings.graph_max_entities
 
-    def extract_entities(self, question: str) -> List[str]:
+    def extract_entities(self, question: str, fast_only: bool = False) -> List[str]:
         """
         从用户查询中抽取关键实体。
 
@@ -84,6 +85,10 @@ class GraphRetriever:
 
         Args:
             question: 用户问题
+            fast_only: True 时仅走快速匹配，未命中即返回空（不回退 LLM）。
+                分解路径的子问题检索用此模式——子问题数量多、LLM 回退是
+                分解延迟的主因，且零命中说明图通道对该子问题无增益，
+                交给 dense/sparse 即可（2026-07-28 零 LLM 均衡化）。
 
         Returns:
             实体名列表
@@ -93,6 +98,9 @@ class GraphRetriever:
         if fast_entities:
             logger.debug(f"快速实体匹配: {fast_entities}")
             return fast_entities
+
+        if fast_only:
+            return []
 
         # 回退：LLM 抽取
         return self._llm_extract_entities(question)
@@ -146,13 +154,16 @@ class GraphRetriever:
                 unique.append(r)
         return unique
 
-    def retrieve(self, question: str, top_k: int = 5) -> List[Document]:
+    def retrieve(
+        self, question: str, top_k: int = 5, fast_only: bool = False
+    ) -> List[Document]:
         """
         图检索主入口：抽取实体 → 子图扩展 → 格式化为 Document。
 
         Args:
             question: 用户问题
             top_k: 最多返回的关系文档数
+            fast_only: 实体抽取仅走零 LLM 快速匹配（见 extract_entities）
 
         Returns:
             包含图上下文信息的 Document 列表
@@ -161,7 +172,7 @@ class GraphRetriever:
             return []
 
         # Step 1: 抽取查询实体
-        entities = self.extract_entities(question)
+        entities = self.extract_entities(question, fast_only=fast_only)
         if not entities:
             return []
 
