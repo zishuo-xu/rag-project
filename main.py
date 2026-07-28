@@ -1,8 +1,31 @@
 """FastAPI 应用入口 - RAG 系统 API 服务"""
 
 import os
-os.environ.setdefault("HF_HUB_OFFLINE", "1")  # 跳过 HuggingFace 网络检查，加速启动
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+
+
+def _local_models_cached() -> bool:
+    """检测本地 embedding/rerank 模型是否已在 HF 缓存中。
+
+    有缓存才开启离线模式(跳过网络检查、加速启动);干净机器上保持联网,
+    让首跑自动下载模型,避免强制离线导致 LocalEntryNotFoundError 崩溃。
+    """
+    try:
+        from huggingface_hub import try_to_load_from_cache
+
+        from config import get_settings
+
+        s = get_settings()
+        for model_id in (s.embedding_model, s.rerank_model):
+            if try_to_load_from_cache(model_id, "config.json") in (None, "repo"):
+                return False
+        return True
+    except Exception:
+        return False
+
+
+if _local_models_cached():
+    os.environ.setdefault("HF_HUB_OFFLINE", "1")  # 跳过 HuggingFace 网络检查，加速启动
+    os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 import logging
 from contextlib import asynccontextmanager

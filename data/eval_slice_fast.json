@@ -1,0 +1,507 @@
+{
+  "version": "1.0",
+  "num_samples": 50,
+  "description": "快速评测切片:300 题全量集步长 6 确定性抽样(50 题),日常迭代 A/B 用;检测力弱于全量(±0.11 vs ±0.05),负结果不下强结论。",
+  "samples": [
+    {
+      "id": "cf001",
+      "question": "山景巴士总站位于什么地方？",
+      "ground_truth": "香港新界屯门区",
+      "metadata": {
+        "source": "cmrc_full_068.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf007",
+      "question": "瓦尔迪斯· 东布洛夫斯基斯出生于哪儿？",
+      "ground_truth": "里加",
+      "metadata": {
+        "source": "cmrc_full_111.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf013",
+      "question": "胜任力的定义是什么？",
+      "ground_truth": "某个个人能够恰如其分地完成某项工作的能力",
+      "metadata": {
+        "source": "cmrc_full_127.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf019",
+      "question": "阿特罗巴特斯曾效力于谁？",
+      "ground_truth": "大流士三世、亚历山大大帝",
+      "metadata": {
+        "source": "cmrc_full_149.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf025",
+      "question": "广泛性发展障碍简称是什么？",
+      "ground_truth": "PDD",
+      "metadata": {
+        "source": "cmrc_full_071.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf031",
+      "question": "鹿鸣宴是哪种制度下的特殊宴会？",
+      "ground_truth": "科举制度",
+      "metadata": {
+        "source": "cmrc_full_158.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf037",
+      "question": "越南政府通常将全国众多省份归类为八大地理区划，其分别是哪些？",
+      "ground_truth": "西北、东北、红河三角洲、中北部、中南部、西原、东南部，和湄公河三角洲",
+      "metadata": {
+        "source": "cmrc_full_140.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf043",
+      "question": "尼古拉·伊万诺维奇·叶若夫是谁？",
+      "ground_truth": "苏联政治人物，秘密警察首脑。是斯大林大清洗计划的主要执行者之一，后在政治运动中失势被处决。",
+      "metadata": {
+        "source": "cmrc_full_067.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf049",
+      "question": "周成建出生于哪里？",
+      "ground_truth": "浙江省丽水市青田县",
+      "metadata": {
+        "source": "cmrc_full_050.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf055",
+      "question": "《甜蜜小天使》是谁的漫画作品？",
+      "ground_truth": "日本漫画家赤冢不二夫",
+      "metadata": {
+        "source": "cmrc_full_017.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf061",
+      "question": "徐凤月是马来西亚第多少届霹雳九洞州议员？",
+      "ground_truth": "第12届",
+      "metadata": {
+        "source": "cmrc_full_138.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf067",
+      "question": "魏裔介的字是什么？",
+      "ground_truth": "石生",
+      "metadata": {
+        "source": "cmrc_full_158.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf073",
+      "question": "哪个卫星探测在2009年4月23日探测到了一次伽玛射线暴发？",
+      "ground_truth": "雨燕",
+      "metadata": {
+        "source": "cmrc_full_005.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf079",
+      "question": "九龙巴士95M线是香港一条来往哪里的路线？",
+      "ground_truth": "翠林及观塘（雅丽道）",
+      "metadata": {
+        "source": "cmrc_full_029.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf085",
+      "question": "《金刀情侠》由谁导演？",
+      "ground_truth": "徐克",
+      "metadata": {
+        "source": "cmrc_full_144.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf091",
+      "question": "溪生战役具体是哪一次战役？",
+      "ground_truth": "是越南战争中爆发于越南共和国（南越）广治省西北部的一次大规模战役",
+      "metadata": {
+        "source": "cmrc_full_105.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf097",
+      "question": "这篇文章列出并讨论了原始印欧语数词的什么内容？",
+      "ground_truth": "它们的假定形式",
+      "metadata": {
+        "source": "cmrc_full_045.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf103",
+      "question": "杨元龙获得哪两个硕士学位？",
+      "ground_truth": "上海圣约翰大学化学硕士学位和美国麻省洛厄尔纺织学院纺织化工硕士学位",
+      "metadata": {
+        "source": "cmrc_full_091.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf109",
+      "question": "白眉丝刺莺生活在什么地方？",
+      "ground_truth": "澳洲沿岸",
+      "metadata": {
+        "source": "cmrc_full_113.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf115",
+      "question": "什么是体循环？",
+      "ground_truth": "体循环（又称为大循环）是心血管循环系统中，携带充氧血离开心脏，进入身体各部位进行气体交换及运输养分后，将缺氧血带回心脏的部分。",
+      "metadata": {
+        "source": "cmrc_full_033.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf121",
+      "question": "戈伟的职业是什么？",
+      "ground_truth": "足球运动员",
+      "metadata": {
+        "source": "cmrc_full_077.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf127",
+      "question": "世界粮食计划署总部在哪里？",
+      "ground_truth": "意大利罗马",
+      "metadata": {
+        "source": "cmrc_full_023.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf133",
+      "question": "托纳蒂赫的意思是什么？",
+      "ground_truth": "日之运行",
+      "metadata": {
+        "source": "cmrc_full_078.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf139",
+      "question": "百济678年统治是什么时候结束的？",
+      "ground_truth": "阶伯于黄山伐战死后不久，唐罗联军即攻克泗沘城，结束百济678年统治。",
+      "metadata": {
+        "source": "cmrc_full_148.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf145",
+      "question": "《苏姗娜之歌》的作者是谁？",
+      "ground_truth": "美国小说家史蒂芬金",
+      "metadata": {
+        "source": "cmrc_full_019.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf151",
+      "question": "《远方的鼓声》的演唱人是谁？",
+      "ground_truth": "汤运焕(东东)",
+      "metadata": {
+        "source": "cmrc_full_020.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf157",
+      "question": "本尼迪克特·理查德·奥格曼·安德森的主要研究方向是？",
+      "ground_truth": "专门研究民族主义和国际关系",
+      "metadata": {
+        "source": "cmrc_full_088.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf163",
+      "question": "本哈德·海默是哪国的政治家？",
+      "ground_truth": "瑞士",
+      "metadata": {
+        "source": "cmrc_full_088.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf169",
+      "question": "青斑阿南鱼的俗名叫什么？",
+      "ground_truth": "青斑龙、青衣、青威",
+      "metadata": {
+        "source": "cmrc_full_153.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf175",
+      "question": "塞斯·亚伦·罗根是什么国籍的演员？",
+      "ground_truth": "加拿大",
+      "metadata": {
+        "source": "cmrc_full_057.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf181",
+      "question": "爱姬谁的独生女？",
+      "ground_truth": "田村清显",
+      "metadata": {
+        "source": "cmrc_full_107.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf187",
+      "question": "额亦都是哪个国家的开国大臣？",
+      "ground_truth": "后金",
+      "metadata": {
+        "source": "cmrc_full_154.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf193",
+      "question": "什么是月代？",
+      "ground_truth": "传统日本成年男性的发型",
+      "metadata": {
+        "source": "cmrc_full_087.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf199",
+      "question": "挖客这个词汇来源于什么地方？",
+      "ground_truth": "美国的digg网站",
+      "metadata": {
+        "source": "cmrc_full_080.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf205",
+      "question": "玖岛城位于什么地方？",
+      "ground_truth": "长崎县大村市玖岛",
+      "metadata": {
+        "source": "cmrc_full_110.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf211",
+      "question": "共有多少个国家成为委员会的创始成员国？",
+      "ground_truth": "40个",
+      "metadata": {
+        "source": "cmrc_full_080.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf217",
+      "question": "现代货箱码头有限公司的简称是什么？",
+      "ground_truth": "现代货箱码头、现代货箱",
+      "metadata": {
+        "source": "cmrc_full_110.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf223",
+      "question": "谁是美国热门电视剧和小说《绯闻女孩》中的女主角？",
+      "ground_truth": "瑟琳娜·范·德·伍德森",
+      "metadata": {
+        "source": "cmrc_full_111.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf229",
+      "question": "圣乔治角海战发生在什么地方？",
+      "ground_truth": "布干维尔岛水域",
+      "metadata": {
+        "source": "cmrc_full_053.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf235",
+      "question": "张燮林以什么打法为特色？",
+      "ground_truth": "以灵活多变的直板长胶削球打法为其特色。",
+      "metadata": {
+        "source": "cmrc_full_074.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf241",
+      "question": "尚温是哪个国家的国王？",
+      "ground_truth": "琉球国",
+      "metadata": {
+        "source": "cmrc_full_067.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf247",
+      "question": "白兰氏著名于什么？",
+      "ground_truth": "鸡精饮料",
+      "metadata": {
+        "source": "cmrc_full_113.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf253",
+      "question": "Telkom SA Ltd.是什么？",
+      "ground_truth": "南非一家有线及无线通讯运营商",
+      "metadata": {
+        "source": "cmrc_full_008.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf259",
+      "question": "什么是营业税？",
+      "ground_truth": "是流转税制中的一个税种",
+      "metadata": {
+        "source": "cmrc_full_133.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf265",
+      "question": "升庵桂湖的地址是哪里？",
+      "ground_truth": "中国四川省成都市北部新都区",
+      "metadata": {
+        "source": "cmrc_full_042.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf271",
+      "question": "阎相闯什么时候进入了八一青年队？",
+      "ground_truth": "2000年",
+      "metadata": {
+        "source": "cmrc_full_148.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf277",
+      "question": "隆柯龙类名字的含义是什么？",
+      "ground_truth": "巨大的蜥蜴",
+      "metadata": {
+        "source": "cmrc_full_151.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf283",
+      "question": "《大海》是谁的专辑？",
+      "ground_truth": "张雨生",
+      "metadata": {
+        "source": "cmrc_full_013.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf289",
+      "question": "入江俊郎是何时毕业于东京帝大的？",
+      "ground_truth": "1924年东京帝大法律系毕业。",
+      "metadata": {
+        "source": "cmrc_full_036.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    },
+    {
+      "id": "cf295",
+      "question": "王明渠的籍贯是哪里？",
+      "ground_truth": "山东省海阳县",
+      "metadata": {
+        "source": "cmrc_full_109.md",
+        "dataset": "cmrc2018",
+        "type": "reading_comprehension"
+      }
+    }
+  ]
+}

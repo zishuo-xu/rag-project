@@ -1,6 +1,7 @@
 """运行 RAG 评估脚本"""
 import json
 import logging
+import os
 import sys
 import time
 
@@ -9,10 +10,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 from app.evaluation.dataset import load_eval_dataset
 from app.evaluation.metrics import evaluate_rag
 
+DATASET_PATH = "data/eval_dataset.json"
+
 
 def main():
     # 加载评估数据集
-    dataset = load_eval_dataset("data/eval_dataset.json")
+    if not os.path.exists(DATASET_PATH):
+        sys.exit(
+            f"❌ {DATASET_PATH} 不存在（20 题 RAGAS 抽样集未入库，仓库只提交 300 题 CMRC 全量集）。\n"
+            f"   主力评估请用: uv run python run_e2e_eval.py --mode full   # 300 题，与 gate 基线可比\n"
+            f"   零 LLM 检索评估: uv run python run_retrieval_eval.py"
+        )
+    dataset = load_eval_dataset(DATASET_PATH)
     samples = dataset["samples"]
 
     questions = [s["question"] for s in samples]

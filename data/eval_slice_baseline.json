@@ -1,0 +1,54 @@
+{
+  "num_samples": 50,
+  "num_ok": 50,
+  "num_failed": 0,
+  "retrieval": {
+    "hit_rate": 1.0,
+    "avg_coverage": 1.0,
+    "avg_num_docs": 5.8,
+    "avg_pre_autocut": 65.36
+  },
+  "generation": {
+    "avg_faithfulness": 1.0,
+    "regen_rate": 0.0
+  },
+  "end_to_end": {
+    "avg_f1": 0.5658,
+    "em_rate": 0.1,
+    "hit_rate": 0.82,
+    "answer_in_top_context_rate": 1.0
+  },
+  "answer_quality": {
+    "avg_f1_short": 0.5798,
+    "em_rate_short": 0.1,
+    "hit_rate_short": 0.76
+  },
+  "rag3": {
+    "avg_num_citations": 0.92,
+    "rewrite_rate": 0.0
+  },
+  "avg_latency_ms": 4728.29,
+  "routing_dist": {
+    "factual": 30,
+    "conceptual": 12,
+    "multi_hop": 2,
+    "numeric": 6
+  },
+  "iterative": {
+    "avg_iterations": 0.0,
+    "stop_reasons": {
+      "sufficient": 50
+    }
+  },
+  "decomposition": {
+    "decomposed_rate": 0.0,
+    "chain_rate": 0.0
+  },
+  "agentic": {
+    "avg_steps": 0.0,
+    "stop_reasons": {
+      "n/a": 50
+    },
+    "action_dist": {}
+  }
+}

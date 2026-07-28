@@ -12,6 +12,9 @@ State/Node/条件边，但零新依赖手写实现，全离线可 mock 测试）
 
 护栏：max_steps 硬上限 / 决策解析失败即停 / 工具异常写入 observation /
 整体异常或空证据由调用方（pipeline）降级回七阶段管道。
+硬门控（agentic_evidence_gate，零 LLM）：search/decompose 后累积证据经 CRAG
+（rerank sigmoid）评为 correct 即强制结束——prompt 信号只能让收敛"可见"，
+管不住 LLM 决策（finish 率曾持续 <50%），故用证据充分度阈值接管停止权。
 时延：每步 1 次小 token 决策调用；use_agentic 默认关。
 """
 
@@ -75,7 +78,7 @@ class AgentResult:
     """agent 检索结果：证据文档 + 决策轨迹"""
     documents: List[Document] = field(default_factory=list)
     steps: List[AgentStep] = field(default_factory=list)
-    stop_reason: str = ""            # agent_done / max_steps / decision_error / converged / no_evidence
+    stop_reason: str = ""            # agent_done / evidence_sufficient / max_steps / decision_error / converged / no_evidence
     decomposed_subqueries: List[str] = field(default_factory=list)
     decomposition_chain: bool = False
     queries_used: List[str] = field(default_factory=list)
@@ -155,6 +158,21 @@ class AgenticRetriever:
                     f"[新增{new_count}篇/累计{len(evidence)}] " + step.observation
                 )
 
+            # F13 硬门控（零 LLM）：新证据到达且 CRAG 判充分 → 强制结束，接管停止权。
+            # 只在有新证据时评估（零新增交给下方收敛护栏）；无真实 rerank 分数时不启用。
+            if (
+                step.action in ("search", "decompose")
+                and new_count > 0
+                and settings.agentic_evidence_gate
+            ):
+                sufficient, grade = self._evidence_sufficient(question, evidence)
+                if grade:
+                    result.crag_grade = grade
+                if sufficient:
+                    step.observation += f"（硬门控：CRAG={grade}，证据充分，强制结束）"
+                    result.stop_reason = "evidence_sufficient"
+                    break
+
             # 零 LLM 收敛护栏：连续两次 search 零新增证据 → 强制停止（复用 F2 收敛概念）
             if step.action == "search":
                 consecutive_empty_search = consecutive_empty_search + 1 if new_count == 0 else 0
@@ -181,6 +199,34 @@ class AgenticRetriever:
             f"stop={result.stop_reason} docs={len(result.documents)}"
         )
         return result
+
+    # ---- 硬门控：证据充分度（零 LLM，复用 CRAG 分级） ----
+
+    def _evidence_sufficient(
+        self, question: str, evidence: List[Document]
+    ) -> tuple[bool, str]:
+        """零 LLM 证据充分度判断：CRAG 评为 correct 即充分。
+
+        复用 pipeline.evaluate（CRAG：top1 rerank sigmoid 判级，数字题另有零 LLM
+        校验）。累积证据来自多步、可能乱序，按 rerank_score 降序排后送入（CRAG 取
+        top1 判级依赖有序输入）。证据不含任何真实 rerank 分数时（如 decompose 的
+        纯 RRF 合并结果）不启用门控，避免 CRAG「无分数默认通过」造成误判。
+        """
+        try:
+            scored = [
+                (float(d.metadata["rerank_score"]), d)
+                for d in evidence
+                if isinstance(d.metadata.get("rerank_score"), (int, float))
+            ]
+            if not scored:
+                return False, ""
+            scored.sort(key=lambda x: x[0], reverse=True)
+            ordered = [d for _, d in scored]
+            grade, _scores, _reason = self._pipeline.evaluate(question, ordered)
+            return grade == "correct", grade
+        except Exception as e:
+            logger.warning(f"F13 硬门控评估失败（忽略，继续循环）: {e}")
+            return False, ""
 
     # ---- 决策节点（LLM，JSON 输出，失败即停） ----
 

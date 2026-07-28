@@ -116,6 +116,7 @@ class RetrievalPipeline:
         top_n: int | None = None,
         channels=ALL_CHANNELS,
         trace_id: str | None = None,
+        fast_graph: bool = False,
     ) -> dict:
         """
         并行执行各召回路，结果按 channel 聚合。
@@ -143,7 +144,9 @@ class RetrievalPipeline:
 
         def _graph():
             if self.graph_retriever:
-                return self.graph_retriever.retrieve(question, top_k=3)
+                return self.graph_retriever.retrieve(
+                    question, top_k=3, fast_only=fast_graph
+                )
             return []
 
         def _pc():
@@ -370,9 +373,13 @@ class RetrievalPipeline:
 
         graph 通道以子问题（而非原问题）做实体匹配——多跳分解的价值正在于
         每个子问题独立命中各自的关系链（2026-07-26 接入）。
+        graph 实体抽取仅走零 LLM 快速匹配（decompose_graph_fast_only）：子问题
+        成倍放大 LLM 回退调用，是分解路径延迟主因；快速未命中说明图通道对该
+        子问题无增益，交给 dense/sparse 兜底（2026-07-28 零 LLM 均衡化）。
         """
         recall_results = self.recall(
-            subq, [subq], top_n=top_n, channels=("dense", "sparse", "graph")
+            subq, [subq], top_n=top_n, channels=("dense", "sparse", "graph"),
+            fast_graph=self._settings.decompose_graph_fast_only,
         )
         return self.fuse(recall_results)
 
@@ -505,6 +512,10 @@ class RetrievalPipeline:
             and self.query_transformer is not None
             and use_query_transform
         )
+        # 精简（2026-07-28，性能效果均衡）：仅 multi_hop 改写扩召回，
+        # 简单/事实型不改写省 LLM（原 query + 5 路 + rerank 够）。效果损：召回面
+        # 略缩，但多路 + rerank 兜底，基线验证 hit。
+        effective_strategy = "multi_query" if result.query_type == "multi_hop" else "none"
         if trace_id:
             tracer.start_span(trace_id, "gate_transform")
         need_retrieval, gate_reason = True, "门控未启用"
@@ -521,13 +532,13 @@ class RetrievalPipeline:
             with ThreadPoolExecutor(max_workers=2) as executor:
                 gate_future = executor.submit(self.gate, question)
                 transform_future = executor.submit(
-                    self.transform, question, query_strategy
+                    self.transform, question, effective_strategy
                 )
                 need_retrieval, gate_reason = gate_future.result()
                 queries = transform_future.result()
         else:
             need_retrieval, gate_reason = self.gate(question)
-            queries = self.transform(question, query_strategy, use_query_transform)
+            queries = self.transform(question, effective_strategy, use_query_transform)
         result.queries_used = queries
         if trace_id:
             tracer.end_span(trace_id, "gate_transform", {
@@ -573,7 +584,7 @@ class RetrievalPipeline:
         if not decomposed:
             # multi_hop 跳过了投机改写但分解未触发 → 延迟补跑，不丢召回质量
             if not queries:
-                queries = self.transform(question, query_strategy, use_query_transform)
+                queries = self.transform(question, effective_strategy, use_query_transform)
                 result.queries_used = queries
             # ③ 多路召回
             if trace_id:

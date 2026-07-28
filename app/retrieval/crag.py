@@ -54,73 +54,61 @@ class CRAGEvaluator:
 
     def __init__(self):
         settings = get_settings()
-        # #17: LLM 添加超时和重试
-        self.llm = build_chat_llm(max_tokens=256, timeout=30, retries=2)
         self.threshold = settings.crag_relevance_threshold
+        # 2026-07-28 零 LLM 精简：门控规则化 + 分级用 rerank 分数阈值。
+        # 原 LLM 门控/分级 prompt 含检索内容触发内容审查 + qwen thinking 慢，
+        # 按性能效果均衡原则精简（效果损：分级从语义判断降为分数阈值，诚实记录）。
 
     def should_retrieve(self, question: str) -> Tuple[bool, str]:
         """
-        判断问题是否需要检索。
+        判断问题是否需要检索（零 LLM，规则）。
 
-        Returns:
-            (need_retrieval: bool, reason: str)
+        闲聊/空 query 不检索；其余检索（含通用常识默认检索，漏判少数可接受）。
+        原 LLM 版判通用常识不检索，规则难覆盖，默认检索更安全。
         """
-        try:
-            prompt = CRAG_SHOULD_RETRIEVE_PROMPT.format(question=question)
-            response = self.llm.invoke(prompt)
-            data = extract_json(response.content)
-            if data:
-                need = data.get("need_retrieval", True)
-                reason = data.get("reason", "")
-                logger.info(f"CRAG should_retrieve: {need} ({reason})")
-                return need, reason
-        except Exception as e:
-            logger.warning(f"CRAG should_retrieve 失败: {e}")
-        # 默认需要检索
+        q = (question or "").strip()
+        if len(q) < 2:
+            return False, "query 过短，无需检索"
+        chitchat = {
+            "你好", "您好", "谢谢", "感谢", "再见", "拜拜", "你是谁",
+            "早上好", "晚上好", "嗨", "哈喽", "在吗", "在不在",
+        }
+        if q in chitchat or any(q.startswith(w) for w in ("你好", "您好", "谢谢", "再见", "拜拜")):
+            return False, "闲聊/问候，无需检索"
         return True, "默认需要检索"
 
     def evaluate_relevance(
         self, question: str, documents: List[Document]
     ) -> Tuple[str, List[int], str]:
         """
-        评估检索结果与问题的相关性。
+        评估检索结果相关性（零 LLM，用 cross-encoder rerank 分数）。
 
-        Args:
-            question: 用户问题
-            documents: 检索到的文档列表
-
-        Returns:
-            (grade, relevant_indices, reason)
-            grade: "correct" | "ambiguous" | "incorrect"
+        documents 已按 rerank_score 降序（pipeline rerank 后），取 top1 sigmoid
+        归一化判级。阈值初始经验值（0.5 correct / 0.3 incorrect），基线后看
+        grade 分布再校准。
         """
+        import math
+
         if not documents:
             return "incorrect", [], "无检索结果"
 
-        # 格式化文档（只取前5篇，每篇截断300字）
-        docs_text = ""
-        for i, doc in enumerate(documents[:5]):
-            content = doc.page_content[:300]
-            source = doc.metadata.get("source", "未知")
-            docs_text += f"[文档{i+1}] (来源: {source})\n{content}\n\n"
+        # 取前 5 篇 rerank 分数（已降序，top1 最高）
+        scores = [d.metadata.get("rerank_score") for d in documents[:5]]
+        scores = [s for s in scores if isinstance(s, (int, float))]
+        if not scores:
+            return "correct", list(range(len(documents))), "无 rerank 分数，默认通过"
 
-        try:
-            prompt = CRAG_EVALUATE_PROMPT.format(
-                question=question,
-                documents=docs_text,
-            )
-            response = self.llm.invoke(prompt)
-            data = extract_json(response.content)
-            if data:
-                grade = data.get("grade", "ambiguous")
-                indices = data.get("relevant_indices", [])
-                reason = data.get("reason", "")
-                logger.info(f"CRAG evaluate: grade={grade}, relevant={indices} ({reason})")
-                return grade, indices, reason
-        except Exception as e:
-            logger.warning(f"CRAG evaluate 失败: {e}")
-
-        # 默认认为相关
-        return "correct", list(range(len(documents))), "评估失败，默认通过"
+        top1 = float(scores[0])
+        p = 1.0 / (1.0 + math.exp(-top1))  # sigmoid → (0,1)
+        if p >= 0.5:
+            grade = "correct"
+        elif p < 0.3:
+            grade = "incorrect"
+        else:
+            grade = "ambiguous"
+        reason = f"rerank_sigmoid={p:.2f} (top1={top1:.2f})"
+        logger.info(f"CRAG evaluate(零LLM): grade={grade}, {reason}")
+        return grade, list(range(len(documents))), reason
 
     def filter_relevant_docs(
         self, documents: List[Document], relevant_indices: List[int]

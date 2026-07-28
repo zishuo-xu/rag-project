@@ -249,7 +249,7 @@ agent_steps / agent_stop_reason / budget_skipped / deadline`。
 |------|----------|------|--------|
 | **Dense** | `dense.py` | embedding + Chroma 向量相似度 | 多查询变体批量预算 embedding，复用 `similarity_search_by_vector`；走 `detail_store`（F6a） |
 | **Sparse** | `sparse.py` | BM25Okapi + jieba 中文分词 | `_tokenize` 词级分词 + 数字单位正则（`1963年/100ms`）；索引持久化到 `bm25_index.pkl` |
-| **Graph** | `graph_retriever.py` | 实体抽取 → 关系/子图多跳召回 | `_fast_entity_match` 零 LLM 优先，失败回退 LLM；`max_hops=2`；关系去重收敛于 `_collect_relations` |
+| **Graph** | `graph_retriever.py` | 实体抽取 → 关系/子图多跳召回 | `_fast_entity_match` 零 LLM 优先，失败回退 LLM（分解路径子问题 `fast_only` 不回退，`decompose_graph_fast_only[True]`）；`max_hops=2`；关系去重收敛于 `_collect_relations` |
 | **Parent-Child** | `parent_child.py` | 小块检索、大块返回 | child(200) 检索 `top_k*3` → 按 `parent_id` 去重 → 批量取 parent(1024)；需 `has_index()` |
 | **Summary** | `indexer.py` | L1 摘要召回 | 由 `use_summary_recall` 开关，提供文档级语义 |
 
@@ -546,7 +546,12 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 - `_tool_search` 复用 `pipeline.search` 复合原语（默认全通道）；
 - 决策 LLM 小预算：`build_chat_llm(max_tokens=agentic_decision_max_tokens, timeout=15, retries=1)`；
 - 硬上限 `agentic_max_steps(4)` 兜底；观测字段 `agent_steps`（决策轨迹）/ `agent_stop_reason`
-  （`agent_done / max_steps / decision_error`）。
+  （`agent_done / evidence_sufficient / max_steps / decision_error / converged / no_evidence`）。
+- **证据充分度硬门控**（`agentic_evidence_gate[True]`，零 LLM）：search/decompose 带来新证据后，
+  累积证据按 rerank 分降序送 `pipeline.evaluate`（CRAG top1 sigmoid 判级），`correct` 即强制
+  结束（`evidence_sufficient`）。动机：prompt 信号只能让收敛「可见」，管不住 LLM 的停止决策
+  （finish 率曾持续 33-53%）；硬门控后多跳切片 finish 率 93%、平均步数 1.53。无真实 rerank
+  分数（纯 RRF 结果）时不启用，避免 CRAG「无分数默认通过」误判。
 - **降级**：`use_agentic[False]` 默认关；开启后任何异常或空证据自动回退七阶段管道主路径。
 
 ---
@@ -667,7 +672,7 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 | LLM / Embedding | `openai_model`、`embedding_provider[local]`、`embedding_model[all-MiniLM-L6-v2]` |
 | 检索 | `retrieval_top_k[5]`、`retrieval_rrf_k[60]`、`rerank_top_n[20]`、`rerank_model` |
 | 分块 | `chunk_size[512]`、`chunk_overlap[64]`、`semantic_chunk_threshold[0.75]` |
-| Graph RAG | `graph_enabled[True]`、`graph_max_hops[2]`、`graph_max_entities[5]` |
+| Graph RAG | `graph_enabled[True]`、`graph_max_hops[2]`、`graph_max_entities[5]`、`decompose_graph_fast_only[True]` |
 | Parent-Child | `use_parent_child[True]`、`parent_chunk_size[1024]`、`child_chunk_size[200]` |
 | CRAG | `use_crag[True]`、`use_crag_gate[True]`、`crag_relevance_threshold[0.5]` |
 | 管道接线 | `use_summary_recall[True]`、`recall_max_workers[6]` |
@@ -683,7 +688,7 @@ RAG 2.0（F1–F6）解决了「检索得准、生成不编造」的问题；RAG
 | **F10 答案增强** | `use_answer_extraction[True]`、`use_self_consistency[False]`、`self_consistency_samples[3]` |
 | **F11 加固** | `api_key[""]`、`rate_limit_rpm[0]`、`log_json[False]`（指标常开无开关） |
 | **F12 对话记忆** | `use_history_rewrite[True]`、`history_rewrite_use_llm[False]`、`history_rewrite_max_turns[4]` |
-| **F13 Agentic** | `use_agentic[False]`、`agentic_max_steps[4]`、`agentic_decision_max_tokens[256]` |
+| **F13 Agentic** | `use_agentic[False]`、`agentic_max_steps[4]`、`agentic_decision_max_tokens[256]`、`agentic_evidence_gate[True]` |
 | **延迟治理** | `latency_budget_ms[25000]`（<=0 关闭）、`answer_max_tokens[1024]` |
 | 并发 | `max_concurrent_requests[4]`、`request_queue_timeout[30.0]` |
 | 思考模式 | `llm_thinking_enabled[False]`（关思考避免 reasoning 吃 max_tokens） |
