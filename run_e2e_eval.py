@@ -445,6 +445,7 @@ def _save(output, tag, feature_state, results, colloquial, summary=None):
     """增量写盘"""
     payload = {
         "mode": tag,
+        "provider": get_settings().llm_provider,  # 记录口径：不同 provider 数字不可直接互比
         "feature_state": feature_state,
         "summary": summary or aggregate(results),
         "results": results,
