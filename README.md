@@ -13,7 +13,9 @@
 | [docs/api.md](./docs/api.md) | API 接口详细文档（请求/响应示例） |
 | [docs/interview_guide.md](./docs/interview_guide.md) | 面试与学习指南（技术深度解析、高频Q&A、扩展路线） |
 | [docs/superpowers/reports/](./docs/superpowers/reports/) | 逐轮迭代验证报告（诚实记录，含负面/无效结果；最新：[2026-07-29 零 LLM 均衡化](./docs/superpowers/reports/2026-07-29-zero-llm-balance-report.md)） |
-| [docs/articles/](./docs/articles/) | 对外技术文章（A/B 归因方法论、F13 三轮迭代、投机流式）+ [5 分钟演示脚本](./docs/articles/00-demo-script.md) |
+| [docs/articles/](./docs/articles/) | 对外技术文章（A/B 归因方法论、F13 三轮迭代、投机流式）+ [发布指南](./docs/articles/publish/发布指南.md) |
+| [docs/demo-recording-guide.md](./docs/demo-recording-guide.md) | 5 分钟演示视频录制手册（逐字旁白 + 时间轴 + 翻车预案） |
+| [docs/resume_entry.md](./docs/resume_entry.md) | 简历项目条目（一行版/三条版/英文版/STAR 口述版 + 追问预案） |
 | [API Swagger UI](http://localhost:8000/docs) | 启动服务后的交互式 API 文档 |
 
 ## 核心叙事（面试 30 秒）
