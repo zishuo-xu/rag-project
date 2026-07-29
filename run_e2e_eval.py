@@ -356,7 +356,12 @@ def main():
 
     feature_state = apply_feature_mode(args.mode, args.only)
     tag = args.only.upper() if args.only else args.mode
-    output = args.output or f"data/eval_e2e_{tag.lower()}.json"
+    # smoke 是高频例行门，默认写独立文件——否则 --smoke（mode 仍为 full）会
+    # 静默覆盖 data/eval_e2e_full.json 的 300 题证据件（2026-07-29 踩过）
+    if args.smoke and not args.output:
+        output = "data/eval_e2e_smoke.json"
+    else:
+        output = args.output or f"data/eval_e2e_{tag.lower()}.json"
 
     print(f"=== 端到端评估 [{tag}] 特性状态: {feature_state} ===")
 
